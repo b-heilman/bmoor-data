@@ -1,0 +1,26 @@
+{
+  "name": "bmoor-data",
+  "main": "dist/bmoor.js",
+  "version": "0.0.1",
+  "homepage": "https://github.com/b-heilman/bmoor-data",
+  "authors": [
+    "Brian Heilman <brian.heilman@gmail.com>"
+  ],
+  "description": "A simple system for in memory storage",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "bower_components",
+    "demo",
+    "gulpfile.js",
+    "index.js",
+    "karma.conf.js",
+    "node_modules", 
+    "package.json",
+    "test",
+    "TODO.txt"
+  ],
+  "dependencies": {
+    "bmoor": "*"
+  }
+}

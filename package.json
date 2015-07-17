@@ -1,0 +1,41 @@
+{
+  "name": "bmoor-data",
+  "version": "0.0.1",
+  "author": "Brian Heilman <das.ist.junk@gmail.com>",
+  "descritpion": "In memory data management system",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/b-heilman/bmoor-data.git"
+  },
+  "main": "build/bmoor-data.js",
+  "dependencies": {
+    "bmoor": "*"
+  },
+  "devDependencies": {
+    "express": "*",
+    "gulp": "*",
+    "gulp-clean": "*",
+    "gulp-concat": "*",
+    "gulp-jshint": "*",
+    "gulp-karma": "*",
+    "gulp-rename": "*",
+    "gulp-serve": "*",
+    "gulp-uglifyjs": "*",
+    "gulp-watch": "*",
+    "gulp-yuidoc": "*",
+    "gulp-header": "*",
+    "gulp-footer": "*",
+    "jshint": "*",
+    "jshint-stylish": "*",
+    "karma": "*",
+    "karma-chrome-launcher": "*",
+    "karma-firefox-launcher": "*",
+    "karma-ie-launcher": "*",
+    "karma-jasmine": "*",
+    "karma-phantomjs-launcher": "*",
+    "karma-safari-launcher": "*",
+    "map-stream": "*",
+    "phantomjs": "*",
+    "phantomjs-polyfill": "*"
+  }
+}
