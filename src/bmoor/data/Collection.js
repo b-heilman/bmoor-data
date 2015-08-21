@@ -1,6 +1,6 @@
 bMoor.make( 'bmoor.data.Collection', 
-	[ 'bmoor.defer.Group', 'bmoor.data.Eventable',
-	function( Defer, Eventable ){
+	[ 'bmoor.defer.Group', 'bmoor.data.Eventable', 'bmoor.data.Follower',
+	function( Defer, Eventable, Follower ){
 		'use strict';
 		
 		function DataCollection(){
@@ -17,15 +17,16 @@ bMoor.make( 'bmoor.data.Collection',
 			parent : Array,
 			construct : DataCollection,
 			extend: [
-				new Eventable()
+				new Eventable(),
+				new Follower()
 			],
 			properties : {
-				_canInsert: function(){
+				_canInsert: function( dataNode ){
+					bMoor.data.setUid( dataNode );
+
 					return true;
 				},
 				_insert : function( content ){
-					bMoor.data.setUid( content );
-
 					this.$trigger( 'insert', content );
 				},
 				_canRemove: function(){
@@ -94,6 +95,13 @@ bMoor.make( 'bmoor.data.Collection',
 						func.call( (context || this), this[i], i );
 					}
 				},
+				toArray: function(){
+					return Array.prototype.slice.call( this, 0 );
+				},
+				// TODO : other casters like toString, etc
+				$get: function( pos ){
+					return this[pos];
+				},
 				$insert : function( obj ){
 					this.push( obj ); // implicitely calls _canInsert and _insert via push
 				},
@@ -106,59 +114,29 @@ bMoor.make( 'bmoor.data.Collection',
 					}
 				},
 				// TODO : replace feedInto
-				$watch: function( onInsert, onRemove ){
-					var	ins = this.$on('insert', onInsert ), 
+				$watch: function( onInsert, onRemove, ctx, args ){
+					var	ins,
+						rem;
+
+					if ( ctx ){
+						ins = this.$on('insert', function(){
+							return onInsert.apply( ctx, args||arguments );
+						});
+						rem = this.$on('remove', function(){
+							return onRemove.apply( ctx, args||arguments );
+						});
+					}else{
+						ins = this.$on('insert', onInsert );
 						rem = this.$on('remove', onRemove );
+					}
 
 					return function(){
 						ins();
 						rem();
 					};
 				},
-				$follow: function( collection ){
-					var i, c,
-						dis = this,
-						follow;
-
-					if ( collection instanceof DataCollection ){
-						follow = bMoor.data.getUid( collection );
-
-						if ( !this.$$following ){
-							this.$$following = {};
-						}
-
-						if ( !this.$$following[follow] ){
-							for( i = 0, c = collection.length; i < c; i++ ){
-								this.$insert( collection[i] );
-							}
-
-							this.$$following[follow] = collection.$watch(
-								this.$insert.bind(this),
-								this.$remove.bind(this)
-							);
-						}
-					}
-				},
-				$ignore: function( collection ){
-					var i, c,
-						follow;
-
-					if ( collection instanceof DataCollection ){
-						follow = bMoor.data.getUid( collection );
-
-						if ( this.$$following && !this.$$following[follow] ){
-							for( i = 0, c = collection.length; i < c; i++ ){
-								this.$remove( collection[i] );
-							}
-
-							this.$$following[follow]();
-							this.$$following[follow] = null;
-						}
-					}
-				},
 				$inflate : function(){
 					var i, c,
-						dis = this,
 						defer = new Defer();
 
 					bMoor.loop( this, function( d, i ){

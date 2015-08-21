@@ -1,12 +1,12 @@
 {
   "name": "bmoor-data",
   "main": "dist/bmoor.js",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "homepage": "https://github.com/b-heilman/bmoor-data",
   "authors": [
     "Brian Heilman <brian.heilman@gmail.com>"
   ],
-  "description": "A simple system for in memory storage",
+  "description": "Data structures for your daily life",
   "license": "MIT",
   "ignore": [
     "**/.*",
@@ -21,6 +21,6 @@
     "TODO.txt"
   ],
   "dependencies": {
-    "bmoor": "*"
+    "bmoor": "0.2.0"
   }
 }

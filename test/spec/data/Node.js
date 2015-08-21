@@ -18,7 +18,7 @@ describe('bmoor.data.Node', function(){
 			var t = {},
 				n = new Node(t);
 
-			n.update(function(p){
+			n.$update(function(p){
 				p.foo = {
 					'bar' : true
 				};
@@ -38,9 +38,9 @@ describe('bmoor.data.Node', function(){
 				p = { 'save' : 'me' },
 				n = new Node(t);
 
-			n.update( 'foo.bar', 1 );
-			n.update( 'hello.world', p );
-			n.update( 'test', 'test' );
+			n.$update( 'foo.bar', 1 );
+			n.$update( 'hello.world', p );
+			n.$update( 'test', 'test' );
 
 			expect( t.foo.bar ).toBe( 1 );
 			expect( t.hello.world ).toBe( p );
@@ -52,10 +52,30 @@ describe('bmoor.data.Node', function(){
 				p = { 'save' : 'me' },
 				n = new Node(t);
 
-			n.update({
+			n.$update({
 				'foo.bar': 1,
 				'hello.world': p,
 				'test': 'test'
+			});
+
+			expect( t.foo.bar ).toBe( 1 );
+			expect( t.hello.world ).toBe( p );
+			expect( t.test ).toBe( 'test' );
+		});
+
+		it('should be updatable through update via an merge object', function(){
+			var t = {},
+				p = { 'save' : 'me' },
+				n = new Node(t);
+
+			n.$update({
+				foo: {
+					bar: 1
+				},
+				hello: {
+					world: p
+				},
+				test: 'test'
 			});
 
 			expect( t.foo.bar ).toBe( 1 );
@@ -70,11 +90,11 @@ describe('bmoor.data.Node', function(){
 				t = {},
 				n = new Node(t);
 
-			n.watch(function(){
+			n.$watch(function(){
 				ping = true;
 			});
 
-			n.update(function(p){
+			n.$update(function(p){
 				p.foo = {
 					'bar' : true
 				};
@@ -95,11 +115,11 @@ describe('bmoor.data.Node', function(){
 				p = { 'save' : 'me' },
 				n = new Node(t);
 
-			n.watch(function(){
+			n.$watch(function(){
 				ping = true;
 			});
 
-			n.update( 'hello.world', p );
+			n.$update( 'hello.world', p );
 		
 			expect( ping ).toBe( true );
 		});
@@ -110,11 +130,11 @@ describe('bmoor.data.Node', function(){
 				p = { 'save' : 'me' },
 				n = new Node(t);
 
-			n.watch(function(){
+			n.$watch(function(){
 				ping = true;
 			});
 
-			n.update({
+			n.$update({
 				'foo.bar': 1,
 				'hello.world': p,
 				'test': 'test'

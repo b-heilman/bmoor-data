@@ -1,6 +1,21 @@
 bMoor.make( 'bmoor.data.Node', 
 	['bmoor.data.Eventable',
 	function( Eventable ){
+		function isSubset( parent, child ){
+			var i, c,
+				keys;
+
+			keys = Object.keys( child );
+
+			for( i = 0, c = keys.length; i < c; i++ ){
+				if ( !parent[keys[i]] ){
+					return false;
+				}
+			}
+
+			return true;
+		}
+
 		return {
 			construct: function( targ ){
 				this.getData = function(){
@@ -14,7 +29,7 @@ bMoor.make( 'bmoor.data.Node',
 				_update: function( update ){
 					this.$trigger( 'update', update );
 				},
-				update: function( change, value ){
+				$update: function( change, value ){
 					var update;
 
 					try{
@@ -25,19 +40,33 @@ bMoor.make( 'bmoor.data.Node',
 							if ( bMoor.isFunction(change) ){
 								update = change( this.getData() );
 							}else if ( bMoor.isObject(change) ){
-								bMoor.object.explode( change,  this.getData() );
-								update = bMoor.object.explode( change );
+								if ( !change.$$explodable && isSubset(this.getData(),change) ){
+									bMoor.object.merge( this.getData(), change );
+									update = change;
+								}else{
+									bMoor.object.explode( this.getData(), change );
+									update = bMoor.object.explode( change );
+								}
+							}else{
+								update = this.getData();
 							}
 						}
 
+						// right now, the value passed is pretty much useless
 						this._update( update );
 					}catch( ex ){
 						// TODO : error handling
 						console.log( 'bmoor.Node:update', ex );
 					}
 				},
-				watch: function( cb ){
-					return this.$on('update', cb );
+				$watch: function( cb, ctx, args ){
+					if ( ctx ){
+						return this.$on( 'update', function(){
+							return cb.apply( ctx, args||arguments );
+						});
+					}else{
+						return this.$on( 'update', cb );
+					}
 				},
 				mount: function( path, node ){
 					bMoor.set( path, node, this.getData() );
