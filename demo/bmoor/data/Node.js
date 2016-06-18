@@ -1,4 +1,0 @@
-;(function(){
-/** bmoor-data v0.0.1 **/
-bMoor.make("bmoor.data.Node",["bmoor.data.Eventable",function(t){return{construct:function(t){this.getData=function(){return t}},extend:[new t],properties:{_update:function(t){this.$trigger("update",t)},update:function(t,o){var e;try{o?(bMoor.set(t,o,this.getData()),e=t):bMoor.isFunction(t)?e=t(this.getData()):bMoor.isObject(t)?(bMoor.object.explode(t,this.getData()),e=bMoor.object.explode(t)):e=this.getData(),this._update(e)}catch(n){console.log("bmoor.Node:update",n)}},watch:function(t,o,e){return o?this.$on("update",function(){return t.apply(o,e||arguments)}):this.$on("update",t)},mount:function(t,o){bMoor.set(t,o,this.getData())}}}}]);
-}());
