@@ -1,6 +1,6 @@
 {
   "name": "bmoor-data",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": "Brian Heilman <das.ist.junk@gmail.com>",
   "description": "Data structures for daily life",
   "license": "MIT",
@@ -25,7 +25,6 @@
     "gulp-jshint": "^2.0.0",
     "gulp-karma": "0.0.5",
     "gulp-load-plugins": "^1.2.2",
-    "gulp-webpack": "^1.5.0",
     "gulp-webserver": "^0.9.1",
     "jasmine": "^2.4.1",
     "jshint": "^2.9.2",
@@ -37,6 +36,7 @@
     "map-stream": "0.0.6",
     "phantomjs-polyfill": "0.0.2",
     "phantomjs-prebuilt": "^2.1.7",
-    "webpack": "^1.13.0"
+    "webpack": "^1.13.0",
+    "webpack-stream": "^3.2.0"
   }
 }

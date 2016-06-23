@@ -1,7 +1,7 @@
 var $ = require('gulp-load-plugins')(),
 	gulp = require('gulp'),
 	map = require('map-stream'),
-	webpack = require('gulp-webpack'),
+	webpack = require('webpack-stream'),
 	karma = require('gulp-karma'),
 	jshint = require('gulp-jshint'),
 	stylish = require('jshint-stylish');

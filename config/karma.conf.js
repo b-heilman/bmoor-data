@@ -12,11 +12,9 @@ module.exports = function(config) {
 
         // list of files / patterns to load in the browser
         files: [
-            //'node_modules/es6-promise/dist/es6-promise.js',
+            'node_modules/bmoor/dist/bmoor.js',
             'dist/bmoor-data.js',
             //------------
-            //'test/lib/**.js',
-            //'test/mock/**/*.js',
             'test/**/*.js'
         ],
 

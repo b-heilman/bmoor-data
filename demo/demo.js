@@ -58,15 +58,16 @@ var bmoorData =
 	'use strict';
 
 	module.exports = {
-		Collection: __webpack_require__(2),
-		Hasher: __webpack_require__(19),
+		Hasher: __webpack_require__(2),
+		Collection: __webpack_require__(17),
 		HashedCollection: __webpack_require__(20),
-		Index: __webpack_require__(21),
-		GridIndex: __webpack_require__(22),
-		Bucketer: __webpack_require__(23),
-		Composite: __webpack_require__(18),
-		Observor: __webpack_require__(17),
-		Table: __webpack_require__(24)
+		Observor: __webpack_require__(18),
+		Composite: __webpack_require__(19),
+		Table: __webpack_require__(21),
+		Memory: __webpack_require__(23),
+		Index: __webpack_require__(22),
+		Bucketer: __webpack_require__(24),
+		GridIndex: __webpack_require__(25)
 	};
 
 /***/ },
@@ -75,307 +76,82 @@ var bmoorData =
 
 	'use strict';
 
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	var bmoor = __webpack_require__(3);
 
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var proto = Array.prototype,
-	    bmoor = __webpack_require__(3),
-	    getUid = bmoor.data.getUid,
-	    Observor = __webpack_require__(17);
-
-	function manageFilter(collection, datum, filter) {
-		var isIn = filter(datum);
-
-		collection._addRegistration(datum, datum.$observe.on('update', function CollectionDatumWatch() {
-			var nowIs = filter(datum);
-
-			if (isIn !== nowIs) {
-				if (nowIs) {
-					collection.insert(datum);
-				} else {
-					collection.remove(datum);
-				}
-
-				isIn = nowIs;
-			}
-		}));
-
-		return isIn;
+	function makeName(cfg) {
+		return cfg.join('-');
 	}
 
-	var Collection = function (_bmoor$build) {
-		_inherits(Collection, _bmoor$build);
+	function buildGetters(cfg) {
+		var i, c;
 
-		function Collection() {
-			_classCallCheck(this, Collection);
+		for (i = 0, c = cfg.length; i < c; i++) {
+			cfg[i] = bmoor.makeGetter(cfg[i]);
+		}
+	}
 
-			var i, c;
+	function makeFullfill(cfg, i) {
+		var next, getter;
 
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Collection).call(this));
-
-			bmoor.data.setUid(_this);
-
-			_this._contains = {};
-			_this._following = {};
-			_this._registrations = {};
-
-			for (i = 0, c = arguments.length; i < c; i++) {
-				_this.consume(arguments[i]);
-			}
-			return _this;
+		if (!i) {
+			i = 0;
 		}
 
-		// private functions
+		getter = cfg[i];
 
-
-		_createClass(Collection, [{
-			key: '_canInsert',
-			value: function _canInsert(obj) {
-				var id = getUid(obj);
-
-				return !this._contains[id] && (!this._$filter || this._$filter(obj));
-			}
-		}, {
-			key: '_onInsert',
-			value: function _onInsert(datum) {
-				var id = getUid(datum);
-
-				this.trigger('insert', datum);
-
-				if (this._$filter) {
-					manageFilter(this, datum, this._$filter);
-				}
-
-				this._contains[id] = 1;
-			}
-		}, {
-			key: '_canRemove',
-			value: function _canRemove(obj) {
-				var id = getUid(obj),
-				    c = --this._contains[id];
-
-				return !c;
-			}
-		}, {
-			key: '_onRemove',
-			value: function _onRemove(obj) {
-				var uid = getUid(obj),
-				    fn = this._registrations[uid];
-
-				this.trigger('remove', obj);
-
-				if (fn) {
-					fn();
-					this._registrations[uid] = null;
-				}
-			}
-		}, {
-			key: '_addRegistration',
-			value: function _addRegistration(datum, unreg) {
-				var uid = getUid(datum),
-				    old = this._registrations[uid];
-
-				if (old) {
-					this._registrations[uid] = function () {
-						unreg();
-						old();
-					};
+		if (i !== cfg.length - 1) {
+			next = makeFullfill(cfg, i + 1);
+			return function (obj) {
+				if (getter(obj) === undefined) {
+					return false;
 				} else {
-					this._registrations[uid] = unreg;
+					return next(obj);
 				}
-			}
+			};
+		} else {
+			return function (obj) {
+				return getter(obj) !== undefined;
+			};
+		}
+	}
 
-			// General access
+	function makeHasher(cfg, i) {
+		var next, getter;
 
-		}, {
-			key: 'get',
-			value: function get(pos) {
-				return this[pos];
-			}
-		}, {
-			key: 'insert',
-			value: function insert(datum, front) {
-				Observor.enforce(datum);
+		if (!i) {
+			i = 0;
+		}
 
-				if (this._canInsert(datum)) {
-					if (front) {
-						proto.unshift.call(this, datum);
-					} else {
-						proto.push.call(this, datum);
-					}
+		getter = cfg[i];
 
-					this._onInsert(datum);
+		if (i !== cfg.length - 1) {
+			next = makeHasher(cfg, i + 1);
+			return function (obj) {
+				return getter(obj) + '::' + next(obj);
+			};
+		} else {
+			return getter;
+		}
+	}
 
-					return true;
-				}
+	// Generates the filtering functions
 
-				return false;
-			}
-		}, {
-			key: 'setFilter',
-			value: function setFilter(fn) {
-				var i, datum;
+	var Hasher = function Hasher(cfg) {
+		_classCallCheck(this, Hasher);
 
-				this._$filter = fn.bind(this);
+		var fields = cfg.slice(0).sort();
 
-				for (i = 0; i < this.length; i++) {
-					datum = this[i];
+		this.name = makeName(fields);
 
-					if (!manageFilter(datum, fn.bind(this))) {
-						this.splice(i, 1);
-						i--;
-					}
-				}
-			}
-		}, {
-			key: 'remove',
-			value: function remove(obj) {
-				var t;
+		buildGetters(fields);
 
-				if (this._canRemove(obj)) {
-					t = bmoor.array.remove(this, obj);
+		this.hash = makeHasher(fields);
+		this.canFulfill = makeFullfill(fields);
+	};
 
-					this._onRemove(t);
-
-					return true;
-				}
-
-				return false;
-			}
-		}, {
-			key: 'consume',
-			value: function consume(obj) {
-				var i, c;
-
-				if (obj instanceof Collection) {
-					this.follow(obj);
-				} else if (bmoor.isArray(obj)) {
-					for (i = 0, c = obj.length; i < c; i++) {
-						this.insert(obj[i]);
-					}
-				} else {
-					this.insert(obj);
-				}
-			}
-
-			// TODO : other casters like toString, etc
-
-		}, {
-			key: 'toArray',
-			value: function toArray() {
-				return this.slice(0);
-			}
-
-			// inheritance methods
-
-		}, {
-			key: 'follow',
-			value: function follow(collection) {
-				var uid = bmoor.data.getUid(collection);
-
-				if (!this._following[uid]) {
-					this._following[uid] = collection.lead(this);
-				}
-			}
-		}, {
-			key: 'lead',
-			value: function lead(collection) {
-				var i, c;
-
-				for (i = 0, c = this.length; i < c; i++) {
-					collection.insert(this[i]);
-				}
-
-				return this.subscribe({
-					'insert': collection.insert.bind(collection),
-					'remove': collection.remove.bind(collection)
-				});
-			}
-		}, {
-			key: 'unfollow',
-			value: function unfollow(collection) {
-				var i,
-				    c,
-				    id = bmoor.data.getUid(collection);
-
-				if (this._following[id]) {
-					for (i = 0, c = collection.length; i < c; i++) {
-						this.remove(collection[i]);
-					}
-
-					this._following[id]();
-					this._following[id] = null;
-				}
-			}
-
-			// override base array functionality
-
-		}, {
-			key: 'push',
-			value: function push(obj) {
-				this.insert(obj, false);
-			}
-		}, {
-			key: 'unshift',
-			value: function unshift(obj) {
-				this.insert(obj, true);
-			}
-		}, {
-			key: 'pop',
-			value: function pop() {
-				var obj = this[this.length - 1];
-				if (this._canRemove(obj)) {
-					proto.pop.call(this);
-					this._onRemove(obj);
-				}
-			}
-		}, {
-			key: 'shift',
-			value: function shift() {
-				var obj = this[0];
-				if (this._canRemove(obj)) {
-					proto.shift.call(this);
-					this._onRemove(obj);
-				}
-			}
-
-			// extended base array functionality
-
-		}, {
-			key: '$filter',
-			value: function $filter(fn) {
-				var child = new Collection();
-				child.setFilter(fn);
-
-				this.lead(child);
-
-				return child;
-			}
-		}, {
-			key: '$concat',
-			value: function $concat() {
-				var i,
-				    c,
-				    child = new Collection();
-
-				this.lead(child);
-				for (i = 0, c = arguments; i < c; i++) {
-					child.consume(arguments[i]);
-				}
-
-				return child;
-			}
-		}]);
-
-		return Collection;
-	}(bmoor.build(Array, { mixin: bmoor.interfaces.Eventing }));
-
-	module.exports = Collection;
+	module.exports = Hasher;
 
 /***/ },
 /* 3 */
@@ -2112,6 +1888,314 @@ var bmoorData =
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var proto = Array.prototype,
+	    bmoor = __webpack_require__(3),
+	    getUid = bmoor.data.getUid,
+	    Observor = __webpack_require__(18);
+
+	function manageFilter(collection, datum, filter) {
+		var isIn = filter(datum);
+
+		collection._addRegistration(datum, datum.$observe.on('update', function CollectionDatumWatch() {
+			var nowIs = filter(datum);
+
+			if (isIn !== nowIs) {
+				if (nowIs) {
+					collection.insert(datum);
+				} else {
+					collection.remove(datum);
+				}
+
+				isIn = nowIs;
+			}
+		}));
+
+		return isIn;
+	}
+
+	var Collection = function (_bmoor$build) {
+		_inherits(Collection, _bmoor$build);
+
+		function Collection() {
+			_classCallCheck(this, Collection);
+
+			var i, c;
+
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Collection).call(this));
+
+			bmoor.data.setUid(_this);
+
+			_this._contains = {};
+			_this._following = {};
+			_this._registrations = {};
+
+			for (i = 0, c = arguments.length; i < c; i++) {
+				_this.consume(arguments[i]);
+			}
+			return _this;
+		}
+
+		// private functions
+
+
+		_createClass(Collection, [{
+			key: '_canInsert',
+			value: function _canInsert(obj) {
+				var id = getUid(obj);
+
+				return !this._contains[id] && (!this._$filter || this._$filter(obj));
+			}
+		}, {
+			key: '_onInsert',
+			value: function _onInsert(datum) {
+				var id = getUid(datum);
+
+				this.trigger('insert', datum);
+
+				if (this._$filter) {
+					manageFilter(this, datum, this._$filter);
+				}
+
+				this._contains[id] = 1;
+			}
+		}, {
+			key: '_canRemove',
+			value: function _canRemove(obj) {
+				var id = getUid(obj),
+				    c = --this._contains[id];
+
+				return !c;
+			}
+		}, {
+			key: '_onRemove',
+			value: function _onRemove(obj) {
+				var uid = getUid(obj),
+				    fn = this._registrations[uid];
+
+				this.trigger('remove', obj);
+
+				if (fn) {
+					fn();
+					this._registrations[uid] = null;
+				}
+			}
+		}, {
+			key: '_addRegistration',
+			value: function _addRegistration(datum, unreg) {
+				var uid = getUid(datum),
+				    old = this._registrations[uid];
+
+				if (old) {
+					this._registrations[uid] = function () {
+						unreg();
+						old();
+					};
+				} else {
+					this._registrations[uid] = unreg;
+				}
+			}
+
+			// General access
+
+		}, {
+			key: 'get',
+			value: function get(pos) {
+				return this[pos];
+			}
+		}, {
+			key: 'insert',
+			value: function insert(datum, front) {
+				Observor.enforce(datum);
+
+				if (this._canInsert(datum)) {
+					if (front) {
+						proto.unshift.call(this, datum);
+					} else {
+						proto.push.call(this, datum);
+					}
+
+					this._onInsert(datum);
+
+					return true;
+				}
+
+				return false;
+			}
+		}, {
+			key: 'setFilter',
+			value: function setFilter(fn) {
+				var i, datum;
+
+				this._$filter = fn.bind(this);
+
+				for (i = 0; i < this.length; i++) {
+					datum = this[i];
+
+					if (!manageFilter(datum, fn.bind(this))) {
+						this.splice(i, 1);
+						i--;
+					}
+				}
+			}
+		}, {
+			key: 'remove',
+			value: function remove(obj) {
+				var t;
+
+				if (this._canRemove(obj)) {
+					t = bmoor.array.remove(this, obj);
+
+					this._onRemove(t);
+
+					return true;
+				}
+
+				return false;
+			}
+		}, {
+			key: 'consume',
+			value: function consume(obj) {
+				var i, c;
+
+				if (obj instanceof Collection) {
+					this.follow(obj);
+				} else if (bmoor.isArray(obj)) {
+					for (i = 0, c = obj.length; i < c; i++) {
+						this.insert(obj[i]);
+					}
+				} else {
+					this.insert(obj);
+				}
+			}
+
+			// TODO : other casters like toString, etc
+
+		}, {
+			key: 'toArray',
+			value: function toArray() {
+				return this.slice(0);
+			}
+
+			// inheritance methods
+
+		}, {
+			key: 'follow',
+			value: function follow(collection) {
+				var uid = bmoor.data.getUid(collection);
+
+				if (!this._following[uid]) {
+					this._following[uid] = collection.lead(this);
+				}
+			}
+		}, {
+			key: 'lead',
+			value: function lead(collection) {
+				var i, c;
+
+				for (i = 0, c = this.length; i < c; i++) {
+					collection.insert(this[i]);
+				}
+
+				return this.subscribe({
+					'insert': collection.insert.bind(collection),
+					'remove': collection.remove.bind(collection)
+				});
+			}
+		}, {
+			key: 'unfollow',
+			value: function unfollow(collection) {
+				var i,
+				    c,
+				    id = bmoor.data.getUid(collection);
+
+				if (this._following[id]) {
+					for (i = 0, c = collection.length; i < c; i++) {
+						this.remove(collection[i]);
+					}
+
+					this._following[id]();
+					this._following[id] = null;
+				}
+			}
+
+			// override base array functionality
+
+		}, {
+			key: 'push',
+			value: function push(obj) {
+				this.insert(obj, false);
+			}
+		}, {
+			key: 'unshift',
+			value: function unshift(obj) {
+				this.insert(obj, true);
+			}
+		}, {
+			key: 'pop',
+			value: function pop() {
+				var obj = this[this.length - 1];
+				if (this._canRemove(obj)) {
+					proto.pop.call(this);
+					this._onRemove(obj);
+				}
+			}
+		}, {
+			key: 'shift',
+			value: function shift() {
+				var obj = this[0];
+				if (this._canRemove(obj)) {
+					proto.shift.call(this);
+					this._onRemove(obj);
+				}
+			}
+
+			// extended base array functionality
+
+		}, {
+			key: '$filter',
+			value: function $filter(fn) {
+				var child = new Collection();
+				child.setFilter(fn);
+
+				this.lead(child);
+
+				return child;
+			}
+		}, {
+			key: '$concat',
+			value: function $concat() {
+				var i,
+				    c,
+				    child = new Collection();
+
+				this.lead(child);
+				for (i = 0, c = arguments; i < c; i++) {
+					child.consume(arguments[i]);
+				}
+
+				return child;
+			}
+		}]);
+
+		return Collection;
+	}(bmoor.build(Array, { mixin: bmoor.interfaces.Eventing }));
+
+	module.exports = Collection;
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -2121,7 +2205,7 @@ var bmoorData =
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 	var bmoor = __webpack_require__(3),
-	    Composite = __webpack_require__(18);
+	    Composite = __webpack_require__(19);
 
 	var Observor = function (_bmoor$build) {
 		_inherits(Observor, _bmoor$build);
@@ -2172,7 +2256,7 @@ var bmoorData =
 	module.exports = Observor;
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2207,89 +2291,6 @@ var bmoorData =
 	module.exports = Composite;
 
 /***/ },
-/* 19 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var bmoor = __webpack_require__(3);
-
-	function makeName(cfg) {
-		return cfg.join('-');
-	}
-
-	function buildGetters(cfg) {
-		var i, c;
-
-		for (i = 0, c = cfg.length; i < c; i++) {
-			cfg[i] = bmoor.makeGetter(cfg[i]);
-		}
-	}
-
-	function makeFullfill(cfg, i) {
-		var next, getter;
-
-		if (!i) {
-			i = 0;
-		}
-
-		getter = cfg[i];
-
-		if (i !== cfg.length - 1) {
-			next = makeFullfill(cfg, i + 1);
-			return function (obj) {
-				if (getter(obj) === undefined) {
-					return false;
-				} else {
-					return next(obj);
-				}
-			};
-		} else {
-			return function (obj) {
-				return getter(obj) !== undefined;
-			};
-		}
-	}
-
-	function makeHasher(cfg, i) {
-		var next, getter;
-
-		if (!i) {
-			i = 0;
-		}
-
-		getter = cfg[i];
-
-		if (i !== cfg.length - 1) {
-			next = makeHasher(cfg, i + 1);
-			return function (obj) {
-				return getter(obj) + '::' + next(obj);
-			};
-		} else {
-			return getter;
-		}
-	}
-
-	// Generates the filtering functions
-
-	var Hasher = function Hasher(cfg) {
-		_classCallCheck(this, Hasher);
-
-		var fields = cfg.slice(0).sort();
-
-		this.name = makeName(fields);
-
-		buildGetters(fields);
-
-		this.hash = makeHasher(fields);
-		this.canFulfill = makeFullfill(fields);
-	};
-
-	module.exports = Hasher;
-
-/***/ },
 /* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -2305,7 +2306,7 @@ var bmoorData =
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var Collection = __webpack_require__(2);
+	var Collection = __webpack_require__(17);
 
 	var HashedCollection = function (_Collection) {
 		_inherits(HashedCollection, _Collection);
@@ -2369,9 +2370,88 @@ var bmoorData =
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+	var Index = __webpack_require__(22),
+	    Hasher = __webpack_require__(2),
+	    Collection = __webpack_require__(17),
+	    HashedCollection = __webpack_require__(20);
+
+	function getIndex(indexes, root, query) {
+		var keys = Object.keys(query).sort(),
+		    fields = keys.join('::'),
+		    index = indexes[fields];
+
+		if (!index) {
+			index = new Index(new Hasher(keys), root);
+			indexes[fields] = index;
+		}
+
+		return index;
+	}
+
+	var Table = function () {
+		function Table(primary) {
+			_classCallCheck(this, Table);
+
+			if (primary) {
+				this.primary = new HashedCollection(new Hasher(primary));
+			} else {
+				this.primary = new Collection();
+			}
+
+			this.indexes = {};
+		}
+
+		_createClass(Table, [{
+			key: 'select',
+			value: function select(query) {
+				if (this.primary instanceof HashedCollection && this.primary._hasher.canFulfill(query)) {
+					return this.primary.select(query);
+				} else {
+					return getIndex(this.indexes, this.primary, query).select(query);
+				}
+			}
+		}, {
+			key: 'insert',
+			value: function insert(datum) {
+				return this.primary.insert(datum);
+			}
+		}, {
+			key: 'update',
+			value: function update(datum) {
+				return this.primary.update(datum);
+			}
+		}, {
+			key: 'publish',
+			value: function publish(datum) {
+				if (!this.insert(datum)) {
+					this.update(datum);
+				}
+			}
+		}, {
+			key: 'remove',
+			value: function remove(datum) {
+				this.primary.remove(datum);
+			}
+		}]);
+
+		return Table;
+	}();
+
+	module.exports = Table;
+
+/***/ },
+/* 22 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 	var bmoor = __webpack_require__(3),
 	    getUid = bmoor.data.getUid,
-	    Collection = __webpack_require__(2);
+	    Collection = __webpack_require__(17);
 
 	function createCollection(index, hash) {
 		var c = new Collection(),
@@ -2531,7 +2611,250 @@ var bmoorData =
 	module.exports = Index;
 
 /***/ },
-/* 22 */
+/* 23 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var MemoryNode = function () {
+		function MemoryNode() {
+			_classCallCheck(this, MemoryNode);
+		}
+
+		_createClass(MemoryNode, [{
+			key: "construct",
+			value: function construct() {
+				this.prev = null;
+				this.next = null;
+			}
+		}, {
+			key: "detach",
+			value: function detach() {
+				if (this.prev) {
+					if (this.next) {
+						this.prev.next = this.next;
+						this.next.prev = this.prev;
+						this.next = null;
+					} else {
+						this.prev.next = null;
+					}
+					this.prev = null;
+				} else if (this.next) {
+					this.next.prev = null;
+					this.next = null;
+				}
+			}
+
+			// insert myself before this node
+
+		}, {
+			key: "insertBefore",
+			value: function insertBefore(node) {
+				this.detach();
+
+				if (node.prev) {
+					this.prev = node.prev;
+					this.prev.next = this;
+				}
+
+				node.prev = this;
+				this.next = node;
+			}
+		}, {
+			key: "insertAfter",
+			value: function insertAfter(node) {
+				this.detach();
+
+				if (node.next) {
+					this.next = node.next;
+					this.next.prev = this;
+				}
+
+				node.next = this;
+				this.prev = node;
+			}
+		}]);
+
+		return MemoryNode;
+	}();
+
+	var Memory = function () {
+		function Memory(hasher, limit, lifetime) {
+			_classCallCheck(this, Memory);
+
+			var unsets = {};
+
+			this.index = {};
+			this.limit = limit;
+			this.length = 0;
+			this.hasher = hasher;
+
+			// tail should be oldest
+			this.head = new MemoryNode();
+			this.tail = new MemoryNode();
+
+			this.tail.insertAfter(this.head);
+
+			if (lifetime) {
+				this.govern = function (hash) {
+					var _this = this;
+
+					var clear = unsets[hash];
+
+					if (clear) {
+						clearTimeout(clear);
+					}
+
+					unsets[hash] = setTimeout(function () {
+						_this.remove(_this.index[hash].$datum);
+					}, lifetime);
+				};
+			} else {
+				this.govern = function () {};
+			}
+		}
+
+		_createClass(Memory, [{
+			key: "select",
+			value: function select(query) {
+				var hash = this.hasher.hash(query);
+
+				return this.index[hash];
+			}
+		}, {
+			key: "get",
+			value: function get(dex) {
+				var i,
+				    node = this.head.next;
+
+				if (dex > this.length) {
+					dex = this.length;
+				}
+
+				for (i = 0; i < dex; i++) {
+					node = node.next;
+				}
+
+				return node.$datum;
+			}
+		}, {
+			key: "first",
+			value: function first() {
+				return this.head.next.$datum;
+			}
+		}, {
+			key: "last",
+			value: function last() {
+				return this.tail.prev.$datum;
+			}
+		}, {
+			key: "insert",
+			value: function insert(datum) {
+				var hash = this.hasher.hash(datum),
+				    node = this.index[hash];
+
+				if (!node) {
+					node = new MemoryNode();
+					node.$datum = datum;
+
+					this.index[hash] = node;
+					if (this.length === this.limit) {
+						this.remove(this.tail.prev.$datum);
+					}
+
+					this.length++;
+				}
+
+				node.insertAfter(this.head);
+				this.govern(hash);
+			}
+		}, {
+			key: "remove",
+			value: function remove(datum) {
+				var hash = this.hasher.hash(datum),
+				    node = this.index[hash];
+
+				if (node) {
+					this.length--;
+					delete this.index[hash];
+					node.detach();
+				}
+			}
+		}]);
+
+		return Memory;
+	}();
+
+	module.exports = Memory;
+
+/***/ },
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var Index = __webpack_require__(22);
+
+	// Takes a filter function, seperates the results out to different collections
+
+	var Bucketer = function (_Index) {
+		_inherits(Bucketer, _Index);
+
+		function Bucketer(hasher, onInsert, onRemove) {
+			_classCallCheck(this, Bucketer);
+
+			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Bucketer).call(this, hasher));
+
+			_this._onInsert = onInsert;
+			_this._onRemove = onRemove;
+			return _this;
+		}
+
+		_createClass(Bucketer, [{
+			key: '_insert',
+			value: function _insert(cuid, obj) {
+				var collection = _get(Object.getPrototypeOf(Bucketer.prototype), '_insert', this).call(this, cuid, obj);
+
+				if (collection) {
+					this._onInsert(collection, obj);
+				}
+
+				return collection;
+			}
+		}, {
+			key: '_remove',
+			value: function _remove(cuid, obj) {
+				var collection = _get(Object.getPrototypeOf(Bucketer.prototype), '_remove', this).call(this, cuid, obj);
+
+				if (collection) {
+					this._onRemove(collection, obj);
+				}
+
+				return collection;
+			}
+		}]);
+
+		return Bucketer;
+	}(Index);
+
+	module.exports = Bucketer;
+
+/***/ },
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2542,7 +2865,7 @@ var bmoorData =
 
 	var bmoor = __webpack_require__(3),
 	    getUid = bmoor.data.getUid,
-	    Collection = __webpack_require__(2);
+	    Collection = __webpack_require__(17);
 
 	function _insert(grid, datum) {
 		var x,
@@ -2745,147 +3068,6 @@ var bmoorData =
 	}();
 
 	module.exports = GridIndex;
-
-/***/ },
-/* 23 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var Index = __webpack_require__(21);
-
-	// Takes a filter function, seperates the results out to different collections
-
-	var Bucketer = function (_Index) {
-		_inherits(Bucketer, _Index);
-
-		function Bucketer(hasher, onInsert, onRemove) {
-			_classCallCheck(this, Bucketer);
-
-			var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Bucketer).call(this, hasher));
-
-			_this._onInsert = onInsert;
-			_this._onRemove = onRemove;
-			return _this;
-		}
-
-		_createClass(Bucketer, [{
-			key: '_insert',
-			value: function _insert(cuid, obj) {
-				var collection = _get(Object.getPrototypeOf(Bucketer.prototype), '_insert', this).call(this, cuid, obj);
-
-				if (collection) {
-					this._onInsert(collection, obj);
-				}
-
-				return collection;
-			}
-		}, {
-			key: '_remove',
-			value: function _remove(cuid, obj) {
-				var collection = _get(Object.getPrototypeOf(Bucketer.prototype), '_remove', this).call(this, cuid, obj);
-
-				if (collection) {
-					this._onRemove(collection, obj);
-				}
-
-				return collection;
-			}
-		}]);
-
-		return Bucketer;
-	}(Index);
-
-	module.exports = Bucketer;
-
-/***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var Index = __webpack_require__(21),
-	    Hasher = __webpack_require__(19),
-	    Collection = __webpack_require__(2),
-	    HashedCollection = __webpack_require__(20);
-
-	function getIndex(indexes, root, query) {
-		var keys = Object.keys(query).sort(),
-		    fields = keys.join('::'),
-		    index = indexes[fields];
-
-		if (!index) {
-			index = new Index(new Hasher(keys), root);
-			indexes[fields] = index;
-		}
-
-		return index;
-	}
-
-	var Table = function () {
-		function Table(primary) {
-			_classCallCheck(this, Table);
-
-			if (primary) {
-				this.primary = new HashedCollection(new Hasher(primary));
-			} else {
-				this.primary = new Collection();
-			}
-
-			this.indexes = {};
-		}
-
-		_createClass(Table, [{
-			key: 'select',
-			value: function select(query) {
-				if (this.primary instanceof HashedCollection && this.primary._hasher.canFulfill(query)) {
-					return this.primary.select(query);
-				} else {
-					return getIndex(this.indexes, this.primary, query).select(query);
-				}
-			}
-		}, {
-			key: 'insert',
-			value: function insert(datum) {
-				return this.primary.insert(datum);
-			}
-		}, {
-			key: 'update',
-			value: function update(datum) {
-				return this.primary.update(datum);
-			}
-		}, {
-			key: 'publish',
-			value: function publish(datum) {
-				if (!this.insert(datum)) {
-					this.update(datum);
-				}
-			}
-		}, {
-			key: 'remove',
-			value: function remove(datum) {
-				this.primary.remove(datum);
-			}
-		}]);
-
-		return Table;
-	}();
-
-	module.exports = Table;
 
 /***/ }
 /******/ ]);
