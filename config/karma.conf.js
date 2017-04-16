@@ -12,10 +12,10 @@ module.exports = function(config) {
 
         // list of files / patterns to load in the browser
         files: [
-            'node_modules/bmoor/dist/bmoor.js',
+            'config/test.js',
             'dist/bmoor-data.js',
             //------------
-            'test/**/*.js'
+            'src/**/*.spec.js'
         ],
 
         reporters: ['progress'],
@@ -45,7 +45,6 @@ module.exports = function(config) {
         // - PhantomJS
         // - IE (only Windows)
         browsers: ['PhantomJS'],
-
 
         // Continuous Integration mode
         // if true, it capture browsers, run tests and exit
