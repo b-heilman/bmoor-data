@@ -24,7 +24,6 @@ class Collection extends Feed {
 					this._removing = [ datum ];
 
 					this.trigger( 'remove', this._removing );
-						
 				}else{
 					this._removing.push( datum );
 				}
@@ -117,10 +116,10 @@ class Collection extends Feed {
 		}
 
 		function remove( datum ){
-			var t = old[ setUid(datum) ];
+			var dex = setUid(datum);
 
-			if ( t ){
-				get(t).remove( datum );
+			if ( dex in old ){
+				get( old[dex] ).remove( datum );
 			}
 		}
 

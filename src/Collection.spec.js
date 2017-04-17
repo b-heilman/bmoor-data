@@ -157,5 +157,35 @@ describe('bmoor-data.Collection', function(){
 				done();
 			}, 100); // it has to go through two rounds of updates
 		});
+
+		it('should properly reroute buckets', function( done ){
+			var t = child.get('dog').data[0],
+				dog = false,
+				pig = false;
+
+			t.type = 'pig';
+
+			child.get('dog').on('update', function(){
+				dog = true;
+			});
+
+			child.get('pig').on('update', function(){
+				pig = true;
+			});
+
+			child.reroute( t );
+
+			expect( child.get('dog').data.length ).toBe( 1 );
+			expect( child.get('dog').data[0].id ).toBe( 3 );
+			expect( child.get('pig').data.length ).toBe( 1 );
+			expect( child.get('pig').data[0].id ).toBe( 1 );
+
+			setTimeout(function(){
+				expect( dog ).toBe( true );
+				expect( pig ).toBe( true );
+
+				done();
+			},100);
+		});
 	});
 });

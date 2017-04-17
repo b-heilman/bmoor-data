@@ -2718,10 +2718,10 @@ var bmoorData =
 				}
 
 				function _remove(datum) {
-					var t = old[setUid(datum)];
+					var dex = setUid(datum);
 
-					if (t) {
-						_get(t).remove(datum);
+					if (dex in old) {
+						_get(old[dex]).remove(datum);
 					}
 				}
 
