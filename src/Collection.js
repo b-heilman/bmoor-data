@@ -149,7 +149,7 @@ class Collection extends Feed {
 
 		return {
 			get: function( hash ){
-				return index[hash];
+				return get( hash );
 			},
 			reroute: function( datum ){
 				remove( datum );

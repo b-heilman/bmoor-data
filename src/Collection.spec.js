@@ -140,6 +140,10 @@ describe('bmoor-data.Collection', function(){
 			expect( child.get('cat').data.length ).toBe( 1 );
 		});
 
+		it('should return back a collection even on a miss', function(){
+			expect( child.get('woot').data.length ).toBe( 0 );
+		});
+
 		it('should route new elements to proper buckets', function( done ){
 			parent.add({ 'type': 'dog', id:4 });
 			parent.add({ 'type': 'cat', id:5 });

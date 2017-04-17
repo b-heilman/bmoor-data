@@ -2698,7 +2698,7 @@ var bmoorData =
 				    index = {},
 				    _disconnect;
 
-				function get(i) {
+				function _get(i) {
 					var t = index[i];
 
 					if (!t) {
@@ -2714,14 +2714,14 @@ var bmoorData =
 
 					old[setUid(datum)] = i;
 
-					get(i).add(datum);
+					_get(i).add(datum);
 				}
 
 				function _remove(datum) {
 					var t = old[setUid(datum)];
 
 					if (t) {
-						get(t).remove(datum);
+						_get(t).remove(datum);
 					}
 				}
 
@@ -2750,7 +2750,7 @@ var bmoorData =
 
 				return {
 					get: function get(hash) {
-						return index[hash];
+						return _get(hash);
 					},
 					reroute: function reroute(datum) {
 						_remove(datum);
