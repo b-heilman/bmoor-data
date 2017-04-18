@@ -60,6 +60,8 @@
 		console.timeEnd('collection-init:' + count);
 		console.log(t.data.length === count ? 'valid' : 'failed: ' + t.data.length);
 
+		//--------
+
 		console.time('collection-consume:' + count);
 		arr = [];
 		for (i = 0, c = count; i < c; i++) {
@@ -71,6 +73,8 @@
 		console.timeEnd('collection-consume:' + count);
 		console.log(t.data.length === count ? 'valid' : 'failed: ' + t.data.length);
 
+		//--------
+
 		console.time('collection-add:' + count);
 		arr = [];
 		t = new bmoorData.Collection();
@@ -79,6 +83,8 @@
 		}
 		console.timeEnd('collection-add:' + count);
 		console.log(t.data.length === count ? 'valid' : 'failed: ' + t.data.length);
+
+		//--------
 
 		console.time('collection-push:' + count);
 		arr = [];
@@ -89,31 +95,33 @@
 		console.timeEnd('collection-push:' + count);
 		console.log(t.data.length === count ? 'valid' : 'failed: ' + t.data.length);
 
-		console.time('collection-filter:' + count);
-		arr = [];
-		t = new bmoorData.Collection(arr);
-		for (i = 0, c = count; i < c; i++) {
-			arr.push({ id: i, type: i % 10, junk: 'woot', foo: 'bar' });
-		}
+		//--------
 
-		t = t.filter(function (d) {
+		console.time('collection-filter:' + count);
+		arr = t.filter(function (d) {
 			return d.id % 2;
 		});
 		console.timeEnd('collection-filter:' + count);
-		console.log(t.data.length * 2 === count ? 'valid' : 'failed: ' + t.data.length);
+		console.log(arr.data.length * 2 === count ? 'valid' : 'failed: ' + arr.data.length);
+
+		//--------
+
+		console.time('collection-index:' + count);
+		arr = t.index(function (d) {
+			return d.id;
+		});
+
+		console.timeEnd('collection-index:' + count);
+		console.log(arr.keys().length === count ? 'valid' : 'failed: ' + arr.keys().length);
+
+		//--------
 
 		console.time('collection-route:' + count);
-		arr = [];
-		t = new bmoorData.Collection(arr);
-		for (i = 0, c = count; i < c; i++) {
-			arr.push({ id: i, type: i % 10, junk: 'woot', foo: 'bar' });
-		}
-
-		t = t.route(function (d) {
+		arr = t.route(function (d) {
 			return d.type;
 		});
 		console.timeEnd('collection-route:' + count);
-		console.log(t.get(0).data.length * 10 === count ? 'valid' : 'failed: ' + t.get(0).data.length);
+		console.log(arr.get(0).data.length * 10 === count ? 'valid' : 'failed: ' + arr.get(0).data.length);
 	}
 
 	window.stressTest = function () {
@@ -2766,15 +2774,64 @@
 				return child;
 			}
 		}, {
+			key: 'index',
+			value: function index(fn) {
+				var _this3 = this;
+
+				var i,
+				    c,
+				    d,
+				    _disconnect,
+				    index = {};
+
+				for (i = 0, c = this.data.length; i < c; i++) {
+					d = this.data[i];
+
+					index[fn(d)] = d;
+				}
+
+				this.stable(function () {
+					_disconnect = _this3.subscribe({
+						insert: function insert(ins) {
+							var i, c, d;
+
+							for (i = 0, c = ins.length; i < c; i++) {
+								d = ins[i];
+								index[fn(d)] = d;
+							}
+						},
+						remove: function remove(outs) {
+							var i, c;
+
+							for (i = 0, c = outs.length; i < c; i++) {
+								delete index[fn(outs[i])];
+							}
+						}
+					});
+				});
+
+				return {
+					get: function get(dex) {
+						return index[dex];
+					},
+					keys: function keys() {
+						return Object.keys(index);
+					},
+					disconnect: function disconnect() {
+						_disconnect();
+					}
+				};
+			}
+		}, {
 			key: 'route',
 			value: function route(hasher) {
-				var _this3 = this;
+				var _this4 = this;
 
 				var i,
 				    c,
 				    old = {},
 				    index = {},
-				    _disconnect;
+				    _disconnect2;
 
 				function _get(i) {
 					var t = index[i];
@@ -2808,7 +2865,7 @@
 				}
 
 				this.stable(function () {
-					_disconnect = _this3.subscribe({
+					_disconnect2 = _this4.subscribe({
 						insert: function insert(ins) {
 							var i, c;
 
@@ -2838,7 +2895,7 @@
 						return Object.keys(index);
 					},
 					disconnect: function disconnect() {
-						_disconnect();
+						_disconnect2();
 					}
 				};
 			}

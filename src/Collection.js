@@ -90,6 +90,52 @@ class Collection extends Feed {
 		return child;
 	}
 
+	index( fn ){
+		var i, c,
+			d,
+			disconnect,
+			index = {};
+
+		for( i = 0, c = this.data.length; i < c; i++ ){
+			d = this.data[i];
+
+			index[ fn(d) ] = d;
+		}
+
+		this.stable( () => {
+			disconnect = this.subscribe({
+				insert: function( ins ){
+					var i, c,
+						d;
+
+					for( i = 0, c = ins.length; i < c; i++ ){
+						d = ins[i];
+						index[ fn(d) ] = d;
+					}
+				},
+				remove: function( outs ){
+					var i, c;
+
+					for( i = 0, c = outs.length; i < c; i++ ){
+						delete index[ fn(outs[i]) ];
+					}
+				}
+			});
+		});
+
+		return {
+			get: function( dex ){
+				return index[ dex ];
+			},
+			keys: function(){
+				return Object.keys( index );
+			},
+			disconnect: function(){
+				disconnect();
+			}
+		};
+	}
+
 	route( hasher ){
 		var i, c,
 			old = {},

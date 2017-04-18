@@ -2688,15 +2688,64 @@ var bmoorData =
 				return child;
 			}
 		}, {
+			key: 'index',
+			value: function index(fn) {
+				var _this3 = this;
+
+				var i,
+				    c,
+				    d,
+				    _disconnect,
+				    index = {};
+
+				for (i = 0, c = this.data.length; i < c; i++) {
+					d = this.data[i];
+
+					index[fn(d)] = d;
+				}
+
+				this.stable(function () {
+					_disconnect = _this3.subscribe({
+						insert: function insert(ins) {
+							var i, c, d;
+
+							for (i = 0, c = ins.length; i < c; i++) {
+								d = ins[i];
+								index[fn(d)] = d;
+							}
+						},
+						remove: function remove(outs) {
+							var i, c;
+
+							for (i = 0, c = outs.length; i < c; i++) {
+								delete index[fn(outs[i])];
+							}
+						}
+					});
+				});
+
+				return {
+					get: function get(dex) {
+						return index[dex];
+					},
+					keys: function keys() {
+						return Object.keys(index);
+					},
+					disconnect: function disconnect() {
+						_disconnect();
+					}
+				};
+			}
+		}, {
 			key: 'route',
 			value: function route(hasher) {
-				var _this3 = this;
+				var _this4 = this;
 
 				var i,
 				    c,
 				    old = {},
 				    index = {},
-				    _disconnect;
+				    _disconnect2;
 
 				function _get(i) {
 					var t = index[i];
@@ -2730,7 +2779,7 @@ var bmoorData =
 				}
 
 				this.stable(function () {
-					_disconnect = _this3.subscribe({
+					_disconnect2 = _this4.subscribe({
 						insert: function insert(ins) {
 							var i, c;
 
@@ -2760,7 +2809,7 @@ var bmoorData =
 						return Object.keys(index);
 					},
 					disconnect: function disconnect() {
-						_disconnect();
+						_disconnect2();
 					}
 				};
 			}

@@ -125,6 +125,52 @@ describe('bmoor-data.Collection', function(){
 				{ type: 'cat', id: 2 },
 				{ type: 'dog', id: 3 }
 			]),
+			child = parent.index(function( d ){
+				return d.id;
+			});
+
+			setTimeout(function(){
+				// allows data to run
+				done();
+			});
+		});
+
+		it('should take all elements from the parent', function(){
+			expect( child.get(1) ).toBe( parent.data[0] );
+			expect( child.get(2) ).toBe( parent.data[1] );
+			expect( child.get(3) ).toBe( parent.data[2] );
+			expect( child.get(4) ).toBeUndefined();
+		});
+
+		it('should index new insertions', function( done ){
+			parent.add({ 'type': 'dog', id:4 });
+
+			setTimeout(function(){
+				expect( child.get(4) ).toBe( parent.data[3] );
+				done();
+			}, 100);
+		});
+
+		it('should unindex removals', function( done ){
+			parent.remove( child.get(2) );
+
+			setTimeout(function(){
+				expect( child.get(2) ).toBeUndefined();
+				done();
+			}, 100);
+		});
+	});
+
+	describe('route', function(){
+		var child,
+			parent;
+
+		beforeEach(function( done ){
+			parent = new Collection([
+				{ type: 'dog', id: 1 },
+				{ type: 'cat', id: 2 },
+				{ type: 'dog', id: 3 }
+			]),
 			child = parent.route(function( d ){
 				return d.type;
 			});
