@@ -21,7 +21,7 @@ class Pool extends Eventing {
 			uid = getUid( feed ),
 			data = this.data,
 			dexs = this.index,
-			mapper = ( new Mapper(readings) ).run,
+			mapper = ( new Mapper(readings) ).go,
 			lastRead = 0,
 			trigger = this.trigger.bind(this);
 
