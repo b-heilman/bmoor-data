@@ -8,7 +8,7 @@ class Collection extends Feed {
 		super( src );
 
 		this._removing = null;
-		this.on('stable', () => {
+		this.on('update', () => {
 			this._removing = null;
 		});
 	}
@@ -33,19 +33,6 @@ class Collection extends Feed {
 		}
 	}
 
-	stable( fn ){
-		var disconnect;
-
-		if ( this._adding || this._removing ){
-			disconnect = this.on( 'stable', function(){
-				fn();
-				disconnect();
-			});
-		}else{
-			fn();
-		}
-	}
-
 	filter( fn ){
 		var i, c,
 			d,
@@ -64,7 +51,7 @@ class Collection extends Feed {
 
 		child.$parent = this;
 
-		this.stable( () => {
+		this.next( 'update', () => {
 			child.$disconnect = this.subscribe({
 				insert: function( ins ){
 					var i, c,
@@ -102,7 +89,7 @@ class Collection extends Feed {
 			index[ fn(d) ] = d;
 		}
 
-		this.stable( () => {
+		this.next( 'update', () => {
 			disconnect = this.subscribe({
 				insert: function( ins ){
 					var i, c,
@@ -173,7 +160,7 @@ class Collection extends Feed {
 			add( this.data[i] );
 		}
 
-		this.stable( () => {
+		this.next( 'update', () => {
 			disconnect = this.subscribe({
 				insert: function( ins ){
 					var i, c;

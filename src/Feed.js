@@ -21,7 +21,7 @@ class Feed extends Eventing {
 		this.data = src;
 
 		this._adding = null;
-		this.on('stable', () => {
+		this.on('update', () => {
 			this._adding = null;
 		});
 	}
@@ -56,19 +56,6 @@ class Feed extends Eventing {
 		}
 
 		this.trigger( 'update' );
-	}
-
-	stable( fn ){
-		var disconnect;
-
-		if ( this._adding ){
-			disconnect = this.on( 'stable', function(){
-				fn();
-				disconnect(); 
-			});
-		}else{
-			fn();
-		}
 	}
 }
 
