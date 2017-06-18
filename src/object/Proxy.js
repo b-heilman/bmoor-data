@@ -10,18 +10,33 @@ class Proxy extends Eventing {
 		};
 	}
 
-	getMask(){
-		var t = Object.create( this.getDatum() );
+	getMask( seed ){
+		var trg,
+			mask;
 
-		t.$parent = this;
+		if ( !this.mask || seed ){
+			trg = this.getDatum();
 
-		// TODO : way to calculate the delta
+			if ( bmoor.isArray(trg) ){
+				this.mask = trg.slice(0);
+			}else{
+				this.mask = Object.create( trg );
+			}
+		}
+		
+		mask = this.mask;
+		if ( seed ){
+			Object.keys(seed).forEach(function( k ){
+				mask[k] = seed[k];
+			});
+		}
 
-		return t;
+		return mask;
 	}
 
 	merge( delta ){
 		bmoor.object.merge( this.getDatum(), delta );
+		this.mask = null;
 	}
 
 	update( delta ){
@@ -35,6 +50,7 @@ class Proxy extends Eventing {
 			}
 		}
 
+		this.mask = null;
 		this.trigger( 'update', delta );
 	}
 

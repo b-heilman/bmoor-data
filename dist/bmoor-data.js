@@ -4932,19 +4932,33 @@ var bmoorData =
 
 		_createClass(Proxy, [{
 			key: 'getMask',
-			value: function getMask() {
-				var t = Object.create(this.getDatum());
+			value: function getMask(seed) {
+				var trg, mask;
 
-				t.$parent = this;
+				if (!this.mask || seed) {
+					trg = this.getDatum();
 
-				// TODO : way to calculate the delta
+					if (bmoor.isArray(trg)) {
+						this.mask = trg.slice(0);
+					} else {
+						this.mask = Object.create(trg);
+					}
+				}
 
-				return t;
+				mask = this.mask;
+				if (seed) {
+					Object.keys(seed).forEach(function (k) {
+						mask[k] = seed[k];
+					});
+				}
+
+				return mask;
 			}
 		}, {
 			key: 'merge',
 			value: function merge(delta) {
 				bmoor.object.merge(this.getDatum(), delta);
+				this.mask = null;
 			}
 		}, {
 			key: 'update',
@@ -4959,6 +4973,7 @@ var bmoorData =
 					}
 				}
 
+				this.mask = null;
 				this.trigger('update', delta);
 			}
 		}, {
