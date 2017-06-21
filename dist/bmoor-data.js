@@ -4916,6 +4916,68 @@ var bmoorData =
 	var bmoor = __webpack_require__(3),
 	    Eventing = bmoor.Eventing;
 
+	function makeMask(target, seed) {
+		var mask = bmoor.isArray(target) ? target.slice(0) : Object.create(target);
+
+		// I'm being lazy
+		Object.keys(target).forEach(function (k) {
+			if (bmoor.isObject(target[k])) {
+				mask[k] = makeMask(target[k], bmoor.isObject(seed) ? seed[k] : null);
+			}
+		});
+
+		if (seed) {
+			Object.keys(seed).forEach(function (k) {
+				if (!mask[k] || !(bmoor.isObject(mask[k]) && bmoor.isObject(seed))) {
+					mask[k] = seed[k];
+				}
+			});
+		}
+
+		return mask;
+	}
+
+	function _isDirty(obj) {
+		var i,
+		    c,
+		    t,
+		    keys = Object.keys(obj);
+
+		for (i = 0, c = keys.length; i < c; i++) {
+			t = obj[keys[i]];
+
+			if (!bmoor.isObject(t) || _isDirty(t)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	function _getChanges(obj) {
+		var rtn = {},
+		    valid = false;
+
+		Object.keys(obj).forEach(function (k) {
+			var d = obj[k];
+
+			if (bmoor.isObject(d)) {
+				d = _getChanges(d);
+				if (d) {
+					valid = true;
+					rtn[k] = d;
+				}
+			} else {
+				valid = true;
+				rtn[k] = d;
+			}
+		});
+
+		if (valid) {
+			return rtn;
+		}
+	}
+
 	var Proxy = function (_Eventing) {
 		_inherits(Proxy, _Eventing);
 
@@ -4933,26 +4995,21 @@ var bmoorData =
 		_createClass(Proxy, [{
 			key: 'getMask',
 			value: function getMask(seed) {
-				var trg, mask;
-
 				if (!this.mask || seed) {
-					trg = this.getDatum();
-
-					if (bmoor.isArray(trg)) {
-						this.mask = trg.slice(0);
-					} else {
-						this.mask = Object.create(trg);
-					}
+					this.mask = makeMask(this.getDatum(), seed);
 				}
 
-				mask = this.mask;
-				if (seed) {
-					Object.keys(seed).forEach(function (k) {
-						mask[k] = seed[k];
-					});
-				}
-
-				return mask;
+				return this.mask;
+			}
+		}, {
+			key: 'getChanges',
+			value: function getChanges() {
+				return _getChanges(this.mask);
+			}
+		}, {
+			key: 'isDirty',
+			value: function isDirty() {
+				return _isDirty(this.mask);
 			}
 		}, {
 			key: 'merge',
