@@ -122,4 +122,7 @@ class Proxy extends Eventing {
 	}
 }
 
+Proxy.isDirty = isDirty;
+Proxy.getChanges = getChanges;
+
 module.exports = Proxy;

@@ -5133,6 +5133,9 @@
 		return Proxy;
 	}(Eventing);
 
+	Proxy.isDirty = _isDirty;
+	Proxy.getChanges = _getChanges;
+
 	module.exports = Proxy;
 
 /***/ }
