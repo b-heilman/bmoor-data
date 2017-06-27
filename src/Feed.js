@@ -19,39 +19,24 @@ class Feed extends Eventing {
 		setUid(this);
 
 		this.data = src;
-
-		this._adding = null;
-		this.on('update', () => {
-			this._adding = null;
-		});
 	}
 
 	add( datum ){
 		oldPush.call( this.data, datum );
 
-		if ( this.hasWaiting('insert') ){
-			if ( this._adding === null ){
-				this._adding = [ datum ];
-
-				this.trigger( 'insert', this._adding );
-			}else{
-				this._adding.push( datum );
-			}
-		}
+		this.trigger( 'insert', datum );
 
 		this.trigger( 'update' );
 	}
 
 	consume( arr ){
+		var i, c;
+
 		oldPush.apply( this.data, arr );
 
 		if ( this.hasWaiting('insert') ){
-			if ( this._adding === null ){
-				this._adding = arr;
-
-				this.trigger( 'insert', this._adding );
-			}else{
-				this._adding.push.apply( this._adding, arr );
+			for ( i = 0, c = arr.length; i < c; i++ ){
+				this.trigger( 'insert', arr[i] );
 			}
 		}
 

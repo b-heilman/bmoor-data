@@ -22,7 +22,6 @@ class Pool extends Eventing {
 			data = this.data,
 			dexs = this.index,
 			mapper = ( new Mapper(readings) ).go,
-			lastRead = 0,
 			trigger = this.trigger.bind(this);
 
 		function read( datum ){
@@ -37,24 +36,12 @@ class Pool extends Eventing {
 			}
 
 			mapper( d, datum );
-		}
 
-		function readAll( changes ){
-			var i, c;
-
-			if( changes && changes.length ){
-				for( i = lastRead, c = changes.length; i < c; i++ ){
-					read( changes[i] );
-				}
-
-				trigger('update');
-			}
+			trigger('update');
 		}
 
 		if ( !this.feeds[uid] ){
-			readAll();
-
-			this.feeds[uid] = feed.on( 'insert', readAll );
+			this.feeds[uid] = feed.on( 'insert', read );
 		}
 	}
 }

@@ -4,30 +4,13 @@ var bmoor = require('bmoor'),
 
 class Collection extends Feed {
 
-	constructor( src ){
-		super( src );
-
-		this._removing = null;
-		this.on('update', () => {
-			this._removing = null;
-		});
-	}
-
 	remove( datum ){
 		var dex = this.data.indexOf( datum );
 		
 		if ( dex !== -1 ){
 			this.data.splice( dex, 1 );
 
-			if ( this.hasWaiting('remove') ){
-				if ( this._removing === null ){
-					this._removing = [ datum ];
-
-					this.trigger( 'remove', this._removing );
-				}else{
-					this._removing.push( datum );
-				}
-			}
+			this.trigger( 'remove', datum );
 
 			this.trigger( 'update' );
 		}
@@ -43,35 +26,21 @@ class Collection extends Feed {
 			d = this.data[i];
 
 			if ( fn(d) ){
-				// this will force an insert event to be fired
-				// TODO : Do I want that?
 				src.push( d );
 			}
 		}
 
 		child.$parent = this;
 
-		this.next( 'update', () => {
-			child.$disconnect = this.subscribe({
-				insert: function( ins ){
-					var i, c,
-						d;
-
-					for( i = 0, c = ins.length; i < c; i++ ){
-						d = ins[ i ];
-						if ( fn(d) ){
-							child.add( d );
-						}
-					}
-				},
-				remove: function( outs ){
-					var i, c;
-
-					for( i = 0, c = outs.length; i < c; i++ ){
-						child.remove( outs[i] );
-					}
+		child.$disconnect = this.subscribe({
+			insert: function( ins ){
+				if ( fn(ins) ){
+					child.add( ins );
 				}
-			});
+			},
+			remove: function( outs ){
+				child.remove( outs );
+			}
 		});
 
 		return child;
@@ -89,25 +58,13 @@ class Collection extends Feed {
 			index[ fn(d) ] = d;
 		}
 
-		this.next( 'update', () => {
-			disconnect = this.subscribe({
-				insert: function( ins ){
-					var i, c,
-						d;
-
-					for( i = 0, c = ins.length; i < c; i++ ){
-						d = ins[i];
-						index[ fn(d) ] = d;
-					}
-				},
-				remove: function( outs ){
-					var i, c;
-
-					for( i = 0, c = outs.length; i < c; i++ ){
-						delete index[ fn(outs[i]) ];
-					}
-				}
-			});
+		disconnect = this.subscribe({
+			insert: function( ins ){
+				index[ fn(ins) ] = ins;
+			},
+			remove: function( outs ){
+				delete index[ fn(outs) ];
+			}
 		});
 
 		return {
@@ -160,23 +117,13 @@ class Collection extends Feed {
 			add( this.data[i] );
 		}
 
-		this.next( 'update', () => {
-			disconnect = this.subscribe({
-				insert: function( ins ){
-					var i, c;
-
-					for( i = 0, c = ins.length; i < c; i++ ){
-						add( ins[i] );
-					}
-				},
-				remove: function( outs ){
-					var i, c;
-
-					for( i = 0, c = outs.length; i < c; i++ ){
-						remove( outs[i] );
-					}
-				}
-			});
+		disconnect = this.subscribe({
+			insert: function( ins ){
+				add( ins );
+			},
+			remove: function( outs ){
+				remove( outs );
+			}
 		});
 
 		return {

@@ -49,17 +49,17 @@ describe('bmoor-data.Pool', function(){
 			agg = new Pool(),
 			feed = new Feed();
 
-		agg.on('update', function(){
-			expect( agg.data[0]._ ).toBe( 0 );
-			expect( agg.data[0].to ).toBe( 2 );
-			done();
-		});
-
 		agg.addFeed( feed, 'index', { 'to' : 'from' } );
 
 		feed.add({
 			index: 0,
 			from: 1
+		});
+
+		agg.on('update', function(){
+			expect( agg.data[0]._ ).toBe( 0 );
+			expect( agg.data[0].to ).toBe( 2 );
+			done();
 		});
 
 		feed.add({

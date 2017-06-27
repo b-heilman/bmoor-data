@@ -27,7 +27,7 @@ describe('bmoor-data.Feed', function(){
 
 		feed.on('insert', function( res ){
 			expect( feed.data[0] ).toBe( n );
-			expect( res[0] ).toBe( n );
+			expect( res ).toBe( n );
 			done();
 		});
 
@@ -41,7 +41,7 @@ describe('bmoor-data.Feed', function(){
 
 		feed.on('insert', function( res ){
 			expect( feed.data[0] ).toBe( n );
-			expect( res[0] ).toBe( n );
+			expect( res ).toBe( n );
 			done();
 		});
 
@@ -55,7 +55,7 @@ describe('bmoor-data.Feed', function(){
 
 		feed.on('insert', function( res ){
 			expect( feed.data[0] ).toBe( n );
-			expect( res[0] ).toBe( n );
+			expect( res ).toBe( n );
 			done();
 		});
 
@@ -77,18 +77,31 @@ describe('bmoor-data.Feed', function(){
 	});
 
 	it('should have consume working correctly', function( done ){
-		var t = [],
-			n = {},
+		var c = 0,
+			t = [],
+			n = {x:1},
 			feed = new Feed(t);
 
+		feed.once('insert', function( res ){
+			expect( feed.data.length ).toBe( 1 );
+			expect( res ).toEqual( {x:1} );
+		});
+
+		feed.add(n);
+
 		feed.on('insert', function( res ){
-			expect( feed.data.length ).toBe( 3 );
-			expect( res.length ).toBe( 3 );
+			if ( c === 0 ){
+				c++;
+				expect( res ).toEqual( {x:2} );
+				expect( feed.data.length ).toBe( 3 );
+			}else{
+				expect( res ).toEqual( {x:3} );
+				expect( feed.data.length ).toBe( 3 );
+			}
 
 			done();
 		});
 
-		feed.add(n);
-		feed.consume([{},{}]);
+		feed.consume([{x:2},{x:3}]);
 	});
 });

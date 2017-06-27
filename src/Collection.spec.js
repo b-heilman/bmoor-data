@@ -19,7 +19,7 @@ describe('bmoor-data.Collection', function(){
 
 		feed.on('insert', function( res ){
 			expect( feed.data[0] ).toBe( n );
-			expect( res[0] ).toBe( n );
+			expect( res ).toBe( n );
 			done();
 		});
 
@@ -33,7 +33,7 @@ describe('bmoor-data.Collection', function(){
 
 		feed.on('insert', function( res ){
 			expect( feed.data[0] ).toBe( n );
-			expect( res[0] ).toBe( n );
+			expect( res ).toBe( n );
 			done();
 		});
 
@@ -47,7 +47,7 @@ describe('bmoor-data.Collection', function(){
 
 		feed.on('insert', function( res ){
 			expect( feed.data[0] ).toBe( n );
-			expect( res[0] ).toBe( n );
+			expect( res ).toBe( n );
 			done();
 		});
 
@@ -76,7 +76,7 @@ describe('bmoor-data.Collection', function(){
 		feed.on('remove', function( res ){
 			expect( feed.data.length ).toBe( 2 );
 			expect( feed.data[feed.data.length-1] ).not.toBe( n );
-			expect( res[0] ).toBe( n );
+			expect( res ).toBe( n );
 			done();
 		});
 
@@ -94,15 +94,17 @@ describe('bmoor-data.Collection', function(){
 
 			expect( child.data.length ).toBe( 1 );
 		
+			feed.add({foo:'zoo'});
+
 			child.on('insert', function( res ){
 				expect( child.data.length ).toBe( 2 );
 				expect( feed.data.length ).toBe( 5 );
-				expect( res[0].foo ).toBe( 'ever' );
+				expect( res.foo ).toBe( 'ever' );
 
 				child.on('remove', function( res ){
 					expect( child.data.length ).toBe( 1 );
 					expect( feed.data.length ).toBe( 4 );
-					expect( res[0].foo ).toBe( 'eins' );
+					expect( res.foo ).toBe( 'eins' );
 
 					done();
 				});
@@ -110,7 +112,7 @@ describe('bmoor-data.Collection', function(){
 				feed.remove( feed.data[0] );
 			});
 
-			feed.add({foo:'zoo'});
+			
 			feed.add({foo:'ever'});
 		});
 	});
