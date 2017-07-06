@@ -2689,7 +2689,7 @@
 	var tests = [function (def, v, errors) {
 		if ((typeof v === 'undefined' ? 'undefined' : _typeof(v)) !== def.type) {
 			errors.push({
-				from: def.from,
+				path: def.path,
 				type: 'type',
 				value: v,
 				expect: def.type
@@ -2701,7 +2701,7 @@
 		var errors = [];
 
 		schema.forEach(function (def) {
-			new Path(def.from).exec(obj, function (v) {
+			new Path(def.path).exec(obj, function (v) {
 				tests.forEach(function (fn) {
 					fn(def, v, errors);
 				});
@@ -3135,6 +3135,11 @@
 		}
 
 		_createClass(Proxy, [{
+			key: '_',
+			value: function _(path) {
+				return this.getDatum()[path];
+			}
+		}, {
 			key: 'getMask',
 			value: function getMask(seed) {
 				if (!this.mask || seed) {
@@ -3142,6 +3147,11 @@
 				}
 
 				return this.mask;
+			}
+		}, {
+			key: '$',
+			value: function $(path) {
+				return this.getMask()[path];
 			}
 		}, {
 			key: 'getChanges',
@@ -3156,21 +3166,11 @@
 		}, {
 			key: 'merge',
 			value: function merge(delta) {
-				bmoor.object.merge(this.getDatum(), delta);
-				this.mask = null;
-			}
-		}, {
-			key: 'update',
-			value: function update(delta) {
-				var datum = this.getDatum();
-
-				if (delta) {
-					if (bmoor.isFunction(delta)) {
-						delta = delta(datum);
-					} else {
-						this.merge(delta);
-					}
+				if (!delta) {
+					delta = this.mask;
 				}
+
+				bmoor.object.merge(this.getDatum(), delta);
 
 				this.mask = null;
 				this.trigger('update', delta);

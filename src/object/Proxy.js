@@ -77,12 +77,20 @@ class Proxy extends Eventing {
 		};
 	}
 
+	_( path ){
+		return this.getDatum()[ path ];
+	}
+
 	getMask( seed ){
 		if ( !this.mask || seed ){
 			this.mask = makeMask( this.getDatum(), seed );
 		}
 
 		return this.mask;
+	}
+
+	$( path ){
+		return this.getMask()[ path ];
 	}
 
 	getChanges(){
@@ -94,20 +102,11 @@ class Proxy extends Eventing {
 	}
 
 	merge( delta ){
-		bmoor.object.merge( this.getDatum(), delta );
-		this.mask = null;
-	}
-
-	update( delta ){
-		var datum = this.getDatum();
-
-		if ( delta ){
-			if ( bmoor.isFunction(delta) ){
-				delta = delta( datum );
-			}else{
-				this.merge( delta );
-			}
+		if ( !delta ){
+			delta = this.mask;
 		}
+
+		bmoor.object.merge( this.getDatum(), delta );
 
 		this.mask = null;
 		this.trigger( 'update', delta );
