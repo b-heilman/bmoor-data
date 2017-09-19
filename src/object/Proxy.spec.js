@@ -5,6 +5,94 @@ describe('bmoor-data.object.Proxy', function(){
 		expect( Proxy ).toBeDefined();
 	});
 
+	describe('isDirty', function(){
+		it('should work with null', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					},
+					blah: {
+						blah: 'blah'
+					}
+				},
+				proxy = new Proxy( target ),
+				mask = proxy.getMask();
+
+			expect( proxy.isDirty() ).toBe( false );
+
+			mask.foo = null;
+
+			expect( proxy.isDirty() ).toBe( true );
+		});
+
+		it('should work with null, via static method', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					},
+					blah: {
+						blah: 'blah'
+					}
+				},
+				proxy = new Proxy( target ),
+				mask = proxy.getMask();
+
+			expect( Proxy.isDirty(mask) ).toBe( false );
+
+			mask.foo = null;
+
+			expect( Proxy.isDirty(mask) ).toBe( true );
+		});
+	});
+
+	describe('getChanges', function(){
+		it('should work with null', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					},
+					blah: {
+						blah: 'blah'
+					}
+				},
+				proxy = new Proxy( target ),
+				mask = proxy.getMask();
+
+			expect( proxy.getChanges() ).toBeUndefined();
+
+			mask.foo = null;
+
+			expect( proxy.getChanges() ).toEqual( {foo:null} );
+		});
+
+		it('should work with null, via static method', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					},
+					blah: {
+						blah: 'blah'
+					}
+				},
+				proxy = new Proxy( target ),
+				mask = proxy.getMask();
+
+			expect( proxy.getChanges() ).toBeUndefined();
+
+			mask.foo = null;
+
+			expect( proxy.getChanges() ).toEqual( {foo:null} );
+		});
+	});
+
 	describe('masks', function(){
 		it('should obfuscate values correctly', function(){
 			var target = {
@@ -21,16 +109,24 @@ describe('bmoor-data.object.Proxy', function(){
 
 		it('should copy value over from a seed', function(){
 			var target = {
-					first: 1
+					first: 1,
+					hello: 'world',
+					blar: {}
 				},
 				proxy = new Proxy( target ),
-				seed = { foo: 'bar' },
+				seed = {
+					foo: 'bar',
+					blar: null,
+					hello: 'world2'
+				},
 				mask = proxy.getMask( seed );
 
 			expect( mask.first ).toBe( 1 );
 			expect( mask.foo ).toBe( 'bar' );
+			expect( mask.hello ).toBe( 'world2' );
+			expect( mask.blar ).toBe( null );
 
-			expect( Object.keys(mask) ).toEqual( ['foo'] );
+			expect( Object.keys(mask) ).toEqual( ['blar','foo','hello'] );
 		});
 	});
 

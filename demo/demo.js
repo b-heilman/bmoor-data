@@ -2177,6 +2177,10 @@
 	function parse(def, path, val) {
 		var method;
 
+		if (val === null || val === undefined) {
+			return;
+		}
+
 		if (bmoor.isArray(val)) {
 			method = 'array';
 		} else {
@@ -3058,20 +3062,22 @@
 	var bmoor = __webpack_require__(3),
 	    Eventing = bmoor.Eventing;
 
-	function makeMask(target, seed) {
+	function makeMask(target, override) {
 		var mask = bmoor.isArray(target) ? target.slice(0) : Object.create(target);
 
 		// I'm being lazy
 		Object.keys(target).forEach(function (k) {
 			if (bmoor.isObject(target[k])) {
-				mask[k] = makeMask(target[k], bmoor.isObject(seed) ? seed[k] : null);
+				mask[k] = makeMask(target[k], bmoor.isObject(override) ? override[k] : null);
 			}
 		});
 
-		if (seed) {
-			Object.keys(seed).forEach(function (k) {
-				if (!mask[k] || !(bmoor.isObject(mask[k]) && bmoor.isObject(seed))) {
-					mask[k] = seed[k];
+		if (override) {
+			Object.keys(override).forEach(function (k) {
+				var bothObj = bmoor.isObject(mask[k]) && bmoor.isObject(override[k]);
+
+				if (!(k in mask) || !bothObj) {
+					mask[k] = override[k];
 				}
 			});
 		}
@@ -3141,9 +3147,9 @@
 			}
 		}, {
 			key: 'getMask',
-			value: function getMask(seed) {
-				if (!this.mask || seed) {
-					this.mask = makeMask(this.getDatum(), seed);
+			value: function getMask(override) {
+				if (!this.mask || override) {
+					this.mask = makeMask(this.getDatum(), override);
 				}
 
 				return this.mask;
