@@ -72,6 +72,8 @@ class Proxy extends Eventing {
 	constructor( obj ){
 		super();
 
+		this.expose( obj );
+
 		this.getDatum = function(){
 			return obj;
 		};
@@ -90,7 +92,7 @@ class Proxy extends Eventing {
 	}
 
 	$( path ){
-		return this.getMask()[ path ];
+		return bmoor.get( this.getMask(), path );
 	}
 
 	getChanges(){
@@ -110,7 +112,11 @@ class Proxy extends Eventing {
 
 		this.mask = null;
 		this.trigger( 'update', delta );
+
+		this.expose( delta );
 	}
+
+	expose(){}
 
 	trigger(){
 		// always make the datum be the last argument passed

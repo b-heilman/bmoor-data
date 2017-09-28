@@ -3048,6 +3048,8 @@ var bmoorData =
 
 			var _this = _possibleConstructorReturn(this, (Proxy.__proto__ || Object.getPrototypeOf(Proxy)).call(this));
 
+			_this.expose(obj);
+
 			_this.getDatum = function () {
 				return obj;
 			};
@@ -3071,7 +3073,7 @@ var bmoorData =
 		}, {
 			key: '$',
 			value: function $(path) {
-				return this.getMask()[path];
+				return bmoor.get(this.getMask(), path);
 			}
 		}, {
 			key: 'getChanges',
@@ -3094,7 +3096,12 @@ var bmoorData =
 
 				this.mask = null;
 				this.trigger('update', delta);
+
+				this.expose(delta);
 			}
+		}, {
+			key: 'expose',
+			value: function expose() {}
 		}, {
 			key: 'trigger',
 			value: function trigger() {

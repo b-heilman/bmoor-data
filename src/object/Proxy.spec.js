@@ -185,4 +185,66 @@ describe('bmoor-data.object.Proxy', function(){
 			});
 		});
 	});
+
+	describe('$ for accessing', function(){
+		it('should work on a base level', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					}
+				},
+				proxy = new Proxy( target );
+
+			expect( proxy.$('foo') ).toBe('bar');
+		});
+
+		it('should work on a multi levels', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					}
+				},
+				proxy = new Proxy( target );
+
+			expect( proxy.$('hello.cruel') ).toBe('world');
+		});
+	});
+
+	describe('extending Proxy', function(){
+		class MyProxy extends Proxy {
+			expose( delta ){
+				if ( delta.foo ){
+					this.eins = delta.foo;
+				}
+
+				if ( delta.bar ){
+					this.zwei = delta.bar;
+				}
+			}
+		}
+
+		it('should work on a base level', function(){
+			var target = {
+					foo: 'bar'
+				},
+				proxy = new MyProxy( target );
+
+			expect( proxy.eins ).toBe('bar');
+			expect( proxy.zwei ).toBeUndefined();
+
+			proxy.merge({ foo: 'bar2', bar: 'doo'});
+
+			expect( proxy.eins ).toBe('bar2');
+			expect( proxy.zwei ).toBe('doo');
+
+			proxy.merge({bar: 'doo2'});
+
+			expect( proxy.eins ).toBe('bar2');
+			expect( proxy.zwei ).toBe('doo2');
+		});
+	});
 });
