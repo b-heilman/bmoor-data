@@ -17,10 +17,11 @@ describe('bmoor-data.Collection', function(){
 			n = {},
 			feed = new Collection(t);
 
-		feed.on('insert', function( res ){
+		feed.on('insert', function pushInsert( res ){
 			expect( feed.data[0] ).toBe( n );
 			expect( res ).toBe( n );
-			done();
+			
+			setTimeout(done,0); // I do this to keep the stack trace manageable
 		});
 
 		t.push(n);
@@ -31,10 +32,11 @@ describe('bmoor-data.Collection', function(){
 			n = {},
 			feed = new Collection(t);
 
-		feed.on('insert', function( res ){
+		feed.on('insert', function originalInsert( res ){
 			expect( feed.data[0] ).toBe( n );
 			expect( res ).toBe( n );
-			done();
+			
+			setTimeout(done,0);
 		});
 
 		t.unshift(n);
@@ -45,10 +47,11 @@ describe('bmoor-data.Collection', function(){
 			n = {},
 			feed = new Collection(t);
 
-		feed.on('insert', function( res ){
+		feed.on('insert', function correctInsert( res ){
 			expect( feed.data[0] ).toBe( n );
 			expect( res ).toBe( n );
-			done();
+			
+			setTimeout(done,0);
 		});
 
 		feed.add(n);
@@ -59,10 +62,11 @@ describe('bmoor-data.Collection', function(){
 			n = {},
 			feed = new Collection(t);
 
-		feed.on('update', function( res ){
+		feed.on('update', function correctUpdate( res ){
 			expect( feed.data[0] ).toBe( n );
 			expect( res ).toBeUndefined( n );
-			done();
+			
+			setTimeout(done,0);
 		});
 
 		feed.add(n);
@@ -73,11 +77,12 @@ describe('bmoor-data.Collection', function(){
 			t = [{foo:'eins'},{foo:'zwei'},n],
 			feed = new Collection(t);
 
-		feed.on('remove', function( res ){
+		feed.on('remove', function correctRemove( res ){
 			expect( feed.data.length ).toBe( 2 );
 			expect( feed.data[feed.data.length-1] ).not.toBe( n );
 			expect( res ).toBe( n );
-			done();
+			
+			setTimeout(done,0);
 		});
 
 		feed.remove(n);
@@ -96,17 +101,17 @@ describe('bmoor-data.Collection', function(){
 		
 			feed.add({foo:'zoo'});
 
-			child.on('insert', function( res ){
+			child.on('insert', function filterInsert( res ){
 				expect( child.data.length ).toBe( 2 );
 				expect( feed.data.length ).toBe( 5 );
 				expect( res.foo ).toBe( 'ever' );
 
-				child.on('remove', function( res ){
+				child.on('remove', function filterRemove( res ){
 					expect( child.data.length ).toBe( 1 );
 					expect( feed.data.length ).toBe( 4 );
 					expect( res.foo ).toBe( 'eins' );
 
-					done();
+					setTimeout(done,0);
 				});
 
 				feed.remove( feed.data[0] );
@@ -114,6 +119,170 @@ describe('bmoor-data.Collection', function(){
 
 			
 			feed.add({foo:'ever'});
+		});
+	});
+
+	describe('search', function(){
+		it('should work correctly', function(){
+			var t = [
+					{id:1, foo:'eins',value:'yes'},
+					{id:3, foo:'zwei',value:'no'},
+					{id:2, foo:'bar',value:'no'},
+					{id:4, foo:'fier',value:'YES'}
+				],
+				feed = new Collection(t),
+				test = {},
+				child = feed.search({
+					normalize: function(){
+						if ( test.value ){
+							return test.value.toLowerCase();
+						}else{
+							return null;
+						}
+					},
+					massage: function( datum ){
+						return { value: datum.value.toLowerCase() };
+					},
+					tests: [
+						function( datum, ctx ){
+							return ctx === null;
+						},
+						function( datum, ctx ){
+							return datum.value === ctx;
+						}
+					]
+				});
+
+			expect( child.data.length ).toBe( 4 );
+		
+			test.value = 'YeS';
+			child.go();
+
+			expect( child.data.length ).toBe( 2 );
+		});
+	});
+
+	describe('paginate', function(){
+		it('should work correctly', function(){
+			var t = [
+					{id:1, foo:'eins',value:'yes'},
+					{id:3, foo:'zwei',value:'no'},
+					{id:2, foo:'bar',value:'no'},
+					{id:4, foo:'fier',value:'YES'},
+					{id:5, foo:'funf',value:'yes'},
+					{id:6, foo:'sechs',value:'no'},
+					{id:7, foo:'sieben',value:'no'}
+				],
+				feed = new Collection(t),
+				child = feed.paginate({
+					size: 2
+				});
+
+			expect( child.data.length ).toBe( 2 );
+			expect( child.nav.pos ).toBe(0);
+			expect( child.nav.start ).toBe(0);
+			expect( child.nav.stop ).toBe(2);
+			expect( child.nav.steps ).toBe(4);
+			expect( child.nav.count ).toBe(7);
+			expect( child.data[0].foo ).toBe( 'eins' );
+			
+			child.nav.next();
+			expect( child.data.length ).toBe( 2 );
+			expect( child.nav.pos ).toBe(1);
+			expect( child.nav.start ).toBe(2);
+			expect( child.nav.stop ).toBe(4);
+			expect( child.nav.steps ).toBe(4);
+			expect( child.nav.count ).toBe(7);
+			expect( child.data[0].foo ).toBe( 'bar' );
+
+			child.nav.next();
+			expect( child.data.length ).toBe( 2 );
+			expect( child.data[0].foo ).toBe( 'funf' );
+
+			child.nav.next();
+			expect( child.data.length ).toBe( 1 );
+			expect( child.nav.pos ).toBe(3);
+			expect( child.nav.start ).toBe(6);
+			expect( child.nav.stop ).toBe(8);
+			expect( child.nav.steps ).toBe(4);
+			expect( child.nav.count ).toBe(7);
+			expect( child.data[0].foo ).toBe( 'sieben' );
+
+			child.nav.prev();
+			child.nav.prev();
+			expect( child.data.length ).toBe( 2 );
+			expect( child.nav.pos ).toBe(1);
+			expect( child.nav.start ).toBe(2);
+			expect( child.nav.stop ).toBe(4);
+			expect( child.nav.steps ).toBe(4);
+			expect( child.nav.count ).toBe(7);
+			expect( child.data[0].foo ).toBe( 'bar' );
+		});
+
+		it('should be able to be chained into', function(){
+			var t = [
+					{id:1, foo:'eins',value:'yes'},
+					{id:3, foo:'zwei',value:'no'},
+					{id:2, foo:'bar',value:'no'},
+					{id:4, foo:'fier',value:'YES'},
+					{id:5, foo:'funf',value:'yes'},
+					{id:6, foo:'sechs',value:'no'},
+					{id:7, foo:'sieben',value:'no'}
+				],
+				feed = new Collection(t),
+				test = {},
+				child = feed.search({
+					normalize: function(){
+						if ( test.value ){
+							return test.value.toLowerCase();
+						}else{
+							return null;
+						}
+					},
+					massage: function( datum ){
+						return { value: datum.value.toLowerCase() };
+					},
+					tests: [
+						function( datum, ctx ){
+							return ctx === null;
+						},
+						function( datum, ctx ){
+							return datum.value === ctx;
+						}
+					]
+				}).paginate({
+					size: 2
+				});
+
+			expect( child.data.length ).toBe( 2 );
+			expect( child.nav.pos ).toBe(0);
+			expect( child.nav.start ).toBe(0);
+			expect( child.nav.stop ).toBe(2);
+			expect( child.nav.steps ).toBe(4);
+			expect( child.nav.count ).toBe(7);
+			expect( child.data[0].foo ).toBe( 'eins' );
+			
+			test.value = 'Yes';
+
+			child.parent.go();
+			child.go();
+
+			expect( child.data.length ).toBe( 2 );
+			expect( child.nav.pos ).toBe(0);
+			expect( child.nav.start ).toBe(0);
+			expect( child.nav.stop ).toBe(2);
+			expect( child.nav.steps ).toBe(2);
+			expect( child.nav.count ).toBe(3);
+			expect( child.data[0].foo ).toBe( 'eins' );
+
+			child.nav.next();
+			expect( child.data.length ).toBe( 1 );
+			expect( child.nav.pos ).toBe(1);
+			expect( child.nav.start ).toBe(2);
+			expect( child.nav.stop ).toBe(4);
+			expect( child.nav.steps ).toBe(2);
+			expect( child.nav.count ).toBe(3);
+			expect( child.data[0].foo ).toBe( 'funf' );
 		});
 	});
 

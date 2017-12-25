@@ -1,6 +1,6 @@
 {
   "name": "bmoor-data",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "author": "Brian Heilman <das.ist.junk@gmail.com>",
   "description": "Data structures for daily life",
   "license": "MIT",
@@ -34,6 +34,7 @@
     "karma-chrome-launcher": "0.2.3",
     "karma-jasmine": "0.3.8",
     "karma-phantomjs-launcher": "1.0.0",
+    "karma-webpack": "^2.0.9",
     "map-stream": "0.0.6",
     "phantomjs-polyfill": "0.0.2",
     "phantomjs-prebuilt": "2.1.7",

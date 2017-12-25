@@ -133,6 +133,11 @@ var bmoorData =
 
 				this.trigger('update');
 			}
+		}, {
+			key: 'sort',
+			value: function sort(fn) {
+				this.data.sort(fn);
+			}
 		}]);
 
 		return Feed;
@@ -1448,6 +1453,34 @@ var bmoorData =
 		return target;
 	}
 
+	function makeExploder(paths) {
+		var fn;
+
+		paths.forEach(function (path) {
+			var old = fn,
+			    setter = bmoor.makeSetter(path);
+
+			if (old) {
+				fn = function fn(ctx, obj) {
+					setter(ctx, obj[path]);
+					old(ctx, obj);
+				};
+			} else {
+				fn = function fn(ctx, obj) {
+					setter(ctx, obj[path]);
+				};
+			}
+		});
+
+		return function (obj) {
+			var rtn = {};
+
+			fn(rtn, obj);
+
+			return rtn;
+		};
+	}
+
 	function implode(obj, ignore) {
 		var rtn = {};
 
@@ -1580,49 +1613,49 @@ var bmoorData =
 		} else if (obj1 !== obj1 && obj2 !== obj2) {
 			return true; // silly NaN
 		} else if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
-				return false; // undefined or null
-			} else if (obj1.equals) {
-					return obj1.equals(obj2);
-				} else if (obj2.equals) {
-					return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
-				} else if (t1 === t2) {
-						if (t1 === 'object') {
-							if (bmoor.isArrayLike(obj1)) {
-								if (!bmoor.isArrayLike(obj2)) {
-									return false;
-								}
+			return false; // undefined or null
+		} else if (obj1.equals) {
+			return obj1.equals(obj2);
+		} else if (obj2.equals) {
+			return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
+		} else if (t1 === t2) {
+			if (t1 === 'object') {
+				if (bmoor.isArrayLike(obj1)) {
+					if (!bmoor.isArrayLike(obj2)) {
+						return false;
+					}
 
-								if ((c = obj1.length) === obj2.length) {
-									for (i = 0; i < c; i++) {
-										if (!equals(obj1[i], obj2[i])) {
-											return false;
-										}
-									}
+					if ((c = obj1.length) === obj2.length) {
+						for (i = 0; i < c; i++) {
+							if (!equals(obj1[i], obj2[i])) {
+								return false;
+							}
+						}
 
-									return true;
-								}
-							} else if (!bmoor.isArrayLike(obj2)) {
-								keyCheck = {};
-								for (i in obj1) {
-									if (obj1.hasOwnProperty(i)) {
-										if (!equals(obj1[i], obj2[i])) {
-											return false;
-										}
+						return true;
+					}
+				} else if (!bmoor.isArrayLike(obj2)) {
+					keyCheck = {};
+					for (i in obj1) {
+						if (obj1.hasOwnProperty(i)) {
+							if (!equals(obj1[i], obj2[i])) {
+								return false;
+							}
 
-										keyCheck[i] = true;
-									}
-								}
+							keyCheck[i] = true;
+						}
+					}
 
-								for (i in obj2) {
-									if (obj2.hasOwnProperty(i)) {
-										if (!keyCheck && obj2[i] !== undefined) {
-											return false;
-										}
-									}
-								}
+					for (i in obj2) {
+						if (obj2.hasOwnProperty(i)) {
+							if (!keyCheck && obj2[i] !== undefined) {
+								return false;
 							}
 						}
 					}
+				}
+			}
+		}
 
 		return false;
 	}
@@ -1631,6 +1664,7 @@ var bmoorData =
 		keys: keys,
 		values: values,
 		explode: explode,
+		makeExploder: makeExploder,
 		implode: implode,
 		mask: mask,
 		extend: extend,
@@ -2531,13 +2565,13 @@ var bmoorData =
 			if (cur === '') {
 				// don't think anything...
 			} else {
-					if (!root[cur]) {
-						root[cur] = {
-							type: 'array'
-						};
-					}
-					root = root[cur];
+				if (!root[cur]) {
+					root[cur] = {
+						type: 'array'
+					};
 				}
+				root = root[cur];
+			}
 			cur = 'items';
 		}
 
@@ -2655,6 +2689,20 @@ var bmoorData =
 	    Feed = __webpack_require__(2),
 	    setUid = bmoor.data.setUid;
 
+	function testStack(old, fn) {
+		if (old) {
+			return function (massaged, ctx) {
+				if (fn(massaged, ctx)) {
+					return true;
+				} else {
+					return old(massaged, ctx);
+				}
+			};
+		} else {
+			return fn;
+		}
+	}
+
 	var Collection = function (_Feed) {
 		_inherits(Collection, _Feed);
 
@@ -2678,34 +2726,154 @@ var bmoorData =
 				}
 			}
 		}, {
-			key: 'filter',
-			value: function filter(fn) {
-				var i,
-				    c,
-				    d,
-				    src = [],
-				    child = new Collection(src);
+			key: 'empty',
+			value: function empty() {
+				var arr = this.data;
 
-				for (i = 0, c = this.data.length; i < c; i++) {
-					d = this.data[i];
-
-					if (fn(d)) {
-						src.push(d);
+				if (this.hasWaiting('remove')) {
+					for (var i = 0, c = arr.length; i < c; i++) {
+						this.trigger('remove', arr[i]);
 					}
 				}
 
-				child.$parent = this;
+				this.trigger('update');
 
-				child.$disconnect = this.subscribe({
-					insert: function insert(ins) {
-						if (fn(ins)) {
-							child.add(ins);
+				arr.length = 0;
+			}
+		}, {
+			key: 'filter',
+			value: function filter(fn, settings) {
+				var child = new Collection();
+
+				if (!settings) {
+					settings = {};
+				}
+
+				child.parent = this;
+
+				child.disconnect = this.subscribe({
+					insert: function insert(datum) {
+						if (fn(datum)) {
+							child.add(datum);
 						}
 					},
-					remove: function remove(outs) {
-						child.remove(outs);
+					remove: function remove(datum) {
+						child.remove(datum);
 					}
 				});
+
+				child.go = function () {
+					var _this2 = this;
+
+					var datum,
+					    insert,
+					    arr = this.parent.data;
+
+					this.empty();
+
+					if (settings.pre) {
+						settings.pre();
+					}
+
+					if (this.hasWaiting('insert')) {
+						insert = function insert(datum) {
+							Array.prototype.push.call(_this2.data, datum);
+							_this2.trigger('insert', datum);
+						};
+					} else {
+						insert = function insert(datum) {
+							Array.prototype.push.call(_this2.data, datum);
+						};
+					}
+
+					for (var i = 0, c = arr.length; i < c; i++) {
+						datum = arr[i];
+						if (fn(datum)) {
+							insert(datum);
+						}
+					}
+
+					if (settings.post) {
+						settings.post();
+					}
+				};
+
+				child.go();
+
+				return child;
+			}
+		}, {
+			key: 'search',
+			value: function search(settings) {
+				var ctx, test;
+
+				for (var i = settings.tests.length - 1; i !== -1; i--) {
+					test = testStack(test, settings.tests[i]);
+				}
+
+				return this.filter(function (datum) {
+					if (!datum.$massaged) {
+						datum.$massaged = settings.massage(datum);
+					}
+
+					return test(datum.$massaged, ctx);
+				}, {
+					pre: function pre() {
+						ctx = settings.normalize();
+					}
+				});
+			}
+
+			// settings { size }
+
+		}, {
+			key: 'paginate',
+			value: function paginate(settings) {
+				var child = new Collection();
+
+				child.parent = this;
+
+				child.go = function () {
+					var span = settings.size,
+					    length = this.parent.data.length,
+					    steps = Math.ceil(length / span);
+
+					this.nav.span = span;
+					this.nav.steps = steps;
+					this.nav.count = length;
+
+					var start = this.nav.pos * span,
+					    stop = start + span;
+
+					this.nav.start = start;
+					this.nav.stop = stop;
+
+					this.empty();
+
+					for (var i = start; i < stop && i < length; i++) {
+						this.add(this.parent.data[i]);
+					}
+				};
+
+				child.nav = {
+					pos: settings.start || 0,
+					hasNext: function hasNext() {
+						return this.stop < this.count;
+					},
+					next: function next() {
+						this.pos++;
+						child.go();
+					},
+					hasPrev: function hasPrev() {
+						return !!this.start;
+					},
+					prev: function prev() {
+						this.pos--;
+						child.go();
+					}
+				};
+
+				child.go();
 
 				return child;
 			}

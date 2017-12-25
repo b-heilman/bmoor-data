@@ -2,6 +2,20 @@ var bmoor = require('bmoor'),
 	Feed = require('./Feed.js'),
 	setUid = bmoor.data.setUid;
 
+function testStack( old, fn ){
+	if ( old ){
+		return function( massaged, ctx ){
+			if ( fn(massaged,ctx) ){
+				return true;
+			}else{
+				return old(massaged,ctx);
+			}
+		};
+	}else{
+		return fn;
+	}
+}
+
 class Collection extends Feed {
 
 	remove( datum ){
@@ -12,36 +26,154 @@ class Collection extends Feed {
 
 			this.trigger( 'remove', datum );
 
-			this.trigger( 'update' );
+			this.trigger('update');
 		}
 	}
 
-	filter( fn ){
-		var i, c,
-			d,
-			src = [],
-			child = new Collection( src );
+	empty(){
+		var arr = this.data;
 
-		for( i = 0, c = this.data.length; i < c; i++ ){
-			d = this.data[i];
-
-			if ( fn(d) ){
-				src.push( d );
+		if ( this.hasWaiting('remove') ){
+			for ( let i = 0, c = arr.length; i < c; i++ ){
+				this.trigger( 'remove', arr[i] );
 			}
 		}
 
-		child.$parent = this;
+		this.trigger('update');
 
-		child.$disconnect = this.subscribe({
-			insert: function( ins ){
-				if ( fn(ins) ){
-					child.add( ins );
+		arr.length = 0;
+	}
+
+	filter( fn, settings ){
+		var child = new Collection();
+
+		if ( !settings ){
+			settings = {};
+		}
+
+		child.parent = this;
+
+		child.disconnect = this.subscribe({
+			insert: function( datum ){
+				if ( fn(datum) ){
+					child.add( datum );
 				}
 			},
-			remove: function( outs ){
-				child.remove( outs );
+			remove: function( datum ){
+				child.remove( datum );
 			}
 		});
+
+		child.go = function(){
+			var datum,
+				insert,
+				arr = this.parent.data;
+
+			this.empty();
+
+			if ( settings.pre ){
+				settings.pre();
+			}
+
+			if ( this.hasWaiting('insert') ){
+				insert = ( datum ) => {
+					Array.prototype.push.call( this.data, datum );
+					this.trigger( 'insert', datum );
+				};
+			}else{
+				insert = ( datum ) => {
+					Array.prototype.push.call( this.data, datum );
+				};
+			}
+
+			for ( let i = 0, c = arr.length; i < c; i++ ){
+				datum = arr[i];
+				if ( fn(datum) ){
+					insert(datum);
+				}
+			}
+
+			if ( settings.post ){
+				settings.post();
+			}
+		};
+
+		child.go();
+
+		return child;
+	}
+
+	search( settings ){
+		var ctx,
+			test;
+
+		for( let i = settings.tests.length - 1; i !== -1; i-- ){
+			test = testStack( test, settings.tests[i] );
+		}
+
+		return this.filter(
+			function( datum ){
+				if ( !datum.$massaged ){
+					datum.$massaged = settings.massage(datum);
+				}
+
+				return test(datum.$massaged, ctx);
+			},
+			{
+				pre: function(){
+					ctx = settings.normalize();
+				}
+			}
+		);
+	}
+
+	// settings { size }
+	paginate( settings ){
+		var child = new Collection();
+
+		child.parent = this;
+
+		child.go = function(){
+			var span = settings.size,
+				length = this.parent.data.length,
+				steps = Math.ceil( length / span );
+
+			this.nav.span = span;
+			this.nav.steps = steps;
+			this.nav.count = length;
+
+			let start = this.nav.pos * span,
+				stop = start + span;
+
+			this.nav.start = start;
+			this.nav.stop = stop;
+
+			this.empty();
+
+			for( let i = start; i < stop && i < length; i++ ){
+				this.add( this.parent.data[i] );
+			}
+		};
+
+		child.nav = {
+			pos: settings.start || 0,
+			hasNext: function(){
+				return this.stop < this.count;
+			},
+			next: function(){
+				this.pos++;
+				child.go();
+			},
+			hasPrev: function(){
+				return !!this.start;
+			},
+			prev: function(){
+				this.pos--;
+				child.go();
+			}
+		};
+
+		child.go();
 
 		return child;
 	}

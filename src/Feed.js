@@ -42,6 +42,10 @@ class Feed extends Eventing {
 
 		this.trigger( 'update' );
 	}
+
+	sort( fn ){
+		this.data.sort( fn );
+	}
 }
 
 module.exports = Feed;
