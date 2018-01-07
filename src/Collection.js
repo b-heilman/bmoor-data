@@ -129,7 +129,8 @@ class Collection extends Feed {
 
 	// settings { size }
 	paginate( settings ){
-		var child = new Collection();
+		var child = new Collection(),
+			origSize = settings.size;
 
 		child.parent = this;
 
@@ -170,6 +171,15 @@ class Collection extends Feed {
 			prev: function(){
 				this.pos--;
 				child.go();
+			},
+			setSize: function( size ){
+				settings.size = size;
+			},
+			maxSize: function(){
+				settings.size = child.parent.data.length;
+			},
+			resetSize: function(){
+				settings.size = origSize;
 			}
 		};
 
