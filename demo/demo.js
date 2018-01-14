@@ -143,13 +143,13 @@
 
 	module.exports = {
 		Feed: __webpack_require__(2),
-		Pool: __webpack_require__(17),
-		Collection: __webpack_require__(25),
+		Pool: __webpack_require__(21),
+		Collection: __webpack_require__(29),
 		stream: {
-			Converter: __webpack_require__(26)
+			Converter: __webpack_require__(30)
 		},
 		object: {
-			Proxy: __webpack_require__(27)
+			Proxy: __webpack_require__(31)
 		}
 	};
 
@@ -241,14 +241,15 @@
 
 	bmoor.dom = __webpack_require__(5);
 	bmoor.data = __webpack_require__(6);
-	bmoor.array = __webpack_require__(7);
-	bmoor.build = __webpack_require__(8);
-	bmoor.object = __webpack_require__(12);
-	bmoor.string = __webpack_require__(13);
-	bmoor.promise = __webpack_require__(14);
+	bmoor.flow = __webpack_require__(7);
+	bmoor.array = __webpack_require__(11);
+	bmoor.build = __webpack_require__(12);
+	bmoor.object = __webpack_require__(16);
+	bmoor.string = __webpack_require__(17);
+	bmoor.promise = __webpack_require__(18);
 
-	bmoor.Memory = __webpack_require__(15);
-	bmoor.Eventing = __webpack_require__(16);
+	bmoor.Memory = __webpack_require__(19);
+	bmoor.Eventing = __webpack_require__(20);
 
 	module.exports = bmoor;
 
@@ -1055,6 +1056,175 @@
 
 	'use strict';
 
+	module.exports = {
+		soon: __webpack_require__(8),
+		debounce: __webpack_require__(9),
+		window: __webpack_require__(10)
+	};
+
+/***/ },
+/* 8 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	module.exports = function (cb, time, settings) {
+		var ctx, args, timeout;
+
+		if (!settings) {
+			settings = {};
+		}
+
+		function fire() {
+			timeout = null;
+			cb.apply(settings.context || ctx, args);
+		}
+
+		var fn = function sooned() {
+			ctx = this;
+			args = arguments;
+
+			if (!timeout) {
+				timeout = setTimeout(fire, time);
+			}
+		};
+
+		fn.clear = function () {
+			clearTimeout(timeout);
+			timeout = null;
+		};
+
+		fn.flush = function () {
+			fire();
+			fn.clear();
+		};
+
+		return fn;
+	};
+
+/***/ },
+/* 9 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	module.exports = function (cb, time, settings) {
+		var ctx, args, limit, timeout;
+
+		if (!settings) {
+			settings = {};
+		}
+
+		function fire() {
+			timeout = null;
+			cb.apply(settings.context || ctx, args);
+		}
+
+		function run() {
+			var now = Date.now();
+
+			if (now >= limit) {
+				fire();
+			} else {
+				timeout = setTimeout(run, limit - now);
+			}
+		}
+
+		var fn = function debounced() {
+			var now = Date.now();
+
+			ctx = this;
+			args = arguments;
+			limit = now + time;
+
+			if (!timeout) {
+				timeout = setTimeout(run, time);
+			}
+		};
+
+		fn.clear = function () {
+			clearTimeout(timeout);
+			timeout = null;
+			limit = null;
+		};
+
+		fn.flush = function () {
+			fire();
+			fn.clear();
+		};
+
+		fn.shift = function (diff) {
+			limit += diff;
+		};
+
+		return fn;
+	};
+
+/***/ },
+/* 10 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	module.exports = function (cb, min, max, settings) {
+		var ctx, args, next, limit, timeout;
+
+		if (!settings) {
+			settings = {};
+		}
+
+		function fire() {
+			limit = null;
+			cb.apply(settings.context || ctx, args);
+		}
+
+		function run() {
+			var now = Date.now();
+
+			if (now >= limit || now >= next) {
+				fire();
+			} else {
+				timeout = setTimeout(run, Math.min(limit, next) - now);
+			}
+		}
+
+		var fn = function windowed() {
+			var now = Date.now();
+
+			ctx = this;
+			args = arguments;
+			next = now + min;
+
+			if (!limit) {
+				limit = now + max;
+				timeout = setTimeout(run, min);
+			}
+		};
+
+		fn.clear = function () {
+			clearTimeout(timeout);
+			timeout = null;
+			limit = null;
+		};
+
+		fn.flush = function () {
+			fire();
+			fn.clear();
+		};
+
+		fn.shift = function (diff) {
+			limit += diff;
+		};
+
+		return fn;
+	};
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
 	/**
 	 * Array helper functions
 	 * @module bmoor.array
@@ -1302,15 +1472,15 @@
 	};
 
 /***/ },
-/* 8 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var bmoor = __webpack_require__(4),
-	    mixin = __webpack_require__(9),
-	    plugin = __webpack_require__(10),
-	    decorate = __webpack_require__(11);
+	    mixin = __webpack_require__(13),
+	    plugin = __webpack_require__(14),
+	    decorate = __webpack_require__(15);
 
 	function proc(action, proto, def) {
 		var i, c;
@@ -1365,7 +1535,7 @@
 	module.exports = maker;
 
 /***/ },
-/* 9 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1379,7 +1549,7 @@
 	};
 
 /***/ },
-/* 10 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1435,7 +1605,7 @@
 	};
 
 /***/ },
-/* 11 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1480,7 +1650,7 @@
 	};
 
 /***/ },
-/* 12 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1537,6 +1707,34 @@
 		});
 
 		return target;
+	}
+
+	function makeExploder(paths) {
+		var fn;
+
+		paths.forEach(function (path) {
+			var old = fn,
+			    setter = bmoor.makeSetter(path);
+
+			if (old) {
+				fn = function fn(ctx, obj) {
+					setter(ctx, obj[path]);
+					old(ctx, obj);
+				};
+			} else {
+				fn = function fn(ctx, obj) {
+					setter(ctx, obj[path]);
+				};
+			}
+		});
+
+		return function (obj) {
+			var rtn = {};
+
+			fn(rtn, obj);
+
+			return rtn;
+		};
 	}
 
 	function implode(obj, ignore) {
@@ -1671,49 +1869,49 @@
 		} else if (obj1 !== obj1 && obj2 !== obj2) {
 			return true; // silly NaN
 		} else if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
-				return false; // undefined or null
-			} else if (obj1.equals) {
-					return obj1.equals(obj2);
-				} else if (obj2.equals) {
-					return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
-				} else if (t1 === t2) {
-						if (t1 === 'object') {
-							if (bmoor.isArrayLike(obj1)) {
-								if (!bmoor.isArrayLike(obj2)) {
-									return false;
-								}
+			return false; // undefined or null
+		} else if (obj1.equals) {
+			return obj1.equals(obj2);
+		} else if (obj2.equals) {
+			return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
+		} else if (t1 === t2) {
+			if (t1 === 'object') {
+				if (bmoor.isArrayLike(obj1)) {
+					if (!bmoor.isArrayLike(obj2)) {
+						return false;
+					}
 
-								if ((c = obj1.length) === obj2.length) {
-									for (i = 0; i < c; i++) {
-										if (!equals(obj1[i], obj2[i])) {
-											return false;
-										}
-									}
+					if ((c = obj1.length) === obj2.length) {
+						for (i = 0; i < c; i++) {
+							if (!equals(obj1[i], obj2[i])) {
+								return false;
+							}
+						}
 
-									return true;
-								}
-							} else if (!bmoor.isArrayLike(obj2)) {
-								keyCheck = {};
-								for (i in obj1) {
-									if (obj1.hasOwnProperty(i)) {
-										if (!equals(obj1[i], obj2[i])) {
-											return false;
-										}
+						return true;
+					}
+				} else if (!bmoor.isArrayLike(obj2)) {
+					keyCheck = {};
+					for (i in obj1) {
+						if (obj1.hasOwnProperty(i)) {
+							if (!equals(obj1[i], obj2[i])) {
+								return false;
+							}
 
-										keyCheck[i] = true;
-									}
-								}
+							keyCheck[i] = true;
+						}
+					}
 
-								for (i in obj2) {
-									if (obj2.hasOwnProperty(i)) {
-										if (!keyCheck && obj2[i] !== undefined) {
-											return false;
-										}
-									}
-								}
+					for (i in obj2) {
+						if (obj2.hasOwnProperty(i)) {
+							if (!keyCheck && obj2[i] !== undefined) {
+								return false;
 							}
 						}
 					}
+				}
+			}
+		}
 
 		return false;
 	}
@@ -1722,6 +1920,7 @@
 		keys: keys,
 		values: values,
 		explode: explode,
+		makeExploder: makeExploder,
 		implode: implode,
 		mask: mask,
 		extend: extend,
@@ -1732,7 +1931,7 @@
 	};
 
 /***/ },
-/* 13 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1929,7 +2128,7 @@
 	};
 
 /***/ },
-/* 14 */
+/* 18 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1944,7 +2143,7 @@
 	};
 
 /***/ },
-/* 15 */
+/* 19 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1989,7 +2188,7 @@
 	};
 
 /***/ },
-/* 16 */
+/* 20 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -2080,7 +2279,7 @@
 	module.exports = Eventing;
 
 /***/ },
-/* 17 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2097,7 +2296,7 @@
 	    Eventing = bmoor.Eventing,
 	    getUid = bmoor.data.getUid,
 	    makeGetter = bmoor.makeGetter,
-	    Mapper = __webpack_require__(18).Mapper;
+	    Mapper = __webpack_require__(22).Mapper;
 
 	var Pool = function (_Eventing) {
 		_inherits(Pool, _Eventing);
@@ -2154,22 +2353,22 @@
 	module.exports = Pool;
 
 /***/ },
-/* 18 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = {
-		encode: __webpack_require__(19),
-		Mapper: __webpack_require__(20),
-		Mapping: __webpack_require__(22),
-		Path: __webpack_require__(21),
-		translate: __webpack_require__(23),
-		validate: __webpack_require__(24)
+		encode: __webpack_require__(23),
+		Mapper: __webpack_require__(24),
+		Mapping: __webpack_require__(26),
+		Path: __webpack_require__(25),
+		translate: __webpack_require__(27),
+		validate: __webpack_require__(28)
 	};
 
 /***/ },
-/* 19 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2250,7 +2449,7 @@
 	module.exports = encode;
 
 /***/ },
-/* 20 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2259,9 +2458,9 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var Path = __webpack_require__(21),
+	var Path = __webpack_require__(25),
 	    bmoor = __webpack_require__(3),
-	    Mapping = __webpack_require__(22);
+	    Mapping = __webpack_require__(26);
 
 	function stack(fn, old) {
 		if (old) {
@@ -2334,7 +2533,7 @@
 	module.exports = Mapper;
 
 /***/ },
-/* 21 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2431,7 +2630,7 @@
 	module.exports = Path;
 
 /***/ },
-/* 22 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2440,7 +2639,7 @@
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var Path = __webpack_require__(21);
+	var Path = __webpack_require__(25);
 
 	function all(next) {
 		return function (toObj, fromObj) {
@@ -2608,7 +2807,7 @@
 	module.exports = Mapping;
 
 /***/ },
-/* 23 */
+/* 27 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2622,13 +2821,13 @@
 			if (cur === '') {
 				// don't think anything...
 			} else {
-					if (!root[cur]) {
-						root[cur] = {
-							type: 'array'
-						};
-					}
-					root = root[cur];
+				if (!root[cur]) {
+					root[cur] = {
+						type: 'array'
+					};
 				}
+				root = root[cur];
+			}
 			cur = 'items';
 		}
 
@@ -2686,14 +2885,14 @@
 	module.exports = encode;
 
 /***/ },
-/* 24 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-	var Path = __webpack_require__(21);
+	var Path = __webpack_require__(25);
 
 	var tests = [function (def, v, errors) {
 		if ((typeof v === 'undefined' ? 'undefined' : _typeof(v)) !== def.type) {
@@ -2729,7 +2928,7 @@
 	module.exports = validate;
 
 /***/ },
-/* 25 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2816,10 +3015,13 @@
 					},
 					remove: function remove(datum) {
 						child.remove(datum);
+					},
+					process: function process() {
+						child.go();
 					}
 				});
 
-				child.go = function () {
+				child.go = bmoor.flow.window(function () {
 					var _this2 = this;
 
 					var datum,
@@ -2833,6 +3035,7 @@
 					}
 
 					if (this.hasWaiting('insert')) {
+						// performance optimization
 						insert = function insert(datum) {
 							Array.prototype.push.call(_this2.data, datum);
 							_this2.trigger('insert', datum);
@@ -2853,9 +3056,11 @@
 					if (settings.post) {
 						settings.post();
 					}
-				};
 
-				child.go();
+					child.trigger('process');
+				}, 5, 30, { context: child });
+
+				child.go.flush();
 
 				return child;
 			}
@@ -2891,7 +3096,23 @@
 
 				child.parent = this;
 
-				child.go = function () {
+				child.disconnect = this.subscribe({
+					insert: function insert(datum) {
+						child.add(datum);
+
+						child.go();
+					},
+					remove: function remove(datum) {
+						child.remove(datum);
+
+						child.go();
+					},
+					process: function process() {
+						child.go();
+					}
+				});
+
+				child.go = bmoor.flow.window(function () {
 					var span = settings.size,
 					    length = this.parent.data.length,
 					    steps = Math.ceil(length / span);
@@ -2911,7 +3132,9 @@
 					for (var i = start; i < stop && i < length; i++) {
 						this.add(this.parent.data[i]);
 					}
-				};
+
+					child.trigger('process');
+				}, 5, 30, { context: child });
 
 				child.nav = {
 					pos: settings.start || 0,
@@ -2920,14 +3143,14 @@
 					},
 					next: function next() {
 						this.pos++;
-						child.go();
+						child.go.flush();
 					},
 					hasPrev: function hasPrev() {
 						return !!this.start;
 					},
 					prev: function prev() {
 						this.pos--;
-						child.go();
+						child.go.flush();
 					},
 					setSize: function setSize(size) {
 						settings.size = size;
@@ -2940,7 +3163,7 @@
 					}
 				};
 
-				child.go();
+				child.go.flush();
 
 				return child;
 			}
@@ -3053,7 +3276,7 @@
 	module.exports = Collection;
 
 /***/ },
-/* 26 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3193,7 +3416,7 @@
 	module.exports = Converter;
 
 /***/ },
-/* 27 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';

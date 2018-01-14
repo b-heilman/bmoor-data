@@ -88,7 +88,7 @@ describe('bmoor-data.Collection', function(){
 		feed.remove(n);
 	});
 
-	describe('filter', function(){
+	describe('::filter', function(){
 		it('should work correctly', function( done ){
 			var n = {foo:'bar'},
 				t = [{foo:'eins'},{foo:'zwei'},n],
@@ -122,7 +122,7 @@ describe('bmoor-data.Collection', function(){
 		});
 	});
 
-	describe('search', function(){
+	describe('::search', function(){
 		it('should work correctly', function(){
 			var t = [
 					{id:1, foo:'eins',value:'yes'},
@@ -156,13 +156,13 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data.length ).toBe( 4 );
 		
 			test.value = 'YeS';
-			child.go();
+			child.go.flush();
 
 			expect( child.data.length ).toBe( 2 );
 		});
 	});
 
-	describe('paginate', function(){
+	describe('::paginate', function(){
 		it('should work correctly', function(){
 			var t = [
 					{id:1, foo:'eins',value:'yes'},
@@ -264,8 +264,8 @@ describe('bmoor-data.Collection', function(){
 			
 			test.value = 'Yes';
 
-			child.parent.go();
-			child.go();
+			child.parent.go.flush();
+			child.go.flush();
 
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(0);
@@ -283,6 +283,47 @@ describe('bmoor-data.Collection', function(){
 			expect( child.nav.steps ).toBe(2);
 			expect( child.nav.count ).toBe(3);
 			expect( child.data[0].foo ).toBe( 'funf' );
+		});
+
+		it('should chain process events', function( done ){
+			var bool = true,
+				t = [
+					{id:1, foo:'eins',value:'yes'},
+					{id:3, foo:'zwei',value:'no'}
+				],
+				feed = new Collection(t),
+				test = {},
+				child = feed.search({
+					normalize: function(){
+						if ( test.value ){
+							return test.value.toLowerCase();
+						}else{
+							return null;
+						}
+					},
+					massage: function( datum ){
+						return { value: datum.value.toLowerCase() };
+					},
+					tests: [
+						function( datum, ctx ){
+							return ctx === null;
+						},
+						function( datum, ctx ){
+							return datum.value === ctx;
+						}
+					]
+				}).paginate({
+					size: 2
+				});
+
+			child.on('process', function(){
+				expect( bool ).toBe( true );
+				done();
+			});
+
+			test.value = 'yes';
+
+			feed.add({id:2, foo:'other', value:'yes'});
 		});
 	});
 

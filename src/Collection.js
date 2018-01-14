@@ -61,10 +61,13 @@ class Collection extends Feed {
 			},
 			remove: function( datum ){
 				child.remove( datum );
+			},
+			process: function(){
+				child.go();
 			}
 		});
 
-		child.go = function(){
+		child.go = bmoor.flow.window(function(){
 			var datum,
 				insert,
 				arr = this.parent.data;
@@ -75,7 +78,7 @@ class Collection extends Feed {
 				settings.pre();
 			}
 
-			if ( this.hasWaiting('insert') ){
+			if ( this.hasWaiting('insert') ){ // performance optimization
 				insert = ( datum ) => {
 					Array.prototype.push.call( this.data, datum );
 					this.trigger( 'insert', datum );
@@ -96,9 +99,11 @@ class Collection extends Feed {
 			if ( settings.post ){
 				settings.post();
 			}
-		};
 
-		child.go();
+			child.trigger('process');
+		}, 5, 30, { context: child });
+
+		child.go.flush();
 
 		return child;
 	}
@@ -138,16 +143,19 @@ class Collection extends Feed {
 			insert: function( datum ){
 				child.add( datum );
 
-				// TODO : debounce
+				child.go();
 			},
 			remove: function( datum ){
 				child.remove( datum );
 
-				// TODO : debounce
+				child.go();
+			},
+			process: function(){
+				child.go();
 			}
 		});
 
-		child.go = function(){
+		child.go = bmoor.flow.window(function(){
 			var span = settings.size,
 				length = this.parent.data.length,
 				steps = Math.ceil( length / span );
@@ -167,7 +175,9 @@ class Collection extends Feed {
 			for( let i = start; i < stop && i < length; i++ ){
 				this.add( this.parent.data[i] );
 			}
-		};
+
+			child.trigger('process');
+		}, 5, 30, { context: child });
 
 		child.nav = {
 			pos: settings.start || 0,
@@ -176,14 +186,14 @@ class Collection extends Feed {
 			},
 			next: function(){
 				this.pos++;
-				child.go();
+				child.go.flush();
 			},
 			hasPrev: function(){
 				return !!this.start;
 			},
 			prev: function(){
 				this.pos--;
-				child.go();
+				child.go.flush();
 			},
 			setSize: function( size ){
 				settings.size = size;
@@ -196,7 +206,7 @@ class Collection extends Feed {
 			}
 		};
 
-		child.go();
+		child.go.flush();
 
 		return child;
 	}
