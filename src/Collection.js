@@ -134,6 +134,19 @@ class Collection extends Feed {
 
 		child.parent = this;
 
+		child.disconnect = this.subscribe({
+			insert: function( datum ){
+				child.add( datum );
+
+				// TODO : debounce
+			},
+			remove: function( datum ){
+				child.remove( datum );
+
+				// TODO : debounce
+			}
+		});
+
 		child.go = function(){
 			var span = settings.size,
 				length = this.parent.data.length,
