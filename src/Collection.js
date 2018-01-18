@@ -181,6 +181,10 @@ class Collection extends Feed {
 
 		child.nav = {
 			pos: settings.start || 0,
+			goto: function( pos ){
+				this.pos = pos;
+				child.go.flush();
+			},
 			hasNext: function(){
 				return this.stop < this.count;
 			},

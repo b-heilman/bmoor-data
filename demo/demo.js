@@ -1869,49 +1869,49 @@
 		} else if (obj1 !== obj1 && obj2 !== obj2) {
 			return true; // silly NaN
 		} else if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
-			return false; // undefined or null
-		} else if (obj1.equals) {
-			return obj1.equals(obj2);
-		} else if (obj2.equals) {
-			return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
-		} else if (t1 === t2) {
-			if (t1 === 'object') {
-				if (bmoor.isArrayLike(obj1)) {
-					if (!bmoor.isArrayLike(obj2)) {
-						return false;
-					}
+				return false; // undefined or null
+			} else if (obj1.equals) {
+					return obj1.equals(obj2);
+				} else if (obj2.equals) {
+					return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
+				} else if (t1 === t2) {
+						if (t1 === 'object') {
+							if (bmoor.isArrayLike(obj1)) {
+								if (!bmoor.isArrayLike(obj2)) {
+									return false;
+								}
 
-					if ((c = obj1.length) === obj2.length) {
-						for (i = 0; i < c; i++) {
-							if (!equals(obj1[i], obj2[i])) {
-								return false;
+								if ((c = obj1.length) === obj2.length) {
+									for (i = 0; i < c; i++) {
+										if (!equals(obj1[i], obj2[i])) {
+											return false;
+										}
+									}
+
+									return true;
+								}
+							} else if (!bmoor.isArrayLike(obj2)) {
+								keyCheck = {};
+								for (i in obj1) {
+									if (obj1.hasOwnProperty(i)) {
+										if (!equals(obj1[i], obj2[i])) {
+											return false;
+										}
+
+										keyCheck[i] = true;
+									}
+								}
+
+								for (i in obj2) {
+									if (obj2.hasOwnProperty(i)) {
+										if (!keyCheck && obj2[i] !== undefined) {
+											return false;
+										}
+									}
+								}
 							}
 						}
-
-						return true;
 					}
-				} else if (!bmoor.isArrayLike(obj2)) {
-					keyCheck = {};
-					for (i in obj1) {
-						if (obj1.hasOwnProperty(i)) {
-							if (!equals(obj1[i], obj2[i])) {
-								return false;
-							}
-
-							keyCheck[i] = true;
-						}
-					}
-
-					for (i in obj2) {
-						if (obj2.hasOwnProperty(i)) {
-							if (!keyCheck && obj2[i] !== undefined) {
-								return false;
-							}
-						}
-					}
-				}
-			}
-		}
 
 		return false;
 	}
@@ -2821,13 +2821,13 @@
 			if (cur === '') {
 				// don't think anything...
 			} else {
-				if (!root[cur]) {
-					root[cur] = {
-						type: 'array'
-					};
+					if (!root[cur]) {
+						root[cur] = {
+							type: 'array'
+						};
+					}
+					root = root[cur];
 				}
-				root = root[cur];
-			}
 			cur = 'items';
 		}
 
@@ -3138,6 +3138,10 @@
 
 				child.nav = {
 					pos: settings.start || 0,
+					goto: function goto(pos) {
+						this.pos = pos;
+						child.go.flush();
+					},
 					hasNext: function hasNext() {
 						return this.stop < this.count;
 					},
