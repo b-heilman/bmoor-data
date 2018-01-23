@@ -2911,29 +2911,44 @@ var bmoorData =
 				arr.length = 0;
 			}
 		}, {
-			key: 'filter',
-			value: function filter(fn, settings) {
-				var child = new Collection();
-
-				if (!settings) {
-					settings = {};
-				}
+			key: 'getChild',
+			value: function getChild(subscribe) {
+				var child = new this.constructor();
 
 				child.parent = this;
 
+				if (!subscribe) {
+					subscribe = {};
+				}
+
 				child.disconnect = this.subscribe({
+					insert: subscribe.insert ? subscribe.insert.bind(child) : function (datum) {
+						child.add(datum);
+					},
+					remove: subscribe.remove ? subscribe.remove.bind(child) : function (datum) {
+						child.remove(datum);
+					},
+					process: subscribe.process ? subscribe.process.bind(child) : function () {
+						child.go();
+					}
+				});
+
+				return child;
+			}
+		}, {
+			key: 'filter',
+			value: function filter(fn, settings) {
+				var child = this.getChild({
 					insert: function insert(datum) {
 						if (fn(datum)) {
 							child.add(datum);
 						}
-					},
-					remove: function remove(datum) {
-						child.remove(datum);
-					},
-					process: function process() {
-						child.go();
 					}
 				});
+
+				if (!settings) {
+					settings = {};
+				}
 
 				child.go = bmoor.flow.window(function () {
 					var _this2 = this;
@@ -3005,12 +3020,7 @@ var bmoorData =
 		}, {
 			key: 'paginate',
 			value: function paginate(settings) {
-				var child = new Collection(),
-				    origSize = settings.size;
-
-				child.parent = this;
-
-				child.disconnect = this.subscribe({
+				var child = this.getChild({
 					insert: function insert(datum) {
 						child.add(datum);
 
@@ -3024,7 +3034,8 @@ var bmoorData =
 					process: function process() {
 						child.go();
 					}
-				});
+				}),
+				    origSize = settings.size;
 
 				child.go = bmoor.flow.window(function () {
 					var span = settings.size,
@@ -3424,8 +3435,6 @@ var bmoorData =
 
 			var _this = _possibleConstructorReturn(this, (Proxy.__proto__ || Object.getPrototypeOf(Proxy)).call(this));
 
-			_this.expose(obj);
-
 			_this.getDatum = function () {
 				return obj;
 			};
@@ -3433,11 +3442,6 @@ var bmoorData =
 		}
 
 		_createClass(Proxy, [{
-			key: '_',
-			value: function _(path) {
-				return this.getDatum()[path];
-			}
-		}, {
 			key: 'getMask',
 			value: function getMask(override) {
 				if (!this.mask || override) {
@@ -3449,7 +3453,7 @@ var bmoorData =
 		}, {
 			key: '$',
 			value: function $(path) {
-				return bmoor.get(this.getMask(), path);
+				return bmoor.get(this.getDatum(), path);
 			}
 		}, {
 			key: 'getChanges',
@@ -3472,12 +3476,7 @@ var bmoorData =
 
 				this.mask = null;
 				this.trigger('update', delta);
-
-				this.expose(delta);
 			}
-		}, {
-			key: 'expose',
-			value: function expose() {}
 		}, {
 			key: 'trigger',
 			value: function trigger() {

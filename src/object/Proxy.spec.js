@@ -216,7 +216,21 @@ describe('bmoor-data.object.Proxy', function(){
 
 	describe('extending Proxy', function(){
 		class MyProxy extends Proxy {
-			expose( delta ){
+			constructor( delta ){
+				super(delta);
+
+				if ( delta.foo ){
+					this.eins = delta.foo;
+				}
+
+				if ( delta.bar ){
+					this.zwei = delta.bar;
+				}
+			}
+
+			merge( delta ){
+				super.merge( delta );
+
 				if ( delta.foo ){
 					this.eins = delta.foo;
 				}

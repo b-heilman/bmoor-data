@@ -44,28 +44,48 @@ class Collection extends Feed {
 		arr.length = 0;
 	}
 
+	getChild( subscribe ){
+		var child = new (this.constructor)();
+
+		child.parent = this;
+
+		if ( !subscribe ){
+			subscribe = {};
+		}
+
+		child.disconnect = this.subscribe({
+			insert: subscribe.insert ? 
+				subscribe.insert.bind(child) : 
+				function( datum ){
+					child.add( datum );
+				},
+			remove: subscribe.remove ?
+				subscribe.remove.bind(child) :
+				function( datum ){
+					child.remove( datum );
+				},
+			process: subscribe.process ?
+				subscribe.process.bind(child) : 
+				function(){
+					child.go();
+				}
+		});
+
+		return child;
+	}
+
 	filter( fn, settings ){
-		var child = new Collection();
+		var child = this.getChild({
+				insert: function( datum ){
+					if ( fn(datum) ){
+						child.add( datum );
+					}
+				}
+			});
 
 		if ( !settings ){
 			settings = {};
 		}
-
-		child.parent = this;
-
-		child.disconnect = this.subscribe({
-			insert: function( datum ){
-				if ( fn(datum) ){
-					child.add( datum );
-				}
-			},
-			remove: function( datum ){
-				child.remove( datum );
-			},
-			process: function(){
-				child.go();
-			}
-		});
 
 		child.go = bmoor.flow.window(function(){
 			var datum,
@@ -134,26 +154,22 @@ class Collection extends Feed {
 
 	// settings { size }
 	paginate( settings ){
-		var child = new Collection(),
+		var child = this.getChild({
+				insert: function( datum ){
+					child.add( datum );
+
+					child.go();
+				},
+				remove: function( datum ){
+					child.remove( datum );
+
+					child.go();
+				},
+				process: function(){
+					child.go();
+				}
+			}),
 			origSize = settings.size;
-
-		child.parent = this;
-
-		child.disconnect = this.subscribe({
-			insert: function( datum ){
-				child.add( datum );
-
-				child.go();
-			},
-			remove: function( datum ){
-				child.remove( datum );
-
-				child.go();
-			},
-			process: function(){
-				child.go();
-			}
-		});
 
 		child.go = bmoor.flow.window(function(){
 			var span = settings.size,
