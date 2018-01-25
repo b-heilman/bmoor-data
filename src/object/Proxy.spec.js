@@ -117,6 +117,7 @@ describe('bmoor-data.object.Proxy', function(){
 				seed = {
 					foo: 'bar',
 					blar: null,
+					first: 1,
 					hello: 'world2'
 				},
 				mask = proxy.getMask( seed );
@@ -183,6 +184,35 @@ describe('bmoor-data.object.Proxy', function(){
 				},
 				eins: 'hi'
 			});
+		});
+	});
+
+	describe('::map', function(){
+		it('should allow default values to be optionally mapped to mask', function(){
+			var target = {
+					first: 1,
+					hello: 'world',
+					blar: {
+						foo: 'blar'
+					}
+				},
+				proxy = new Proxy( target ),
+				seed = {
+					second: 2,
+					blar: {
+						foo: 'blar'
+					},
+					hello: 'world'
+				},
+				mask = proxy.map( seed );
+
+			expect( mask.first ).toBe( 1 );
+			expect( mask.second ).toBe( 2 );
+			expect( mask.hello ).toBe( 'world' );
+			expect( mask.blar ).toEqual( {} );
+
+			expect( Object.keys(mask) ).toEqual( ['blar','second'] );
+			expect( proxy.getChanges() ).toEqual( {second:2} );
 		});
 	});
 

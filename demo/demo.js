@@ -1869,49 +1869,49 @@
 		} else if (obj1 !== obj1 && obj2 !== obj2) {
 			return true; // silly NaN
 		} else if (obj1 === null || obj1 === undefined || obj2 === null || obj2 === undefined) {
-				return false; // undefined or null
-			} else if (obj1.equals) {
-					return obj1.equals(obj2);
-				} else if (obj2.equals) {
-					return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
-				} else if (t1 === t2) {
-						if (t1 === 'object') {
-							if (bmoor.isArrayLike(obj1)) {
-								if (!bmoor.isArrayLike(obj2)) {
-									return false;
-								}
+			return false; // undefined or null
+		} else if (obj1.equals) {
+			return obj1.equals(obj2);
+		} else if (obj2.equals) {
+			return obj2.equals(obj1); // because maybe somene wants a class to be able to equal a simple object
+		} else if (t1 === t2) {
+			if (t1 === 'object') {
+				if (bmoor.isArrayLike(obj1)) {
+					if (!bmoor.isArrayLike(obj2)) {
+						return false;
+					}
 
-								if ((c = obj1.length) === obj2.length) {
-									for (i = 0; i < c; i++) {
-										if (!equals(obj1[i], obj2[i])) {
-											return false;
-										}
-									}
+					if ((c = obj1.length) === obj2.length) {
+						for (i = 0; i < c; i++) {
+							if (!equals(obj1[i], obj2[i])) {
+								return false;
+							}
+						}
 
-									return true;
-								}
-							} else if (!bmoor.isArrayLike(obj2)) {
-								keyCheck = {};
-								for (i in obj1) {
-									if (obj1.hasOwnProperty(i)) {
-										if (!equals(obj1[i], obj2[i])) {
-											return false;
-										}
+						return true;
+					}
+				} else if (!bmoor.isArrayLike(obj2)) {
+					keyCheck = {};
+					for (i in obj1) {
+						if (obj1.hasOwnProperty(i)) {
+							if (!equals(obj1[i], obj2[i])) {
+								return false;
+							}
 
-										keyCheck[i] = true;
-									}
-								}
+							keyCheck[i] = true;
+						}
+					}
 
-								for (i in obj2) {
-									if (obj2.hasOwnProperty(i)) {
-										if (!keyCheck && obj2[i] !== undefined) {
-											return false;
-										}
-									}
-								}
+					for (i in obj2) {
+						if (obj2.hasOwnProperty(i)) {
+							if (!keyCheck && obj2[i] !== undefined) {
+								return false;
 							}
 						}
 					}
+				}
+			}
+		}
 
 		return false;
 	}
@@ -2148,29 +2148,70 @@
 
 	'use strict';
 
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var master = {};
 
-	var Memory = function Memory() {
-		_classCallCheck(this, Memory);
+	var Memory = function () {
+		function Memory() {
+			_classCallCheck(this, Memory);
 
-		var index = {};
+			var index = {};
 
-		this.check = function (name) {
-			return index[name];
-		};
+			this.get = function (name) {
+				return index[name];
+			};
 
-		this.register = function (name, obj) {
-			index[name] = obj;
-		};
+			this.check = function (name) {
+				console.log('Memory::check will soon removed');
+				return index[name];
+			};
 
-		this.clear = function (name) {
-			if (name in index) {
-				delete index[name];
+			this.isSet = function (name) {
+				return !!index[name];
+			};
+
+			this.register = function (name, obj) {
+				index[name] = obj;
+			};
+
+			this.clear = function (name) {
+				if (name in index) {
+					delete index[name];
+				}
+			};
+
+			this.keys = function () {
+				return Object.keys(index);
+			};
+		}
+
+		_createClass(Memory, [{
+			key: 'import',
+			value: function _import(json) {
+				var _this = this;
+
+				Object.keys(json).forEach(function (key) {
+					_this.register(key, json[key]);
+				});
 			}
-		};
-	};
+		}, {
+			key: 'export',
+			value: function _export() {
+				var _this2 = this;
+
+				return this.keys().reduce(function (rtn, key) {
+					rtn[key] = _this2.get(key);
+
+					return rtn;
+				}, {});
+			}
+		}]);
+
+		return Memory;
+	}();
 
 	module.exports = {
 		Memory: Memory,
@@ -2821,13 +2862,13 @@
 			if (cur === '') {
 				// don't think anything...
 			} else {
-					if (!root[cur]) {
-						root[cur] = {
-							type: 'array'
-						};
-					}
-					root = root[cur];
+				if (!root[cur]) {
+					root[cur] = {
+						type: 'array'
+					};
 				}
+				root = root[cur];
+			}
 			cur = 'items';
 		}
 
@@ -3461,10 +3502,12 @@
 
 		if (override) {
 			Object.keys(override).forEach(function (k) {
-				var bothObj = bmoor.isObject(mask[k]) && bmoor.isObject(override[k]);
+				var m = mask[k],
+				    o = override[k],
+				    bothObj = bmoor.isObject(m) && bmoor.isObject(o);
 
-				if (!(k in mask) || !bothObj) {
-					mask[k] = override[k];
+				if ((!(k in mask) || !bothObj) && o !== m) {
+					mask[k] = o;
 				}
 			});
 		}
@@ -3513,6 +3556,21 @@
 		}
 	}
 
+	function _map(delta, obj) {
+		Object.keys(delta).forEach(function (k) {
+			var d = delta[k],
+			    o = obj[k];
+
+			if (d !== o) {
+				if (bmoor.isObject(d) && bmoor.isObject(o)) {
+					_map(d, o);
+				} else {
+					obj[k] = d;
+				}
+			}
+		});
+	}
+
 	var Proxy = function (_Eventing) {
 		_inherits(Proxy, _Eventing);
 
@@ -3550,6 +3608,15 @@
 			key: 'isDirty',
 			value: function isDirty() {
 				return _isDirty(this.mask);
+			}
+		}, {
+			key: 'map',
+			value: function map(delta) {
+				var mask = this.getMask();
+
+				_map(delta, mask);
+
+				return mask;
 			}
 		}, {
 			key: 'merge',

@@ -17,10 +17,12 @@ function makeMask( target, override ){
 
 	if ( override ){
 		Object.keys(override).forEach(function( k ){
-			var bothObj = bmoor.isObject(mask[k]) && bmoor.isObject(override[k]);
+			var m = mask[k],
+				o = override[k],
+				bothObj = bmoor.isObject(m) && bmoor.isObject(o);
 
-			if ( !(k in mask) || !bothObj ){
-				mask[k] = override[k];
+			if ( (!(k in mask) || !bothObj) && o !== m ){
+				mask[k] = o;
 			}
 		});
 	}
@@ -68,6 +70,21 @@ function getChanges( obj ){
 	}
 }
 
+function map( delta, obj ){
+	Object.keys( delta ).forEach(function( k ){
+		var d = delta[k],
+			o = obj[k];
+
+		if ( d !== o ){
+			if ( bmoor.isObject(d) && bmoor.isObject(o) ){
+				map( d, o );
+			}else{
+				obj[k] = d;
+			}
+		}
+	});
+}
+
 class Proxy extends Eventing {
 	constructor( obj ){
 		super();
@@ -95,6 +112,14 @@ class Proxy extends Eventing {
 
 	isDirty(){
 		return isDirty( this.mask );
+	}
+
+	map( delta ){
+		var mask = this.getMask();
+
+		map( delta, mask );
+
+		return mask;
 	}
 
 	merge( delta ){
