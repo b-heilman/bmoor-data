@@ -1,5 +1,6 @@
 var bmoor = require('bmoor'),
 	Feed = require('./Feed.js'),
+	Hash = require('./object/Hash.js'),
 	setUid = bmoor.data.setUid;
 
 function testStack( old, fn ){
@@ -49,27 +50,29 @@ class Collection extends Feed {
 
 		child.parent = this;
 
-		if ( !subscribe ){
-			subscribe = {};
-		}
+		if ( subscribe !== false ){
+			if ( !subscribe ){
+				subscribe = {};
+			}
 
-		child.disconnect = this.subscribe({
-			insert: subscribe.insert ? 
-				subscribe.insert.bind(child) : 
-				function( datum ){
-					child.add( datum );
-				},
-			remove: subscribe.remove ?
-				subscribe.remove.bind(child) :
-				function( datum ){
-					child.remove( datum );
-				},
-			process: subscribe.process ?
-				subscribe.process.bind(child) : 
-				function(){
-					child.go();
-				}
-		});
+			child.disconnect = this.subscribe({
+				insert: subscribe.insert ? 
+					subscribe.insert.bind(child) : 
+					function( datum ){
+						child.add( datum );
+					},
+				remove: subscribe.remove ?
+					subscribe.remove.bind(child) :
+					function( datum ){
+						child.remove( datum );
+					},
+				process: subscribe.process ?
+					subscribe.process.bind(child) : 
+					function(){
+						child.go();
+					}
+			});
+		}
 
 		return child;
 	}
@@ -94,8 +97,8 @@ class Collection extends Feed {
 
 			this.empty();
 
-			if ( settings.pre ){
-				settings.pre();
+			if ( settings.before ){
+				settings.before();
 			}
 
 			if ( this.hasWaiting('insert') ){ // performance optimization
@@ -116,8 +119,8 @@ class Collection extends Feed {
 				}
 			}
 
-			if ( settings.post ){
-				settings.post();
+			if ( settings.after ){
+				settings.after();
 			}
 
 			child.trigger('process');
@@ -145,7 +148,7 @@ class Collection extends Feed {
 				return test(datum.$massaged, ctx);
 			},
 			{
-				pre: function(){
+				before: function(){
 					ctx = settings.normalize();
 				}
 			}
@@ -231,30 +234,29 @@ class Collection extends Feed {
 		return child;
 	}
 
-	index( fn ){
-		var i, c,
-			d,
-			disconnect,
-			index = {};
+	_index( dex ){
+		var index = {};
 
-		for( i = 0, c = this.data.length; i < c; i++ ){
-			d = this.data[i];
+		for( let i = 0, c = this.data.length; i < c; i++ ){
+			let d = this.data[i],
+				key = dex.go(d);
 
-			index[ fn(d) ] = d;
+			index[ key ] = d;
 		}
 
-		disconnect = this.subscribe({
+		let disconnect = this.subscribe({
 			insert: function( ins ){
-				index[ fn(ins) ] = ins;
+				index[ dex.go(ins) ] = ins;
 			},
 			remove: function( outs ){
-				delete index[ fn(outs) ];
+				delete index[ dex.go(outs) ];
 			}
 		});
 
 		return {
-			get: function( dex ){
-				return index[ dex ];
+			get: function( search ){
+				var key = dex.go(search);
+				return index[ key ];
 			},
 			keys: function(){
 				return Object.keys( index );
@@ -265,29 +267,48 @@ class Collection extends Feed {
 		};
 	}
 
-	route( hasher ){
-		var i, c,
-			old = {},
-			index = {},
-			disconnect;
+	index( search, settings ){
+		var index,
+			dex = new Hash( search, settings );
 
-		function get( i ){
-			var t = index[i];
-
-			if ( !t ){
-				t = new Collection();
-				index[i] = t;
-			}
-
-			return t;
+		if ( !this.indexes ){
+			this.indexes = {};
 		}
 
+		index = this.indexes[dex.hash];
+
+		if ( !index ){
+			index = this._index( dex );
+			this.indexes[dex.hash] = index;
+		}
+
+		return index;
+	}
+
+	get( search, settings ){
+		this.index( search, settings ).get( search );
+	}
+
+	_route( dex ){
+		let old = {},
+			index = {},
+			get = ( key ) => {
+				var collection = index[key];
+
+				if ( !collection ){
+					collection = this.getChild( false );
+					index[key] = collection;
+				}
+
+				return collection;
+			};
+
 		function add( datum ){
-			var i = hasher( datum );
+			var d = dex.go( datum );
 
-			old[ setUid(datum) ] = i;
+			old[ setUid(datum) ] = d;
 
-			get(i).add( datum );
+			get(d).add( datum );
 		}
 
 		function remove( datum ){
@@ -298,22 +319,22 @@ class Collection extends Feed {
 			}
 		}
 
-		for( i = 0, c = this.data.length; i < c; i++ ){
+		for( let i = 0, c = this.data.length; i < c; i++ ){
 			add( this.data[i] );
 		}
 
-		disconnect = this.subscribe({
-			insert: function( ins ){
-				add( ins );
+		let disconnect = this.subscribe({
+			insert: function( datum ){
+				add( datum );
 			},
-			remove: function( outs ){
-				remove( outs );
+			remove: function( datum ){
+				remove( datum );
 			}
 		});
 
 		return {
-			get: function( hash ){
-				return get( hash );
+			get: function( search ){
+				return get( dex.go(search) );
 			},
 			reroute: function( datum ){
 				remove( datum );
@@ -326,6 +347,25 @@ class Collection extends Feed {
 				disconnect();
 			}
 		};
+	}
+
+	route( search, settings ){
+		var router,
+			dex = new Hash(search,settings);
+
+		if ( !this.routes ){
+			this.routes = {};
+		}
+
+		router = this.routes[dex.hash];
+
+		if ( !router ){
+			router = this._route( dex );
+
+			this.routes[dex.hash] = router;
+		}
+
+		return router;
 	}
 }
 

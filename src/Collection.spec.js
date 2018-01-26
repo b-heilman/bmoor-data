@@ -327,11 +327,11 @@ describe('bmoor-data.Collection', function(){
 		});
 	});
 
-	describe('route', function(){
+	describe('::index', function(){
 		var child,
 			parent;
 
-		beforeEach(function( done ){
+		beforeEach(function(){
 			parent = new Collection([
 				{ type: 'dog', id: 1 },
 				{ type: 'cat', id: 2 },
@@ -339,11 +339,6 @@ describe('bmoor-data.Collection', function(){
 			]),
 			child = parent.index(function( d ){
 				return d.id;
-			});
-
-			setTimeout(function(){
-				// allows data to run
-				done();
 			});
 		});
 
@@ -354,30 +349,24 @@ describe('bmoor-data.Collection', function(){
 			expect( child.get(4) ).toBeUndefined();
 		});
 
-		it('should index new insertions', function( done ){
+		it('should index new insertions', function(){
 			parent.add({ 'type': 'dog', id:4 });
 
-			setTimeout(function(){
-				expect( child.get(4) ).toBe( parent.data[3] );
-				done();
-			}, 100);
+			expect( child.get(4) ).toBe( parent.data[3] );
 		});
 
-		it('should unindex removals', function( done ){
+		it('should unindex removals', function(){
 			parent.remove( child.get(2) );
 
-			setTimeout(function(){
-				expect( child.get(2) ).toBeUndefined();
-				done();
-			}, 100);
+			expect( child.get(2) ).toBeUndefined();
 		});
 	});
 
-	describe('route', function(){
+	describe('::route', function(){
 		var child,
 			parent;
 
-		beforeEach(function( done ){
+		beforeEach(function(){
 			parent = new Collection([
 				{ type: 'dog', id: 1 },
 				{ type: 'cat', id: 2 },
@@ -385,11 +374,6 @@ describe('bmoor-data.Collection', function(){
 			]),
 			child = parent.route(function( d ){
 				return d.type;
-			});
-
-			setTimeout(function(){
-				// allows data to run
-				done();
 			});
 		});
 
@@ -402,21 +386,17 @@ describe('bmoor-data.Collection', function(){
 			expect( child.get('woot').data.length ).toBe( 0 );
 		});
 
-		it('should route new elements to proper buckets', function( done ){
+		it('should route new elements to proper buckets', function(){
 			parent.add({ 'type': 'dog', id:4 });
 			parent.add({ 'type': 'cat', id:5 });
 			parent.add({ 'type': 'monkey', id: 6 });
 
-			setTimeout(function(){
-				expect( child.get('dog').data.length ).toBe( 3 );
-				expect( child.get('cat').data.length ).toBe( 2 );
-				expect( child.get('monkey').data.length ).toBe( 1 );
-			
-				done();
-			}, 100); // it has to go through two rounds of updates
+			expect( child.get('dog').data.length ).toBe( 3 );
+			expect( child.get('cat').data.length ).toBe( 2 );
+			expect( child.get('monkey').data.length ).toBe( 1 );
 		});
 
-		it('should properly reroute buckets', function( done ){
+		it('should properly reroute buckets', function(){
 			var t = child.get('dog').data[0],
 				dog = false,
 				pig = false;
@@ -438,12 +418,8 @@ describe('bmoor-data.Collection', function(){
 			expect( child.get('pig').data.length ).toBe( 1 );
 			expect( child.get('pig').data[0].id ).toBe( 1 );
 
-			setTimeout(function(){
-				expect( dog ).toBe( true );
-				expect( pig ).toBe( true );
-
-				done();
-			},100);
+			expect( dog ).toBe( true );
+			expect( pig ).toBe( true );
 		});
 	});
 });

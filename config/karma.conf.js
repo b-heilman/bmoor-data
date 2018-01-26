@@ -10,6 +10,14 @@ module.exports = function(config) {
         // testing framework to use (jasmine/mocha/qunit/...)
         frameworks: ['jasmine'],
 
+        plugins: [
+            require("karma-webpack"),
+            'karma-jasmine',
+            'karma-chrome-launcher',
+            'karma-ie-launcher',
+            'karma-sourcemap-loader'
+        ],
+
         // list of files / patterns to load in the browser
         files: [
             'config/test.js',
@@ -22,19 +30,22 @@ module.exports = function(config) {
         exclude: [],
 
         preprocessors: {
-            'src/**/*.spec.js': ['webpack']
+            'lib/polyfills.js': ['webpack'],
+            // main test files
+            'src/**/*.spec.js': ['webpack','sourcemap']
         },
 
         webpack: {
             module: {
-                loaders: [{
+                rules: [{
                     test: /\.js$/,
                     loader: "babel-loader",
-                    query: {
-                        presets: ['es2015']
+                    options: {
+                        presets: ['env']
                     }
                 }]
-            }
+            },
+            devtool: 'inline-source-map'
         },
 
         webpackMiddleware: {
@@ -43,16 +54,10 @@ module.exports = function(config) {
             noInfo: true,
             // and use stats to turn off verbose output
             stats: {
-                // options i.e.
+                // options i.e. 
                 chunks: false
             }
         },
-
-        plugins: [
-            require("karma-webpack"),
-            'karma-jasmine',
-            'karma-phantomjs-launcher'
-        ],
 
         client: {
             captureConsole: true
@@ -63,7 +68,7 @@ module.exports = function(config) {
         // web server port
         browserNoActivityTimeout: 100000,
         port: 9999,
-        browsers: ['PhantomJS'],
+        browsers: ['Chrome'],
 
         // level of logging
         // possible values: LOG_DISABLE || LOG_ERROR || LOG_WARN || LOG_INFO || LOG_DEBUG
