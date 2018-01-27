@@ -981,10 +981,10 @@ module.exports = {
 	Pool: __webpack_require__(23),
 	Collection: __webpack_require__(29),
 	stream: {
-		Converter: __webpack_require__(31)
+		Converter: __webpack_require__(32)
 	},
 	object: {
-		Proxy: __webpack_require__(32)
+		Proxy: __webpack_require__(33)
 	}
 };
 
@@ -3015,6 +3015,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var bmoor = __webpack_require__(0),
     Feed = __webpack_require__(3),
     Hash = __webpack_require__(30),
+    Test = __webpack_require__(31),
     setUid = bmoor.data.setUid;
 
 function testStack(old, fn) {
@@ -3029,6 +3030,193 @@ function testStack(old, fn) {
 	} else {
 		return fn;
 	}
+}
+
+function memorized(parent, cache, expressor, generator, settings) {
+	var rtn, index, oldDisconnect;
+
+	if (!parent[cache]) {
+		parent[cache] = {};
+	}
+
+	index = parent[cache];
+
+	// console.log( '->', expressor.hash );
+	rtn = index[expressor.hash];
+
+	if (!rtn) {
+		if (!settings) {
+			settings = {};
+		}
+
+		if (settings.disconnect) {
+			oldDisconnect = settings.disconnect;
+		}
+
+		settings.disconnect = function () {
+			if (oldDisconnect) {
+				oldDisconnect();
+			}
+
+			index[expressor.hash] = null;
+		};
+
+		rtn = generator(expressor, parent, settings);
+
+		index[expressor.hash] = rtn;
+	}
+
+	return rtn;
+}
+
+function _route(dex, parent) {
+	var old = {},
+	    index = {},
+	    _get = function _get(key) {
+		var collection = index[key];
+
+		if (!collection) {
+			collection = parent.getChild(false);
+			index[key] = collection;
+		}
+
+		return collection;
+	};
+
+	function add(datum) {
+		var d = dex.go(datum);
+
+		old[setUid(datum)] = d;
+
+		_get(d).add(datum);
+	}
+
+	function _remove(datum) {
+		var dex = setUid(datum);
+
+		if (dex in old) {
+			_get(old[dex]).remove(datum);
+		}
+	}
+
+	for (var i = 0, c = parent.data.length; i < c; i++) {
+		add(parent.data[i]);
+	}
+
+	var _disconnect = parent.subscribe({
+		insert: function insert(datum) {
+			add(datum);
+		},
+		remove: function remove(datum) {
+			_remove(datum);
+		}
+	});
+
+	return {
+		get: function get(search) {
+			return _get(dex.go(search));
+		},
+		reroute: function reroute(datum) {
+			_remove(datum);
+			add(datum);
+		},
+		keys: function keys() {
+			return Object.keys(index);
+		},
+		disconnect: function disconnect() {
+			_disconnect();
+		}
+	};
+}
+
+function _index(dex, parent) {
+	var index = {};
+
+	for (var i = 0, c = parent.data.length; i < c; i++) {
+		var datum = parent.data[i],
+		    key = dex.go(datum);
+
+		index[key] = datum;
+	}
+
+	var _disconnect2 = parent.subscribe({
+		insert: function insert(datum) {
+			var key = dex.go(datum);
+			index[key] = datum;
+		},
+		remove: function remove(datum) {
+			var key = dex.go(datum);
+			delete index[key];
+		}
+	});
+
+	return {
+		get: function get(search) {
+			var key = dex.go(search);
+			return index[key];
+		},
+		keys: function keys() {
+			return Object.keys(index);
+		},
+		disconnect: function disconnect() {
+			_disconnect2();
+		}
+	};
+}
+
+function _filter(dex, parent, settings) {
+	var child;
+
+	settings = Object.assign({}, {
+		insert: function insert(datum) {
+			if (dex.go(datum)) {
+				child.add(datum);
+			}
+		}
+	}, settings);
+
+	child = parent.getChild(settings);
+
+	child.go = bmoor.flow.window(function () {
+		var datum,
+		    insert,
+		    arr = parent.data;
+
+		child.empty();
+
+		if (settings.before) {
+			settings.before();
+		}
+
+		if (child.hasWaiting('insert')) {
+			// performance optimization
+			insert = function insert(datum) {
+				Array.prototype.push.call(child.data, datum);
+				child.trigger('insert', datum);
+			};
+		} else {
+			insert = function insert(datum) {
+				Array.prototype.push.call(child.data, datum);
+			};
+		}
+
+		for (var i = 0, c = arr.length; i < c; i++) {
+			datum = arr[i];
+			if (dex.go(datum)) {
+				insert(datum);
+			}
+		}
+
+		if (settings.after) {
+			settings.after();
+		}
+
+		child.trigger('process');
+	}, settings.min || 5, settings.max || 30);
+
+	child.go.flush();
+
+	return child;
 }
 
 var Collection = function (_Feed) {
@@ -3070,88 +3258,63 @@ var Collection = function (_Feed) {
 		}
 	}, {
 		key: 'getChild',
-		value: function getChild(subscribe) {
-			var child = new this.constructor();
+		value: function getChild(settings) {
+			var child = new this.constructor(null, settings);
 
 			child.parent = this;
 
-			if (subscribe !== false) {
-				if (!subscribe) {
-					subscribe = {};
-				}
-
-				child.disconnect = this.subscribe({
-					insert: subscribe.insert ? subscribe.insert.bind(child) : function (datum) {
+			if (settings !== false) {
+				var done = this.subscribe(Object.assign({
+					insert: function insert(datum) {
 						child.add(datum);
 					},
-					remove: subscribe.remove ? subscribe.remove.bind(child) : function (datum) {
+					remove: function remove(datum) {
 						child.remove(datum);
 					},
-					process: subscribe.process ? subscribe.process.bind(child) : function () {
+					process: function process() {
 						child.go();
+					},
+					destroy: function destroy() {
+						child.destroy();
 					}
-				});
+				}, settings));
+
+				child.disconnect = function () {
+					if (settings.disconnect) {
+						settings.disconnect();
+					}
+
+					done();
+				};
+
+				child.destroy = function () {
+					child.disconnect();
+
+					child.trigger('destroy');
+				};
 			}
 
 			return child;
 		}
 	}, {
+		key: 'index',
+		value: function index(search, settings) {
+			return memorized(this, 'indexes', new Hash(search, settings), _index);
+		}
+	}, {
+		key: 'get',
+		value: function get(search, settings) {
+			this.index(search, settings).get(search);
+		}
+	}, {
+		key: 'route',
+		value: function route(search, settings) {
+			return memorized(this, 'routes', new Hash(search, settings), _route);
+		}
+	}, {
 		key: 'filter',
-		value: function filter(fn, settings) {
-			var child = this.getChild({
-				insert: function insert(datum) {
-					if (fn(datum)) {
-						child.add(datum);
-					}
-				}
-			});
-
-			if (!settings) {
-				settings = {};
-			}
-
-			child.go = bmoor.flow.window(function () {
-				var _this2 = this;
-
-				var datum,
-				    insert,
-				    arr = this.parent.data;
-
-				this.empty();
-
-				if (settings.before) {
-					settings.before();
-				}
-
-				if (this.hasWaiting('insert')) {
-					// performance optimization
-					insert = function insert(datum) {
-						Array.prototype.push.call(_this2.data, datum);
-						_this2.trigger('insert', datum);
-					};
-				} else {
-					insert = function insert(datum) {
-						Array.prototype.push.call(_this2.data, datum);
-					};
-				}
-
-				for (var i = 0, c = arr.length; i < c; i++) {
-					datum = arr[i];
-					if (fn(datum)) {
-						insert(datum);
-					}
-				}
-
-				if (settings.after) {
-					settings.after();
-				}
-
-				child.trigger('process');
-			}, 5, 30, { context: child });
-
-			child.go.flush();
-
-			return child;
+		value: function filter(search, settings) {
+			return memorized(this, 'filters', new Test(search, settings), _filter, settings);
 		}
 	}, {
 		key: 'search',
@@ -3171,7 +3334,8 @@ var Collection = function (_Feed) {
 			}, {
 				before: function before() {
 					ctx = settings.normalize();
-				}
+				},
+				hash: 'search:' + Date.now()
 			});
 		}
 
@@ -3180,7 +3344,9 @@ var Collection = function (_Feed) {
 	}, {
 		key: 'paginate',
 		value: function paginate(settings) {
-			var child = this.getChild({
+			var child;
+
+			settings = Object.assign({}, {
 				insert: function insert(datum) {
 					child.add(datum);
 
@@ -3194,8 +3360,11 @@ var Collection = function (_Feed) {
 				process: function process() {
 					child.go();
 				}
-			}),
-			    origSize = settings.size;
+			}, settings);
+
+			child = this.getChild(settings);
+
+			var origSize = settings.size;
 
 			child.go = bmoor.flow.window(function () {
 				var span = settings.size,
@@ -3219,27 +3388,27 @@ var Collection = function (_Feed) {
 				}
 
 				child.trigger('process');
-			}, 5, 30, { context: child });
+			}, settings.min || 5, settings.max || 30, { context: child });
 
 			child.nav = {
 				pos: settings.start || 0,
 				goto: function goto(pos) {
 					this.pos = pos;
-					child.go.flush();
+					child.go();
 				},
 				hasNext: function hasNext() {
 					return this.stop < this.count;
 				},
 				next: function next() {
 					this.pos++;
-					child.go.flush();
+					child.go();
 				},
 				hasPrev: function hasPrev() {
 					return !!this.start;
 				},
 				prev: function prev() {
 					this.pos--;
-					child.go.flush();
+					child.go();
 				},
 				setSize: function setSize(size) {
 					settings.size = size;
@@ -3255,147 +3424,6 @@ var Collection = function (_Feed) {
 			child.go.flush();
 
 			return child;
-		}
-	}, {
-		key: '_index',
-		value: function _index(dex) {
-			var index = {};
-
-			for (var i = 0, c = this.data.length; i < c; i++) {
-				var d = this.data[i],
-				    key = dex.go(d);
-
-				index[key] = d;
-			}
-
-			var _disconnect = this.subscribe({
-				insert: function insert(ins) {
-					index[dex.go(ins)] = ins;
-				},
-				remove: function remove(outs) {
-					delete index[dex.go(outs)];
-				}
-			});
-
-			return {
-				get: function get(search) {
-					var key = dex.go(search);
-					return index[key];
-				},
-				keys: function keys() {
-					return Object.keys(index);
-				},
-				disconnect: function disconnect() {
-					_disconnect();
-				}
-			};
-		}
-	}, {
-		key: 'index',
-		value: function index(search, settings) {
-			var index,
-			    dex = new Hash(search, settings);
-
-			if (!this.indexes) {
-				this.indexes = {};
-			}
-
-			index = this.indexes[dex.hash];
-
-			if (!index) {
-				index = this._index(dex);
-				this.indexes[dex.hash] = index;
-			}
-
-			return index;
-		}
-	}, {
-		key: 'get',
-		value: function get(search, settings) {
-			this.index(search, settings).get(search);
-		}
-	}, {
-		key: '_route',
-		value: function _route(dex) {
-			var _this3 = this;
-
-			var old = {},
-			    index = {},
-			    _get = function _get(key) {
-				var collection = index[key];
-
-				if (!collection) {
-					collection = _this3.getChild(false);
-					index[key] = collection;
-				}
-
-				return collection;
-			};
-
-			function add(datum) {
-				var d = dex.go(datum);
-
-				old[setUid(datum)] = d;
-
-				_get(d).add(datum);
-			}
-
-			function _remove(datum) {
-				var dex = setUid(datum);
-
-				if (dex in old) {
-					_get(old[dex]).remove(datum);
-				}
-			}
-
-			for (var i = 0, c = this.data.length; i < c; i++) {
-				add(this.data[i]);
-			}
-
-			var _disconnect2 = this.subscribe({
-				insert: function insert(datum) {
-					add(datum);
-				},
-				remove: function remove(datum) {
-					_remove(datum);
-				}
-			});
-
-			return {
-				get: function get(search) {
-					return _get(dex.go(search));
-				},
-				reroute: function reroute(datum) {
-					_remove(datum);
-					add(datum);
-				},
-				keys: function keys() {
-					return Object.keys(index);
-				},
-				disconnect: function disconnect() {
-					_disconnect2();
-				}
-			};
-		}
-	}, {
-		key: 'route',
-		value: function route(search, settings) {
-			var router,
-			    dex = new Hash(search, settings);
-
-			if (!this.routes) {
-				this.routes = {};
-			}
-
-			router = this.routes[dex.hash];
-
-			if (!router) {
-				router = this._route(dex);
-
-				this.routes[dex.hash] = router;
-			}
-
-			return router;
 		}
 	}]);
 
@@ -3493,6 +3521,81 @@ module.exports = Hash;
 
 /***/ }),
 /* 31 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var bmoor = __webpack_require__(0);
+
+function stack(old, getter, value) {
+	if (old) {
+		return function (obj) {
+			if (getter(obj) === value) {
+				return old(obj);
+			} else {
+				return false;
+			}
+		};
+	} else {
+		return function (obj) {
+			return getter(obj) === value;
+		};
+	}
+}
+
+function build(obj) {
+	var fn,
+	    flat = bmoor.object.implode(obj),
+	    values = [];
+
+	Object.keys(flat).sort().forEach(function (path) {
+		var v = flat[path];
+
+		fn = stack(fn, bmoor.makeGetter(path), v);
+
+		values.push(path + '=' + v);
+	});
+
+	return {
+		fn: fn,
+		index: values.join(':')
+	};
+}
+
+var Test = function Test(ops, settings) {
+	_classCallCheck(this, Test);
+
+	var fn, hash;
+
+	if (!settings) {
+		settings = {};
+	}
+
+	if (bmoor.isFunction(ops)) {
+		fn = ops;
+		hash = ops.toString().replace(/[\s]+/g, '');
+	} else if (bmoor.isObject(ops)) {
+		var t = build(ops);
+
+		fn = t.fn;
+		hash = t.index;
+	} else {
+		throw new Error('I can not build a Test out of ' + (typeof ops === 'undefined' ? 'undefined' : _typeof(ops)));
+	}
+
+	this.hash = settings.hash || hash;
+	this.go = fn;
+};
+
+module.exports = Test;
+
+/***/ }),
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3633,7 +3736,7 @@ var Converter = function (_Eventing) {
 module.exports = Converter;
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

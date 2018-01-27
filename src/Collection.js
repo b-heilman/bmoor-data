@@ -1,6 +1,7 @@
 var bmoor = require('bmoor'),
 	Feed = require('./Feed.js'),
 	Hash = require('./object/Hash.js'),
+	Test = require('./object/Test.js'),
 	setUid = bmoor.data.setUid;
 
 function testStack( old, fn ){
@@ -15,6 +16,198 @@ function testStack( old, fn ){
 	}else{
 		return fn;
 	}
+}
+
+function memorized( parent, cache, expressor, generator, settings ){
+	var rtn,
+		index,
+		oldDisconnect;
+
+	if ( !parent[cache] ){
+		parent[cache] = {};
+	}
+
+	index = parent[cache];
+
+	// console.log( '->', expressor.hash );
+	rtn = index[expressor.hash];
+
+	if ( !rtn ){
+		if ( !settings ){
+			settings = {};
+		}
+
+		if ( settings.disconnect ){
+			oldDisconnect = settings.disconnect;
+		}
+
+		settings.disconnect = function(){
+			if ( oldDisconnect ){
+				oldDisconnect();
+			}
+
+			index[expressor.hash] = null;
+		};
+
+		rtn = generator( expressor, parent, settings );
+
+		index[expressor.hash] = rtn;
+	}
+
+	return rtn;
+}
+
+function route( dex, parent ){
+	let old = {},
+		index = {},
+		get = ( key ) => {
+			var collection = index[key];
+
+			if ( !collection ){
+				collection = parent.getChild( false );
+				index[key] = collection;
+			}
+
+			return collection;
+		};
+
+	function add( datum ){
+		var d = dex.go( datum );
+
+		old[ setUid(datum) ] = d;
+
+		get(d).add( datum );
+	}
+
+	function remove( datum ){
+		var dex = setUid(datum);
+
+		if ( dex in old ){
+			get( old[dex] ).remove( datum );
+		}
+	}
+
+	for( let i = 0, c = parent.data.length; i < c; i++ ){
+		add( parent.data[i] );
+	}
+
+	let disconnect = parent.subscribe({
+		insert: function( datum ){
+			add( datum );
+		},
+		remove: function( datum ){
+			remove( datum );
+		}
+	});
+
+	return {
+		get: function( search ){
+			return get( dex.go(search) );
+		},
+		reroute: function( datum ){
+			remove( datum );
+			add( datum );
+		},
+		keys: function(){
+			return Object.keys( index );
+		},
+		disconnect: function(){
+			disconnect();
+		}
+	};
+}
+
+function index( dex, parent ){
+	var index = {};
+
+	for( let i = 0, c = parent.data.length; i < c; i++ ){
+		let datum = parent.data[i],
+			key = dex.go(datum);
+
+		index[ key ] = datum;
+	}
+
+	let disconnect = parent.subscribe({
+		insert: function( datum ){
+			var key = dex.go(datum);
+			index[ key ] = datum;
+		},
+		remove: function( datum ){
+			var key = dex.go(datum);
+			delete index[ key ];
+		}
+	});
+
+	return {
+		get: function( search ){
+			var key = dex.go(search);
+			return index[ key ];
+		},
+		keys: function(){
+			return Object.keys( index );
+		},
+		disconnect: function(){
+			disconnect();
+		}
+	};
+}
+
+function filter( dex, parent, settings ){
+	var child;
+
+	settings = Object.assign(
+		{}, 
+		{
+			insert: function( datum ){
+				if ( dex.go(datum) ){
+					child.add( datum );
+				}
+			}
+		},
+		settings
+	);
+
+	child = parent.getChild( settings );
+
+	child.go = bmoor.flow.window(function(){
+		var datum,
+			insert,
+			arr = parent.data;
+
+		child.empty();
+
+		if ( settings.before ){
+			settings.before();
+		}
+
+		if ( child.hasWaiting('insert') ){ // performance optimization
+			insert = ( datum ) => {
+				Array.prototype.push.call( child.data, datum );
+				child.trigger( 'insert', datum );
+			};
+		}else{
+			insert = ( datum ) => {
+				Array.prototype.push.call( child.data, datum );
+			};
+		}
+
+		for ( let i = 0, c = arr.length; i < c; i++ ){
+			datum = arr[i];
+			if ( dex.go(datum) ){
+				insert(datum);
+			}
+		}
+
+		if ( settings.after ){
+			settings.after();
+		}
+
+		child.trigger('process');
+	}, settings.min||5, settings.max||30);
+
+	child.go.flush();
+
+	return child;
 }
 
 class Collection extends Feed {
@@ -45,90 +238,78 @@ class Collection extends Feed {
 		arr.length = 0;
 	}
 
-	getChild( subscribe ){
-		var child = new (this.constructor)();
+	getChild( settings ){
+		var child = new (this.constructor)( null, settings );
 
 		child.parent = this;
 
-		if ( subscribe !== false ){
-			if ( !subscribe ){
-				subscribe = {};
-			}
-
-			child.disconnect = this.subscribe({
-				insert: subscribe.insert ? 
-					subscribe.insert.bind(child) : 
-					function( datum ){
+		if ( settings !== false ){
+			let done = this.subscribe(Object.assign(
+				{
+					insert: function( datum ){
 						child.add( datum );
 					},
-				remove: subscribe.remove ?
-					subscribe.remove.bind(child) :
-					function( datum ){
+					remove: function( datum ){
 						child.remove( datum );
 					},
-				process: subscribe.process ?
-					subscribe.process.bind(child) : 
-					function(){
+					process: function(){
 						child.go();
+					},
+					destroy: function(){
+						child.destroy();
 					}
-			});
+				},
+				settings
+			));
+
+			child.disconnect = function(){
+				if ( settings.disconnect ){
+					settings.disconnect();
+				}
+
+				done();
+			};
+
+			child.destroy = function(){
+				child.disconnect();
+
+				child.trigger('destroy');
+			};
 		}
 
 		return child;
 	}
 
-	filter( fn, settings ){
-		var child = this.getChild({
-				insert: function( datum ){
-					if ( fn(datum) ){
-						child.add( datum );
-					}
-				}
-			});
+	index( search, settings ){
+		return memorized( 
+			this,
+			'indexes', 
+			new Hash( search, settings ),
+			index
+		);
+	}
 
-		if ( !settings ){
-			settings = {};
-		}
+	get( search, settings ){
+		this.index( search, settings ).get( search );
+	}
 
-		child.go = bmoor.flow.window(function(){
-			var datum,
-				insert,
-				arr = this.parent.data;
+	route( search, settings ){
+		return memorized(
+			this,
+			'routes',
+			new Hash(search,settings),
+			route
+		);
+	}
 
-			this.empty();
-
-			if ( settings.before ){
-				settings.before();
-			}
-
-			if ( this.hasWaiting('insert') ){ // performance optimization
-				insert = ( datum ) => {
-					Array.prototype.push.call( this.data, datum );
-					this.trigger( 'insert', datum );
-				};
-			}else{
-				insert = ( datum ) => {
-					Array.prototype.push.call( this.data, datum );
-				};
-			}
-
-			for ( let i = 0, c = arr.length; i < c; i++ ){
-				datum = arr[i];
-				if ( fn(datum) ){
-					insert(datum);
-				}
-			}
-
-			if ( settings.after ){
-				settings.after();
-			}
-
-			child.trigger('process');
-		}, 5, 30, { context: child });
-
-		child.go.flush();
-
-		return child;
+	filter( search, settings ){
+		return memorized(
+			this,
+			'filters',
+			new Test( search, settings ),
+			filter,
+			settings
+		);
 	}
 
 	search( settings ){
@@ -150,14 +331,19 @@ class Collection extends Feed {
 			{
 				before: function(){
 					ctx = settings.normalize();
-				}
+				},
+				hash: 'search:'+Date.now()
 			}
 		);
 	}
 
 	// settings { size }
 	paginate( settings ){
-		var child = this.getChild({
+		var child;
+
+		settings = Object.assign(
+			{},
+			{
 				insert: function( datum ){
 					child.add( datum );
 
@@ -171,8 +357,13 @@ class Collection extends Feed {
 				process: function(){
 					child.go();
 				}
-			}),
-			origSize = settings.size;
+			},
+			settings
+		);
+
+		child = this.getChild( settings );
+
+		let origSize = settings.size;
 
 		child.go = bmoor.flow.window(function(){
 			var span = settings.size,
@@ -196,27 +387,27 @@ class Collection extends Feed {
 			}
 
 			child.trigger('process');
-		}, 5, 30, { context: child });
+		}, settings.min||5, settings.max||30, { context: child });
 
 		child.nav = {
 			pos: settings.start || 0,
 			goto: function( pos ){
 				this.pos = pos;
-				child.go.flush();
+				child.go();
 			},
 			hasNext: function(){
 				return this.stop < this.count;
 			},
 			next: function(){
 				this.pos++;
-				child.go.flush();
+				child.go();
 			},
 			hasPrev: function(){
 				return !!this.start;
 			},
 			prev: function(){
 				this.pos--;
-				child.go.flush();
+				child.go();
 			},
 			setSize: function( size ){
 				settings.size = size;
@@ -232,140 +423,6 @@ class Collection extends Feed {
 		child.go.flush();
 
 		return child;
-	}
-
-	_index( dex ){
-		var index = {};
-
-		for( let i = 0, c = this.data.length; i < c; i++ ){
-			let d = this.data[i],
-				key = dex.go(d);
-
-			index[ key ] = d;
-		}
-
-		let disconnect = this.subscribe({
-			insert: function( ins ){
-				index[ dex.go(ins) ] = ins;
-			},
-			remove: function( outs ){
-				delete index[ dex.go(outs) ];
-			}
-		});
-
-		return {
-			get: function( search ){
-				var key = dex.go(search);
-				return index[ key ];
-			},
-			keys: function(){
-				return Object.keys( index );
-			},
-			disconnect: function(){
-				disconnect();
-			}
-		};
-	}
-
-	index( search, settings ){
-		var index,
-			dex = new Hash( search, settings );
-
-		if ( !this.indexes ){
-			this.indexes = {};
-		}
-
-		index = this.indexes[dex.hash];
-
-		if ( !index ){
-			index = this._index( dex );
-			this.indexes[dex.hash] = index;
-		}
-
-		return index;
-	}
-
-	get( search, settings ){
-		this.index( search, settings ).get( search );
-	}
-
-	_route( dex ){
-		let old = {},
-			index = {},
-			get = ( key ) => {
-				var collection = index[key];
-
-				if ( !collection ){
-					collection = this.getChild( false );
-					index[key] = collection;
-				}
-
-				return collection;
-			};
-
-		function add( datum ){
-			var d = dex.go( datum );
-
-			old[ setUid(datum) ] = d;
-
-			get(d).add( datum );
-		}
-
-		function remove( datum ){
-			var dex = setUid(datum);
-
-			if ( dex in old ){
-				get( old[dex] ).remove( datum );
-			}
-		}
-
-		for( let i = 0, c = this.data.length; i < c; i++ ){
-			add( this.data[i] );
-		}
-
-		let disconnect = this.subscribe({
-			insert: function( datum ){
-				add( datum );
-			},
-			remove: function( datum ){
-				remove( datum );
-			}
-		});
-
-		return {
-			get: function( search ){
-				return get( dex.go(search) );
-			},
-			reroute: function( datum ){
-				remove( datum );
-				add( datum );
-			},
-			keys: function(){
-				return Object.keys( index );
-			},
-			disconnect: function(){
-				disconnect();
-			}
-		};
-	}
-
-	route( search, settings ){
-		var router,
-			dex = new Hash(search,settings);
-
-		if ( !this.routes ){
-			this.routes = {};
-		}
-
-		router = this.routes[dex.hash];
-
-		if ( !router ){
-			router = this._route( dex );
-
-			this.routes[dex.hash] = router;
-		}
-
-		return router;
 	}
 }
 

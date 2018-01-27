@@ -1,5 +1,5 @@
 describe('bmoor-data.Collection', function(){
-	var Collection = bmoorData.Collection;
+	var Collection = require('./Collection.js');
 
 	it('should be defined', function(){
 		expect( Collection ).toBeDefined();
@@ -119,6 +119,8 @@ describe('bmoor-data.Collection', function(){
 
 			
 			feed.add({foo:'ever'});
+
+			child.disconnect();
 		});
 	});
 
@@ -159,6 +161,8 @@ describe('bmoor-data.Collection', function(){
 			child.go.flush();
 
 			expect( child.data.length ).toBe( 2 );
+
+			child.disconnect();
 		});
 	});
 
@@ -187,6 +191,8 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data[0].foo ).toBe( 'eins' );
 			
 			child.nav.next();
+			child.go.flush();
+
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(1);
 			expect( child.nav.start ).toBe(2);
@@ -196,10 +202,14 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data[0].foo ).toBe( 'bar' );
 
 			child.nav.next();
+			child.go.flush();
+			
 			expect( child.data.length ).toBe( 2 );
 			expect( child.data[0].foo ).toBe( 'funf' );
 
 			child.nav.next();
+			child.go.flush();
+			
 			expect( child.data.length ).toBe( 1 );
 			expect( child.nav.pos ).toBe(3);
 			expect( child.nav.start ).toBe(6);
@@ -210,6 +220,8 @@ describe('bmoor-data.Collection', function(){
 
 			child.nav.prev();
 			child.nav.prev();
+			child.go.flush();
+			
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(1);
 			expect( child.nav.start ).toBe(2);
@@ -276,6 +288,8 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data[0].foo ).toBe( 'eins' );
 
 			child.nav.next();
+			child.go.flush();
+			
 			expect( child.data.length ).toBe( 1 );
 			expect( child.nav.pos ).toBe(1);
 			expect( child.nav.start ).toBe(2);
@@ -324,6 +338,8 @@ describe('bmoor-data.Collection', function(){
 			test.value = 'yes';
 
 			feed.add({id:2, foo:'other', value:'yes'});
+
+			child.disconnect();
 		});
 	});
 
@@ -359,6 +375,8 @@ describe('bmoor-data.Collection', function(){
 			parent.remove( child.get(2) );
 
 			expect( child.get(2) ).toBeUndefined();
+
+			child.disconnect();
 		});
 	});
 
@@ -420,6 +438,8 @@ describe('bmoor-data.Collection', function(){
 
 			expect( dog ).toBe( true );
 			expect( pig ).toBe( true );
+
+			child.disconnect();
 		});
 	});
 });
