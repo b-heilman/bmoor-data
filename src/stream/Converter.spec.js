@@ -1,5 +1,6 @@
 describe('bmoor-data.stream.Converter', function(){
-	var Feed = bmoorData.Collection,
+	var bmoorData = require('../../bmoor-data.js'),
+		Feed = bmoorData.Collection,
 		Converter = bmoorData.stream.Converter;
 
 	it('should be defined', function(){
@@ -30,11 +31,11 @@ describe('bmoor-data.stream.Converter', function(){
 				datum.y = true;
 				return datum;
 			},
-			function( datum, orig ){
+			function( datum ){
 				expect( datum ).toEqual({x:3,y:true});
 				return {z:100};
 			},
-			function( datum, orig ){
+			function( datum ){
 				datum.t = 200;
 				return datum;
 			}

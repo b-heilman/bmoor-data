@@ -1,5 +1,5 @@
 describe('bmoor-data.Feed', function(){
-	var Feed = bmoorData.Feed;
+	var Feed = require('./Feed.js');
 
 	it('should be defined', function(){
 		expect( Feed ).toBeDefined();

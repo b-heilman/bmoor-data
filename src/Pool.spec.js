@@ -1,6 +1,6 @@
 describe('bmoor-data.Pool', function(){
-	var Feed = bmoorData.Feed,
-		Pool = bmoorData.Pool;
+	var Feed = require('./Feed.js'),
+		Pool = require('./Pool.js');
 
 	it('should be defined', function(){
 		expect( Pool ).toBeDefined();
@@ -45,8 +45,7 @@ describe('bmoor-data.Pool', function(){
 	});
 
 	it('should copy and update values correctly', function( done ){
-		var count = 0,
-			agg = new Pool(),
+		var agg = new Pool(),
 			feed = new Feed();
 
 		agg.addFeed( feed, 'index', { 'to' : 'from' } );

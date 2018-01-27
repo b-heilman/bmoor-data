@@ -122,6 +122,67 @@ describe('bmoor-data.Collection', function(){
 
 			child.disconnect();
 		});
+
+		it('should be able to filter by object', function(){
+			var t = [
+					{foo:'eins'},
+					{foo:'zwei'},
+					{foo:'einser'},
+					{foo:'eins'},
+					{foo:'eins'},
+					{foo:'zwei'},
+					{foo:'drei'}
+				],
+				feed = new Collection(t),
+				child = feed.filter(
+					{ foo: 'eins' }
+				);
+
+			expect( child.data.length ).toBe( 3 );
+		
+			feed.add({foo:'eins'});
+			
+			expect( child.data.length ).toBe( 4 );
+
+			child.add({foo:'eins'});
+			
+			expect( child.data.length ).toBe( 5 );
+
+			child.destroy();
+		});
+
+		it('should be able to filter by array index', function( done ){
+			var n = {foo:'bar'},
+				t = [{foo:'eins'},{foo:'zwei'},n],
+				feed = new Collection(t),
+				child = feed.filter(
+					{ foo:{ 0: 'e' } }
+				);
+
+			expect( child.data.length ).toBe( 1 );
+		
+			feed.add({foo:'zoo'});
+
+			child.on('insert', function filterInsert( res ){
+				expect( child.data.length ).toBe( 2 );
+				expect( feed.data.length ).toBe( 5 );
+				expect( res.foo ).toBe( 'ever' );
+
+				child.on('remove', function filterRemove( res ){
+					expect( child.data.length ).toBe( 1 );
+					expect( feed.data.length ).toBe( 4 );
+					expect( res.foo ).toBe( 'eins' );
+
+					setTimeout(done,0);
+				});
+
+				feed.remove( feed.data[0] );
+			});
+			
+			feed.add({foo:'ever'});
+
+			child.disconnect();
+		});
 	});
 
 	describe('::search', function(){
@@ -352,7 +413,7 @@ describe('bmoor-data.Collection', function(){
 				{ type: 'dog', id: 1 },
 				{ type: 'cat', id: 2 },
 				{ type: 'dog', id: 3 }
-			]),
+			]);
 			child = parent.index(function( d ){
 				return d.id;
 			});
@@ -389,7 +450,7 @@ describe('bmoor-data.Collection', function(){
 				{ type: 'dog', id: 1 },
 				{ type: 'cat', id: 2 },
 				{ type: 'dog', id: 3 }
-			]),
+			]);
 			child = parent.route(function( d ){
 				return d.type;
 			});

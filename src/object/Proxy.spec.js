@@ -1,5 +1,6 @@
 describe('bmoor-data.object.Proxy', function(){
-	var Proxy = bmoorData.object.Proxy;
+	var bmoorData = require('../../bmoor-data.js'),
+		Proxy = bmoorData.object.Proxy;
 
 	it('should be defined', function(){
 		expect( Proxy ).toBeDefined();

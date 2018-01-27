@@ -86,14 +86,14 @@ var failOnError = function() {
 };
 
 gulp.task('build-lint', function() {
-    gulp.src( env.jsSrc )
+    gulp.src( env.jsSrc.map((d) => d.replace('!','')) )
         .pipe( jshint() )
         .pipe( jshint.reporter(stylish) )
         .pipe( failOnError() );
 });
 
 gulp.task('lint', function() {
-    gulp.src( env.jsSrc )
+    gulp.src( env.jsSrc.map((d) => d.replace('!','')) )
         .pipe( jshint() )
         .pipe( jshint.reporter(stylish) );
 });
