@@ -65,13 +65,13 @@ class Hash {
 
 		this.hash = settings.hash || hash;
 		this.go = function( search ){
-			if ( settings.massage ){
-				search = settings.massage(search);
-			}
-
 			if ( !bmoor.isObject(search) ) {
 				return search; 
 			}else{
+				if ( settings.massage ){
+					search = settings.massage(search);
+				}
+
 				return fn(search);
 			}
 		};

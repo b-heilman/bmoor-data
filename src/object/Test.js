@@ -64,7 +64,13 @@ class Test {
 		}
 
 		this.hash = settings.hash || hash;
-		this.go = fn;
+		this.go = function( search ){
+			if ( settings.massage ){
+				search = settings.massage(search);
+			}
+
+			return fn(search);
+		};
 	}
 }
 

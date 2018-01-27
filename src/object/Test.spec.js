@@ -26,6 +26,8 @@ describe('bmoor-data::Test', function(){
 					}
 				});
 
+			expect( filter.hash ).toBe( 'boo=bar:eins.zwei=hello' );
+
 			expect( filter.go({
 				boo: 'bar',
 				eins: {
@@ -76,6 +78,8 @@ describe('bmoor-data::Test', function(){
 					}
 				});
 
+			expect( filter.hash ).toBe( 'foo.bar=undefined' );
+
 			expect( filter.go({
 			}) ).toBe( true );
 
@@ -87,6 +91,29 @@ describe('bmoor-data::Test', function(){
 				foo: {
 					bar: true
 				}
+			}) ).toBe( false );
+		});
+
+		it('should allow massaging', function(){
+			var filter = new Test({ foo: 'bar'},
+				{
+					massage: function( d ){
+						return d.info;
+					}
+				});
+
+			expect( filter.hash ).toBe( 'foo=bar' );
+
+			expect( filter.go({
+				foo: 'bar'
+			}) ).toBe( false );
+
+			expect( filter.go({
+				info: {foo:'bar'}
+			}) ).toBe( true );
+
+			expect( filter.go({
+				info: { foo: { bar: true } }
 			}) ).toBe( false );
 		});
 	});

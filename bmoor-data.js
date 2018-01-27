@@ -6,6 +6,8 @@ module.exports = {
 		Converter: require('./src/stream/Converter.js')
 	},
 	object: {
-		Proxy: require('./src/object/Proxy.js')
+		Proxy: require('./src/object/Proxy.js'),
+		Test: require('./src/object/Test.js'),
+		Hash: require('./src/object/Hash.js')
 	}
 };

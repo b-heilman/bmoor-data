@@ -284,7 +284,7 @@ class Collection extends Feed {
 		return memorized( 
 			this,
 			'indexes', 
-			new Hash( search, settings ),
+			search instanceof Hash ? search : new Hash( search, settings ),
 			index
 		);
 	}
@@ -297,7 +297,7 @@ class Collection extends Feed {
 		return memorized(
 			this,
 			'routes',
-			new Hash(search,settings),
+			search instanceof Hash ? search : new Hash( search, settings ),
 			route
 		);
 	}
@@ -306,7 +306,7 @@ class Collection extends Feed {
 		return memorized(
 			this,
 			'filters',
-			new Test( search, settings ),
+			search instanceof Test ? search : new Test( search, settings ),
 			filter,
 			settings
 		);

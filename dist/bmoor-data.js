@@ -61,7 +61,7 @@ var bmoorData =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 8);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -73,17 +73,17 @@ var bmoorData =
 
 var bmoor = Object.create(__webpack_require__(1));
 
-bmoor.dom = __webpack_require__(8);
-bmoor.data = __webpack_require__(9);
-bmoor.flow = __webpack_require__(10);
-bmoor.array = __webpack_require__(13);
-bmoor.build = __webpack_require__(14);
-bmoor.object = __webpack_require__(18);
-bmoor.string = __webpack_require__(19);
-bmoor.promise = __webpack_require__(20);
+bmoor.dom = __webpack_require__(10);
+bmoor.data = __webpack_require__(11);
+bmoor.flow = __webpack_require__(12);
+bmoor.array = __webpack_require__(15);
+bmoor.build = __webpack_require__(16);
+bmoor.object = __webpack_require__(20);
+bmoor.string = __webpack_require__(21);
+bmoor.promise = __webpack_require__(22);
 
-bmoor.Memory = __webpack_require__(21);
-bmoor.Eventing = __webpack_require__(22);
+bmoor.Memory = __webpack_require__(23);
+bmoor.Eventing = __webpack_require__(24);
 
 module.exports = bmoor;
 
@@ -967,7 +967,85 @@ module.exports = Mapping;
 "use strict";
 
 
-module.exports = __webpack_require__(7);
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var bmoor = __webpack_require__(0);
+
+function stack(old, getter) {
+	if (old) {
+		return function (obj) {
+			return old(obj) + ':' + getter(obj);
+		};
+	} else {
+		return function (obj) {
+			return getter(obj);
+		};
+	}
+}
+
+function build(obj) {
+	var fn,
+	    keys,
+	    values = [];
+
+	if (bmoor.isArray(obj)) {
+		keys = obj;
+	} else {
+		var flat = bmoor.object.implode(obj);
+
+		keys = Object.keys(flat);
+	}
+
+	keys.sort().forEach(function (path) {
+		fn = stack(fn, bmoor.makeGetter(path));
+
+		values.push(path);
+	});
+
+	return {
+		fn: fn,
+		index: values.join(':')
+	};
+}
+
+var Hash = function Hash(ops, settings) {
+	_classCallCheck(this, Hash);
+
+	var fn, hash;
+
+	if (!settings) {
+		settings = {};
+	}
+
+	if (bmoor.isFunction(ops)) {
+		fn = ops;
+		hash = ops.toString().replace(/[\s]+/g, '');
+	} else if (bmoor.isObject(ops)) {
+		var t = build(ops);
+
+		fn = t.fn;
+		hash = t.index;
+	} else {
+		throw new Error('I can not build a Hash out of ' + (typeof ops === 'undefined' ? 'undefined' : _typeof(ops)));
+	}
+
+	this.hash = settings.hash || hash;
+	this.go = function (search) {
+		if (!bmoor.isObject(search)) {
+			return search;
+		} else {
+			if (settings.massage) {
+				search = settings.massage(search);
+			}
+
+			return fn(search);
+		}
+	};
+};
+
+module.exports = Hash;
 
 /***/ }),
 /* 7 */
@@ -976,20 +1054,112 @@ module.exports = __webpack_require__(7);
 "use strict";
 
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var bmoor = __webpack_require__(0);
+
+function stack(old, getter, value) {
+	if (old) {
+		return function (obj) {
+			if (getter(obj) === value) {
+				return old(obj);
+			} else {
+				return false;
+			}
+		};
+	} else {
+		return function (obj) {
+			return getter(obj) === value;
+		};
+	}
+}
+
+function build(obj) {
+	var fn,
+	    flat = bmoor.object.implode(obj),
+	    values = [];
+
+	Object.keys(flat).sort().forEach(function (path) {
+		var v = flat[path];
+
+		fn = stack(fn, bmoor.makeGetter(path), v);
+
+		values.push(path + '=' + v);
+	});
+
+	return {
+		fn: fn,
+		index: values.join(':')
+	};
+}
+
+var Test = function Test(ops, settings) {
+	_classCallCheck(this, Test);
+
+	var fn, hash;
+
+	if (!settings) {
+		settings = {};
+	}
+
+	if (bmoor.isFunction(ops)) {
+		fn = ops;
+		hash = ops.toString().replace(/[\s]+/g, '');
+	} else if (bmoor.isObject(ops)) {
+		var t = build(ops);
+
+		fn = t.fn;
+		hash = t.index;
+	} else {
+		throw new Error('I can not build a Test out of ' + (typeof ops === 'undefined' ? 'undefined' : _typeof(ops)));
+	}
+
+	this.hash = settings.hash || hash;
+	this.go = function (search) {
+		if (settings.massage) {
+			search = settings.massage(search);
+		}
+
+		return fn(search);
+	};
+};
+
+module.exports = Test;
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = __webpack_require__(9);
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
 module.exports = {
 	Feed: __webpack_require__(3),
-	Pool: __webpack_require__(23),
-	Collection: __webpack_require__(29),
+	Pool: __webpack_require__(25),
+	Collection: __webpack_require__(31),
 	stream: {
 		Converter: __webpack_require__(32)
 	},
 	object: {
-		Proxy: __webpack_require__(33)
+		Proxy: __webpack_require__(33),
+		Test: __webpack_require__(7),
+		Hash: __webpack_require__(6)
 	}
 };
 
 /***/ }),
-/* 8 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1290,7 +1460,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 9 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1331,20 +1501,20 @@ module.exports = {
 };
 
 /***/ }),
-/* 10 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 module.exports = {
-	soon: __webpack_require__(11),
-	debounce: __webpack_require__(12),
+	soon: __webpack_require__(13),
+	debounce: __webpack_require__(14),
 	window: __webpack_require__(4)
 };
 
 /***/ }),
-/* 11 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1385,7 +1555,7 @@ module.exports = function (cb, time, settings) {
 };
 
 /***/ }),
-/* 12 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1444,7 +1614,7 @@ module.exports = function (cb, time, settings) {
 };
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1697,16 +1867,16 @@ module.exports = {
 };
 
 /***/ }),
-/* 14 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var bmoor = __webpack_require__(1),
-    mixin = __webpack_require__(15),
-    plugin = __webpack_require__(16),
-    decorate = __webpack_require__(17);
+    mixin = __webpack_require__(17),
+    plugin = __webpack_require__(18),
+    decorate = __webpack_require__(19);
 
 function proc(action, proto, def) {
 	var i, c;
@@ -1761,7 +1931,7 @@ maker.plugin = plugin;
 module.exports = maker;
 
 /***/ }),
-/* 15 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1776,7 +1946,7 @@ module.exports = function (to, from) {
 };
 
 /***/ }),
-/* 16 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1833,7 +2003,7 @@ module.exports = function (to, from, ctx) {
 };
 
 /***/ }),
-/* 17 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1879,7 +2049,7 @@ module.exports = function (to, from) {
 };
 
 /***/ }),
-/* 18 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2161,7 +2331,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 19 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2359,7 +2529,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 20 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2438,7 +2608,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 21 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2525,7 +2695,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 22 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2617,7 +2787,7 @@ var Eventing = function () {
 module.exports = Eventing;
 
 /***/ }),
-/* 23 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2635,7 +2805,7 @@ var bmoor = __webpack_require__(0),
     Eventing = bmoor.Eventing,
     getUid = bmoor.data.getUid,
     makeGetter = bmoor.makeGetter,
-    Mapper = __webpack_require__(24).Mapper;
+    Mapper = __webpack_require__(26).Mapper;
 
 var Pool = function (_Eventing) {
 	_inherits(Pool, _Eventing);
@@ -2692,23 +2862,23 @@ var Pool = function (_Eventing) {
 module.exports = Pool;
 
 /***/ }),
-/* 24 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 module.exports = {
-	encode: __webpack_require__(25),
-	Mapper: __webpack_require__(26),
+	encode: __webpack_require__(27),
+	Mapper: __webpack_require__(28),
 	Mapping: __webpack_require__(5),
 	Path: __webpack_require__(2),
-	translate: __webpack_require__(27),
-	validate: __webpack_require__(28)
+	translate: __webpack_require__(29),
+	validate: __webpack_require__(30)
 };
 
 /***/ }),
-/* 25 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2790,7 +2960,7 @@ encode.$ops = ops;
 module.exports = encode;
 
 /***/ }),
-/* 26 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2875,7 +3045,7 @@ var Mapper = function () {
 module.exports = Mapper;
 
 /***/ }),
-/* 27 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2954,7 +3124,7 @@ function encode(schema) {
 module.exports = encode;
 
 /***/ }),
-/* 28 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2998,7 +3168,7 @@ validate.$ops = tests;
 module.exports = validate;
 
 /***/ }),
-/* 29 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3014,8 +3184,8 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var bmoor = __webpack_require__(0),
     Feed = __webpack_require__(3),
-    Hash = __webpack_require__(30),
-    Test = __webpack_require__(31),
+    Hash = __webpack_require__(6),
+    Test = __webpack_require__(7),
     setUid = bmoor.data.setUid;
 
 function testStack(old, fn) {
@@ -3299,7 +3469,7 @@ var Collection = function (_Feed) {
 	}, {
 		key: 'index',
 		value: function index(search, settings) {
-			return memorized(this, 'indexes', new Hash(search, settings), _index);
+			return memorized(this, 'indexes', search instanceof Hash ? search : new Hash(search, settings), _index);
 		}
 	}, {
 		key: 'get',
@@ -3309,12 +3479,12 @@ var Collection = function (_Feed) {
 	}, {
 		key: 'route',
 		value: function route(search, settings) {
-			return memorized(this, 'routes', new Hash(search, settings), _route);
+			return memorized(this, 'routes', search instanceof Hash ? search : new Hash(search, settings), _route);
 		}
 	}, {
 		key: 'filter',
 		value: function filter(search, settings) {
-			return memorized(this, 'filters', new Test(search, settings), _filter, settings);
+			return memorized(this, 'filters', search instanceof Test ? search : new Test(search, settings), _filter, settings);
 		}
 	}, {
 		key: 'search',
@@ -3431,168 +3601,6 @@ var Collection = function (_Feed) {
 }(Feed);
 
 module.exports = Collection;
-
-/***/ }),
-/* 30 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var bmoor = __webpack_require__(0);
-
-function stack(old, getter) {
-	if (old) {
-		return function (obj) {
-			return old(obj) + ':' + getter(obj);
-		};
-	} else {
-		return function (obj) {
-			return getter(obj);
-		};
-	}
-}
-
-function build(obj) {
-	var fn,
-	    keys,
-	    values = [];
-
-	if (bmoor.isArray(obj)) {
-		keys = obj;
-	} else {
-		var flat = bmoor.object.implode(obj);
-
-		keys = Object.keys(flat);
-	}
-
-	keys.sort().forEach(function (path) {
-		fn = stack(fn, bmoor.makeGetter(path));
-
-		values.push(path);
-	});
-
-	return {
-		fn: fn,
-		index: values.join(':')
-	};
-}
-
-var Hash = function Hash(ops, settings) {
-	_classCallCheck(this, Hash);
-
-	var fn, hash;
-
-	if (!settings) {
-		settings = {};
-	}
-
-	if (bmoor.isFunction(ops)) {
-		fn = ops;
-		hash = ops.toString().replace(/[\s]+/g, '');
-	} else if (bmoor.isObject(ops)) {
-		var t = build(ops);
-
-		fn = t.fn;
-		hash = t.index;
-	} else {
-		throw new Error('I can not build a Hash out of ' + (typeof ops === 'undefined' ? 'undefined' : _typeof(ops)));
-	}
-
-	this.hash = settings.hash || hash;
-	this.go = function (search) {
-		if (settings.massage) {
-			search = settings.massage(search);
-		}
-
-		if (!bmoor.isObject(search)) {
-			return search;
-		} else {
-			return fn(search);
-		}
-	};
-};
-
-module.exports = Hash;
-
-/***/ }),
-/* 31 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var bmoor = __webpack_require__(0);
-
-function stack(old, getter, value) {
-	if (old) {
-		return function (obj) {
-			if (getter(obj) === value) {
-				return old(obj);
-			} else {
-				return false;
-			}
-		};
-	} else {
-		return function (obj) {
-			return getter(obj) === value;
-		};
-	}
-}
-
-function build(obj) {
-	var fn,
-	    flat = bmoor.object.implode(obj),
-	    values = [];
-
-	Object.keys(flat).sort().forEach(function (path) {
-		var v = flat[path];
-
-		fn = stack(fn, bmoor.makeGetter(path), v);
-
-		values.push(path + '=' + v);
-	});
-
-	return {
-		fn: fn,
-		index: values.join(':')
-	};
-}
-
-var Test = function Test(ops, settings) {
-	_classCallCheck(this, Test);
-
-	var fn, hash;
-
-	if (!settings) {
-		settings = {};
-	}
-
-	if (bmoor.isFunction(ops)) {
-		fn = ops;
-		hash = ops.toString().replace(/[\s]+/g, '');
-	} else if (bmoor.isObject(ops)) {
-		var t = build(ops);
-
-		fn = t.fn;
-		hash = t.index;
-	} else {
-		throw new Error('I can not build a Test out of ' + (typeof ops === 'undefined' ? 'undefined' : _typeof(ops)));
-	}
-
-	this.hash = settings.hash || hash;
-	this.go = fn;
-};
-
-module.exports = Test;
 
 /***/ }),
 /* 32 */

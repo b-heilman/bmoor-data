@@ -52,5 +52,18 @@ describe('bmoor-data::Hash', function(){
 			expect( index.go({eins:10,zwei:20}) ).toBe( '10:20' );
 			expect( index.go('10:20') ).toBe( '10:20' );
 		});
+
+		it('should allow massaging', function(){
+			var index = new Hash(['eins','zwei'], {
+					massage: function ( d ){
+						return d.info;
+					}
+				});
+
+			expect( index.hash ).toBe('eins:zwei');
+			expect( index.go({info:{eins:1,zwei:2}}) ).toBe( '1:2' );
+			expect( index.go({info:{eins:10,zwei:20}}) ).toBe( '10:20' );
+			expect( index.go('10:20') ).toBe( '10:20' );
+		});
 	});
 });
