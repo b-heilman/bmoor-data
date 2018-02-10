@@ -333,9 +333,10 @@ class Collection extends Feed {
 		);
 	}
 
-	sort( sorter, settings ){
+	sorted( sorter, settings ){
 		// TODO : create the Compare class, then memorize this
-		var child;
+		var child,
+			parent = this;
 
 		settings = Object.assign(
 			{}, 

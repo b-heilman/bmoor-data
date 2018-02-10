@@ -3537,10 +3537,11 @@ var Collection = function (_Feed) {
 			return memorized(this, 'filters', search instanceof Test ? search : new Test(search, settings), _filter, settings);
 		}
 	}, {
-		key: 'sort',
-		value: function sort(sorter, settings) {
+		key: 'sorted',
+		value: function sorted(sorter, settings) {
 			// TODO : create the Compare class, then memorize this
-			var child;
+			var child,
+			    parent = this;
 
 			settings = Object.assign({}, {
 				insert: function insert(datum) {
@@ -3642,7 +3643,7 @@ var Collection = function (_Feed) {
 				child.trigger('process');
 			}, settings.min || 5, settings.max || 30, { context: child });
 
-			child.nav = {
+			var nav = {
 				pos: settings.start || 0,
 				goto: function goto(pos) {
 					if (bmoor.isObject(pos)) {
@@ -3655,8 +3656,10 @@ var Collection = function (_Feed) {
 						}
 					}
 
-					this.pos = pos;
-					child.go();
+					if (pos !== this.pos) {
+						this.pos = pos;
+						child.go();
+					}
 				},
 				hasNext: function hasNext() {
 					return this.stop < this.count;
@@ -3683,6 +3686,7 @@ var Collection = function (_Feed) {
 				}
 			};
 
+			child.nav = nav;
 			child.go.flush();
 
 			return child;
