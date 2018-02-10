@@ -43,6 +43,26 @@ class Feed extends Eventing {
 		this.trigger( 'update' );
 	}
 
+	follow( parent, settings ){
+		parent.subscribe(Object.assign(
+			{
+				insert: ( datum ) => {
+					this.add( datum );
+				},
+				remove: ( datum ) => {
+					this.remove( datum );
+				},
+				process: () => {
+					this.go();
+				},
+				destroy: () => {
+					this.destroy();
+				}
+			},
+			settings
+		));
+	}
+
 	sort( fn ){
 		this.data.sort( fn );
 	}

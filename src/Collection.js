@@ -29,7 +29,6 @@ function memorized( parent, cache, expressor, generator, settings ){
 
 	index = parent[cache];
 
-	// console.log( '->', expressor.hash );
 	rtn = index[expressor.hash];
 
 	if ( !rtn ){
@@ -212,6 +211,7 @@ function filter( dex, parent, settings ){
 
 class Collection extends Feed {
 
+	// remove a datum from the collection
 	remove( datum ){
 		var dex = this.data.indexOf( datum );
 		
@@ -224,6 +224,7 @@ class Collection extends Feed {
 		}
 	}
 
+	// remove all datums from the collection
 	empty(){
 		var arr = this.data;
 
@@ -238,29 +239,49 @@ class Collection extends Feed {
 		arr.length = 0;
 	}
 
+	// follow a parent collection
+	follow( parent, settings ){
+		var disconnect = parent.subscribe(Object.assign(
+			{
+				insert: ( datum ) => {
+					this.add( datum );
+				},
+				remove: ( datum ) => {
+					this.remove( datum );
+				},
+				process: () => {
+					this.go();
+				},
+				destroy: () => {
+					this.destroy();
+				}
+			},
+			settings
+		));
+
+		if ( this.disconnect ){
+			let old = this.disconnect;
+			this.disconnect = function(){
+				old();
+				disconnect();
+			};
+		}else{
+			this.disconnect = disconnect;
+		}
+
+		// if you just want to disconnect form this one
+		// you can later be specific
+		return disconnect; 
+	}
+
 	getChild( settings ){
 		var child = new (this.constructor)( null, settings );
 
 		child.parent = this;
 
 		if ( settings !== false ){
-			let done = this.subscribe(Object.assign(
-				{
-					insert: function( datum ){
-						child.add( datum );
-					},
-					remove: function( datum ){
-						child.remove( datum );
-					},
-					process: function(){
-						child.go();
-					},
-					destroy: function(){
-						child.destroy();
-					}
-				},
-				settings
-			));
+			child.follow( this, settings );
+			let done = child.disconnect;
 
 			child.disconnect = function(){
 				if ( settings.disconnect ){
@@ -312,6 +333,37 @@ class Collection extends Feed {
 		);
 	}
 
+	sort( sorter, settings ){
+		// TODO : create the Compare class, then memorize this
+		var child;
+
+		settings = Object.assign(
+			{}, 
+			{
+				insert: function( datum ){
+					child.add( datum );
+					child.go();
+				},
+				update: function(){
+					child.go();
+				}
+			},
+			settings
+		);
+
+		child = parent.getChild( settings );
+
+		child.go = bmoor.flow.window(function(){
+			child.data.sort( sorter );
+
+			child.trigger('process');
+		}, settings.min||5, settings.max||30);
+
+		child.go.flush();
+
+		return child;
+	}
+
 	search( settings ){
 		var ctx,
 			test;
@@ -339,7 +391,8 @@ class Collection extends Feed {
 
 	// settings { size }
 	paginate( settings ){
-		var child;
+		var child,
+			parent = this;
 
 		settings = Object.assign(
 			{},
@@ -367,7 +420,7 @@ class Collection extends Feed {
 
 		child.go = bmoor.flow.window(function(){
 			var span = settings.size,
-				length = this.parent.data.length,
+				length = parent.data.length,
 				steps = Math.ceil( length / span );
 
 			this.nav.span = span;
@@ -378,22 +431,37 @@ class Collection extends Feed {
 				stop = start + span;
 
 			this.nav.start = start;
+			if ( stop > length ){
+				stop = length;
+			}
 			this.nav.stop = stop;
 
 			this.empty();
 
-			for( let i = start; i < stop && i < length; i++ ){
+			for( let i = start; i < stop; i++ ){
 				this.add( this.parent.data[i] );
 			}
 
 			child.trigger('process');
 		}, settings.min||5, settings.max||30, { context: child });
 
-		child.nav = {
+		let nav = {
 			pos: settings.start || 0,
 			goto: function( pos ){
-				this.pos = pos;
-				child.go();
+				if ( bmoor.isObject(pos) ){
+					var tPos = parent.data.indexOf(pos);
+
+					if ( tPos === -1 ){
+						pos = 0;
+					}else{
+						pos = Math.floor(tPos/settings.size);
+					}
+				}
+
+				if ( pos !== this.pos ){
+					this.pos = pos;
+					child.go();
+				}
 			},
 			hasNext: function(){
 				return this.stop < this.count;
@@ -413,13 +481,14 @@ class Collection extends Feed {
 				settings.size = size;
 			},
 			maxSize: function(){
-				settings.size = child.parent.data.length;
+				this.setSize( child.parent.data.length );
 			},
 			resetSize: function(){
-				settings.size = origSize;
+				this.setSize( origSize );
 			}
 		};
 
+		child.nav = nav;
 		child.go.flush();
 
 		return child;

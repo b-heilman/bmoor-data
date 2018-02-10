@@ -711,6 +711,26 @@ var Feed = function (_Eventing) {
 			this.trigger('update');
 		}
 	}, {
+		key: 'follow',
+		value: function follow(parent, settings) {
+			var _this2 = this;
+
+			parent.subscribe(Object.assign({
+				insert: function insert(datum) {
+					_this2.add(datum);
+				},
+				remove: function remove(datum) {
+					_this2.remove(datum);
+				},
+				process: function process() {
+					_this2.go();
+				},
+				destroy: function destroy() {
+					_this2.destroy();
+				}
+			}, settings));
+		}
+	}, {
 		key: 'sort',
 		value: function sort(fn) {
 			this.data.sort(fn);
@@ -3211,7 +3231,6 @@ function memorized(parent, cache, expressor, generator, settings) {
 
 	index = parent[cache];
 
-	// console.log( '->', expressor.hash );
 	rtn = index[expressor.hash];
 
 	if (!rtn) {
@@ -3400,6 +3419,9 @@ var Collection = function (_Feed) {
 
 	_createClass(Collection, [{
 		key: 'remove',
+
+
+		// remove a datum from the collection
 		value: function remove(datum) {
 			var dex = this.data.indexOf(datum);
 
@@ -3411,6 +3433,9 @@ var Collection = function (_Feed) {
 				this.trigger('update');
 			}
 		}
+
+		// remove all datums from the collection
+
 	}, {
 		key: 'empty',
 		value: function empty() {
@@ -3426,6 +3451,43 @@ var Collection = function (_Feed) {
 
 			arr.length = 0;
 		}
+
+		// follow a parent collection
+
+	}, {
+		key: 'follow',
+		value: function follow(parent, settings) {
+			var _this2 = this;
+
+			var disconnect = parent.subscribe(Object.assign({
+				insert: function insert(datum) {
+					_this2.add(datum);
+				},
+				remove: function remove(datum) {
+					_this2.remove(datum);
+				},
+				process: function process() {
+					_this2.go();
+				},
+				destroy: function destroy() {
+					_this2.destroy();
+				}
+			}, settings));
+
+			if (this.disconnect) {
+				var old = this.disconnect;
+				this.disconnect = function () {
+					old();
+					disconnect();
+				};
+			} else {
+				this.disconnect = disconnect;
+			}
+
+			// if you just want to disconnect form this one
+			// you can later be specific
+			return disconnect;
+		}
 	}, {
 		key: 'getChild',
 		value: function getChild(settings) {
@@ -3434,20 +3496,8 @@ var Collection = function (_Feed) {
 			child.parent = this;
 
 			if (settings !== false) {
-				var done = this.subscribe(Object.assign({
-					insert: function insert(datum) {
-						child.add(datum);
-					},
-					remove: function remove(datum) {
-						child.remove(datum);
-					},
-					process: function process() {
-						child.go();
-					},
-					destroy: function destroy() {
-						child.destroy();
-					}
-				}, settings));
+				child.follow(this, settings);
+				var done = child.disconnect;
 
 				child.disconnect = function () {
 					if (settings.disconnect) {
@@ -3487,6 +3537,34 @@ var Collection = function (_Feed) {
 			return memorized(this, 'filters', search instanceof Test ? search : new Test(search, settings), _filter, settings);
 		}
 	}, {
+		key: 'sort',
+		value: function sort(sorter, settings) {
+			// TODO : create the Compare class, then memorize this
+			var child;
+
+			settings = Object.assign({}, {
+				insert: function insert(datum) {
+					child.add(datum);
+					child.go();
+				},
+				update: function update() {
+					child.go();
+				}
+			}, settings);
+
+			child = parent.getChild(settings);
+
+			child.go = bmoor.flow.window(function () {
+				child.data.sort(sorter);
+
+				child.trigger('process');
+			}, settings.min || 5, settings.max || 30);
+
+			child.go.flush();
+
+			return child;
+		}
+	}, {
 		key: 'search',
 		value: function search(settings) {
 			var ctx, test;
@@ -3514,7 +3592,8 @@ var Collection = function (_Feed) {
 	}, {
 		key: 'paginate',
 		value: function paginate(settings) {
-			var child;
+			var child,
+			    parent = this;
 
 			settings = Object.assign({}, {
 				insert: function insert(datum) {
@@ -3538,7 +3617,7 @@ var Collection = function (_Feed) {
 
 			child.go = bmoor.flow.window(function () {
 				var span = settings.size,
-				    length = this.parent.data.length,
+				    length = parent.data.length,
 				    steps = Math.ceil(length / span);
 
 				this.nav.span = span;
@@ -3549,11 +3628,14 @@ var Collection = function (_Feed) {
 				    stop = start + span;
 
 				this.nav.start = start;
+				if (stop > length) {
+					stop = length;
+				}
 				this.nav.stop = stop;
 
 				this.empty();
 
-				for (var i = start; i < stop && i < length; i++) {
+				for (var i = start; i < stop; i++) {
 					this.add(this.parent.data[i]);
 				}
 
@@ -3563,6 +3645,16 @@ var Collection = function (_Feed) {
 			child.nav = {
 				pos: settings.start || 0,
 				goto: function goto(pos) {
+					if (bmoor.isObject(pos)) {
+						var tPos = parent.data.indexOf(pos);
+
+						if (tPos === -1) {
+							pos = 0;
+						} else {
+							pos = Math.floor(tPos / settings.size);
+						}
+					}
+
 					this.pos = pos;
 					child.go();
 				},
@@ -3584,10 +3676,10 @@ var Collection = function (_Feed) {
 					settings.size = size;
 				},
 				maxSize: function maxSize() {
-					settings.size = child.parent.data.length;
+					this.setSize(child.parent.data.length);
 				},
 				resetSize: function resetSize() {
-					settings.size = origSize;
+					this.setSize(origSize);
 				}
 			};
 

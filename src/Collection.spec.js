@@ -100,7 +100,7 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data.length ).toBe( 1 );
 		
 			feed.add({foo:'zoo'});
-
+			
 			child.on('insert', function filterInsert( res ){
 				expect( child.data.length ).toBe( 2 );
 				expect( feed.data.length ).toBe( 5 );
@@ -274,7 +274,7 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data.length ).toBe( 1 );
 			expect( child.nav.pos ).toBe(3);
 			expect( child.nav.start ).toBe(6);
-			expect( child.nav.stop ).toBe(8);
+			expect( child.nav.stop ).toBe(7);
 			expect( child.nav.steps ).toBe(4);
 			expect( child.nav.count ).toBe(7);
 			expect( child.data[0].foo ).toBe( 'sieben' );
@@ -290,6 +290,78 @@ describe('bmoor-data.Collection', function(){
 			expect( child.nav.steps ).toBe(4);
 			expect( child.nav.count ).toBe(7);
 			expect( child.data[0].foo ).toBe( 'bar' );
+		});
+
+		it('should allow goto an object', function(){
+			var t = [
+					{id:1, foo:'eins',value:'yes'},
+					{id:3, foo:'zwei',value:'no'},
+					{id:2, foo:'bar',value:'no'},
+					{id:4, foo:'fier',value:'YES'},
+					{id:5, foo:'funf',value:'yes'},
+					{id:6, foo:'sechs',value:'no'},
+					{id:7, foo:'sieben',value:'no'}
+				],
+				feed = new Collection(t),
+				child = feed.paginate({
+					size: 2
+				});
+
+			child.nav.goto(t[2]);
+			child.go.flush();
+
+			expect( child.data.length ).toBe( 2 );
+			expect( child.nav.pos ).toBe(1);
+			expect( child.nav.start ).toBe(2);
+			expect( child.nav.stop ).toBe(4);
+			expect( child.nav.steps ).toBe(4);
+			expect( child.nav.count ).toBe(7);
+			expect( child.data[0].foo ).toBe( 'bar' );
+
+			child.nav.goto(t[3]);
+			child.go.flush();
+
+			expect( child.data.length ).toBe( 2 );
+			expect( child.nav.pos ).toBe(1);
+			expect( child.nav.start ).toBe(2);
+			expect( child.nav.stop ).toBe(4);
+			expect( child.nav.steps ).toBe(4);
+			expect( child.nav.count ).toBe(7);
+			expect( child.data[0].foo ).toBe( 'bar' );
+
+			child.nav.goto(t[5]);
+			child.go.flush();
+
+			expect( child.data.length ).toBe( 2 );
+			expect( child.nav.pos ).toBe(2);
+			expect( child.nav.start ).toBe(4);
+			expect( child.nav.stop ).toBe(6);
+			expect( child.nav.steps ).toBe(4);
+			expect( child.nav.count ).toBe(7);
+			expect( child.data[0].foo ).toBe( 'funf' );
+
+			child.nav.goto(t[6]);
+			child.go.flush();
+
+			expect( child.data.length ).toBe( 1 );
+			expect( child.nav.pos ).toBe(3);
+			expect( child.nav.start ).toBe(6);
+			expect( child.nav.stop ).toBe(7);
+			expect( child.nav.steps ).toBe(4);
+			expect( child.nav.count ).toBe(7);
+			expect( child.data[0].foo ).toBe( 'sieben' );
+
+			// search for something out of the list
+			child.nav.goto({});
+			child.go.flush();
+
+			expect( child.data.length ).toBe( 2 );
+			expect( child.nav.pos ).toBe(0);
+			expect( child.nav.start ).toBe(0);
+			expect( child.nav.stop ).toBe(2);
+			expect( child.nav.steps ).toBe(4);
+			expect( child.nav.count ).toBe(7);
+			expect( child.data[0].foo ).toBe( 'eins' );
 		});
 
 		it('should be able to be chained into', function(){
@@ -354,7 +426,7 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data.length ).toBe( 1 );
 			expect( child.nav.pos ).toBe(1);
 			expect( child.nav.start ).toBe(2);
-			expect( child.nav.stop ).toBe(4);
+			expect( child.nav.stop ).toBe(3);
 			expect( child.nav.steps ).toBe(2);
 			expect( child.nav.count ).toBe(3);
 			expect( child.data[0].foo ).toBe( 'funf' );
