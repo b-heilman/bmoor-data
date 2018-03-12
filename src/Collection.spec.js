@@ -12,6 +12,19 @@ describe('bmoor-data.Collection', function(){
 		expect( feed.data ).toBeDefined();
 	});
 
+	it('should return the same class via getChild', function(){
+		class MyCollection extends Collection{
+			newProp(){
+				return 'ok';
+			}
+		}
+
+		var coll = new MyCollection();
+
+		expect( coll.getChild() instanceof MyCollection )
+		.toBe( true );
+	});
+
 	it('should allow a push on the original source', function( done ){
 		var t = [],
 			n = {},
@@ -86,6 +99,37 @@ describe('bmoor-data.Collection', function(){
 		});
 
 		feed.remove(n);
+	});
+
+	describe('::map', function(){
+		it('should prepopulate', function(){
+			var t = [{foo:'eins'},{foo:'zwei'},{foo:'drei'}],
+				collection = new Collection(t);
+
+			let mapped = collection.map((d) => {
+					return { other: d.foo };
+				});
+
+			expect( mapped.data.length ).toBe( 3 );
+
+			expect( mapped.data[0] ).toEqual({other:'eins'});
+		});
+	});
+
+	describe('::sorted', function(){
+		it('should prepopulate', function(){
+			var t = [{foo:'eins'},{foo:'zwei'},{foo:'drei'}],
+				collection = new Collection(t);
+
+			let sorted = collection.sorted((a,b) => {
+					return a.foo < b.foo ? 
+						1 : (a.foo > b.foo ? -1 : 0);
+				});
+
+			expect( sorted.data.length ).toBe( 3 );
+
+			expect( sorted.data[0] ).toEqual({foo:'zwei'});
+		});
 	});
 
 	describe('::filter', function(){

@@ -151,6 +151,105 @@ function index( dex, parent ){
 	};
 }
 
+function sorted( dex, parent, settings ){
+	var child;
+
+	settings = Object.assign(
+		{}, 
+		{
+			insert: function( datum ){
+				child.add( datum );
+				child.go();
+			},
+			update: function(){
+				child.go();
+			}
+		},
+		settings
+	);
+
+	child = parent.getChild( settings );
+
+	for( var i = 0, c = parent.data.length; i < c; i++ ){
+		child.add( parent.data[i] );
+	}
+
+	child.go = bmoor.flow.window(function(){
+		if ( settings.before ){
+			settings.before();
+		}
+
+		child.data.sort( dex.go );
+
+		if ( settings.after ){
+			settings.after();
+		}
+
+		child.trigger('process');
+	}, settings.min||5, settings.max||30);
+
+	child.go.flush();
+
+	return child;
+}
+
+function mapped( dex, parent, settings ){
+	var child;
+
+	settings = Object.assign(
+		{}, 
+		{
+			insert: function( datum ){
+				// I only need to 
+				child.add( dex.go(datum) );
+			}
+			// remove should use a look-aside
+		},
+		settings
+	);
+
+	child = parent.getChild( settings );
+
+	child.go = bmoor.flow.window(function(){
+		var datum,
+			insert,
+			arr = parent.data;
+
+		child.empty();
+
+		if ( settings.before ){
+			settings.before();
+		}
+
+		if ( child.hasWaiting('insert') ){ // performance optimization
+			insert = ( datum ) => {
+				Array.prototype.push.call( child.data, datum );
+				child.trigger( 'insert', datum );
+			};
+		}else{
+			insert = ( datum ) => {
+				Array.prototype.push.call( child.data, datum );
+			};
+		}
+
+		for ( let i = 0, c = arr.length; i < c; i++ ){
+			datum = arr[i];
+			
+			insert( dex.go(datum) );
+		}
+
+		if ( settings.after ){
+			settings.after();
+		}
+
+		child.trigger('process');
+	}, settings.min||5, settings.max||30);
+
+	child.go.flush();
+
+	return child;
+}
+
 function filter( dex, parent, settings ){
 	var child;
 
@@ -275,7 +374,9 @@ class Collection extends Feed {
 	}
 
 	getChild( settings ){
-		var child = new (this.constructor)( null, settings );
+		let ChildClass = (settings ? 
+				settings.childClass : null) || this.constructor,
+			child = new (ChildClass)( null, settings );
 
 		child.parent = this;
 
@@ -306,7 +407,8 @@ class Collection extends Feed {
 			this,
 			'indexes', 
 			search instanceof Hash ? search : new Hash( search, settings ),
-			index
+			index,
+			settings
 		);
 	}
 
@@ -319,7 +421,8 @@ class Collection extends Feed {
 			this,
 			'routes',
 			search instanceof Hash ? search : new Hash( search, settings ),
-			route
+			route,
+			settings
 		);
 	}
 
@@ -333,36 +436,31 @@ class Collection extends Feed {
 		);
 	}
 
-	sorted( sorter, settings ){
-		// TODO : create the Compare class, then memorize this
-		var child,
-			parent = this;
-
-		settings = Object.assign(
-			{}, 
+	// TODO : create the Compare class, then memorize this
+	sorted( sortFn, settings ){
+		return memorized(
+			this,
+			'sorts',
 			{
-				insert: function( datum ){
-					child.add( datum );
-					child.go();
-				},
-				update: function(){
-					child.go();
-				}
+				hash: sortFn.toString(),
+				go: sortFn
 			},
+			sorted,
 			settings
 		);
+	}
 
-		child = parent.getChild( settings );
-
-		child.go = bmoor.flow.window(function(){
-			child.data.sort( sorter );
-
-			child.trigger('process');
-		}, settings.min||5, settings.max||30);
-
-		child.go.flush();
-
-		return child;
+	map( mapFn, settings ){
+		return memorized(
+			this,
+			'maps',
+			{
+				hash: mapFn.toString(),
+				go: mapFn
+			},
+			mapped,
+			settings
+		);
 	}
 
 	search( settings ){
@@ -459,6 +557,10 @@ class Collection extends Feed {
 					}
 				}
 
+				if ( pos < 0 ){
+					pos = 0;
+				}
+
 				if ( pos !== this.pos ){
 					this.pos = pos;
 					child.go();
@@ -468,18 +570,18 @@ class Collection extends Feed {
 				return this.stop < this.count;
 			},
 			next: function(){
-				this.pos++;
-				child.go();
+				this.goto( this.pos + 1 );
 			},
 			hasPrev: function(){
 				return !!this.start;
 			},
 			prev: function(){
-				this.pos--;
-				child.go();
+				this.goto( this.pos - 1 );
 			},
 			setSize: function( size ){
+				this.pos = -1;
 				settings.size = size;
+				this.goto( 0 );
 			},
 			maxSize: function(){
 				this.setSize( child.parent.data.length );

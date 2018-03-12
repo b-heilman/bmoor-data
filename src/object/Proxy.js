@@ -31,15 +31,17 @@ function makeMask( target, override ){
 }
 
 function isDirty( obj ){
-	var i, c,
-		t,
-		keys = Object.keys( obj );
+	var keys = Object.keys( obj );
 
-	for( i = 0, c = keys.length; i < c; i++ ){
-		t = obj[keys[i]];
+	for( let i = 0, c = keys.length; i < c; i++ ){
+		let k = keys[i];
 
-		if ( !bmoor.isObject(t) || isDirty(t) ){
-			return true;
+		if ( k.charAt(0) !== '$' ){
+			let t = obj[k];
+
+			if ( !bmoor.isObject(t) || isDirty(t) ){
+				return true;
+			}
 		}
 	}
 
@@ -48,22 +50,27 @@ function isDirty( obj ){
 
 function getChanges( obj ){
 	var rtn = {},
-		valid = false;
+		valid = false,
+		keys = Object.keys( obj );
 
-	Object.keys( obj ).forEach(function( k ){
-		var d = obj[k];
+	for( let i = 0, c = keys.length; i < c; i++ ){
+		let k = keys[i];
 
-		if ( bmoor.isObject(d) ){
-			d = getChanges(d);
-			if ( d ){
+		if ( k.charAt(0) !== '$' ){
+			let d = obj[k];
+
+			if ( bmoor.isObject(d) ){
+				d = getChanges(d);
+				if ( d ){
+					valid = true;
+					rtn[k] = d;
+				}
+			}else{
 				valid = true;
 				rtn[k] = d;
 			}
-		}else{
-			valid = true;
-			rtn[k] = d;
 		}
-	});
+	}
 
 	if ( valid ){
 		return rtn;
@@ -71,18 +78,23 @@ function getChanges( obj ){
 }
 
 function map( delta, obj ){
-	Object.keys( delta ).forEach(function( k ){
-		var d = delta[k],
+	var keys = Object.keys( delta );
+
+	for( let i = 0, c = keys.length; i < c; i++ ){
+		let k = keys[i], 
+			d = delta[k],
 			o = obj[k];
 
-		if ( d !== o ){
-			if ( bmoor.isObject(d) && bmoor.isObject(o) ){
-				map( d, o );
-			}else{
-				obj[k] = d;
+		if ( k.charAt(0) !== '$' ){
+			if ( d !== o ){
+				if ( bmoor.isObject(d) && bmoor.isObject(o) ){
+					map( d, o );
+				}else{
+					obj[k] = d;
+				}
 			}
 		}
-	});
+	}
 }
 
 class Proxy extends Eventing {
@@ -122,6 +134,19 @@ class Proxy extends Eventing {
 		return mask;
 	}
 
+	// create a deep copy of the datum.  if applyMask == true, 
+	// we copy the mask on top as well.  Can be used for stringify then
+	copy( applyMask ){
+		var rtn = {};
+
+		bmoor.object.merge( rtn, this.getDatum() );
+		if ( applyMask ){
+			bmoor.object.merge( rtn, this.getMask() );
+		}
+
+		return rtn;
+	}
+
 	merge( delta ){
 		if ( !delta ){
 			delta = this.mask;
@@ -139,6 +164,10 @@ class Proxy extends Eventing {
 		arguments.length++;
 
 		super.trigger.apply( this, arguments );
+	}
+
+	toJson(){
+		return JSON.stringify( this.getDatum() );
 	}
 }
 
