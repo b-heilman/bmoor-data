@@ -7,13 +7,18 @@ var bmoor = require('bmoor'),
 // src -> feed -> target
 class Feed extends Eventing {
 
-	constructor( src ){
+	constructor( src, settings ){
 		super();
 
 		if ( !src ){
 			src = [];
-		}else{
+			this.settings = {};
+		}else if ( Array.isArray(src) ){
+			this.settings = settings || {};
 			src.push = src.unshift = this.add.bind( this );
+		}else{
+			this.settings = src;
+			src = [];
 		}
 
 		setUid(this);
@@ -21,8 +26,12 @@ class Feed extends Eventing {
 		this.data = src;
 	}
 
-	add( datum ){
+	_add( datum ){
 		oldPush.call( this.data, datum );
+	}
+
+	add( datum ){
+		this._add( datum );
 
 		this.trigger( 'insert', datum );
 
@@ -32,12 +41,10 @@ class Feed extends Eventing {
 	consume( arr ){
 		var i, c;
 
-		oldPush.apply( this.data, arr );
-
-		if ( this.hasWaiting('insert') ){
-			for ( i = 0, c = arr.length; i < c; i++ ){
-				this.trigger( 'insert', arr[i] );
-			}
+		for ( i = 0, c = arr.length; i < c; i++ ){
+			let d = arr[i];
+			this._add( d );
+			this.trigger( 'insert', d );
 		}
 
 		this.trigger( 'update' );
@@ -53,7 +60,9 @@ class Feed extends Eventing {
 					this.remove( datum );
 				},
 				process: () => {
-					this.go();
+					if ( this.go ){
+						this.go();
+					}
 				},
 				destroy: () => {
 					this.destroy();
@@ -63,7 +72,9 @@ class Feed extends Eventing {
 		));
 	}
 
+	// I want to remove this
 	sort( fn ){
+		console.warn('this will be removed soon');
 		this.data.sort( fn );
 	}
 }

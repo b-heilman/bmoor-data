@@ -93,12 +93,16 @@ describe('bmoor-data.Feed', function(){
 			if ( c === 0 ){
 				c++;
 				expect( res ).toEqual( {x:2} );
-				expect( feed.data.length ).toBe( 3 );
+				expect( feed.data.length ).toBe( 2 );
 			}else{
 				expect( res ).toEqual( {x:3} );
 				expect( feed.data.length ).toBe( 3 );
 			}
+		});
 
+		feed.on('update', function(){
+			expect( feed.data.length ).toBe( 3 );
+			
 			done();
 		});
 

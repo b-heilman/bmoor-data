@@ -155,8 +155,8 @@ function sorted( dex, parent, settings ){
 	var child;
 
 	settings = Object.assign(
-		{}, 
 		{
+			follow: true,
 			insert: function( datum ){
 				child.add( datum );
 				child.go();
@@ -212,7 +212,6 @@ function mapped( dex, parent, settings ){
 
 	child.go = bmoor.flow.window(function(){
 		var datum,
-			insert,
 			arr = parent.data;
 
 		child.empty();
@@ -221,21 +220,10 @@ function mapped( dex, parent, settings ){
 			settings.before();
 		}
 
-		if ( child.hasWaiting('insert') ){ // performance optimization
-			insert = ( datum ) => {
-				Array.prototype.push.call( child.data, datum );
-				child.trigger( 'insert', datum );
-			};
-		}else{
-			insert = ( datum ) => {
-				Array.prototype.push.call( child.data, datum );
-			};
-		}
-
 		for ( let i = 0, c = arr.length; i < c; i++ ){
 			datum = arr[i];
 			
-			insert( dex.go(datum) );
+			child.add( dex.go(datum) );
 		}
 
 		if ( settings.after ){
@@ -254,8 +242,8 @@ function filter( dex, parent, settings ){
 	var child;
 
 	settings = Object.assign(
-		{}, 
 		{
+			follow: true,
 			insert: function( datum ){
 				if ( dex.go(datum) ){
 					child.add( datum );
@@ -269,7 +257,6 @@ function filter( dex, parent, settings ){
 
 	child.go = bmoor.flow.window(function(){
 		var datum,
-			insert,
 			arr = parent.data;
 
 		child.empty();
@@ -278,21 +265,10 @@ function filter( dex, parent, settings ){
 			settings.before();
 		}
 
-		if ( child.hasWaiting('insert') ){ // performance optimization
-			insert = ( datum ) => {
-				Array.prototype.push.call( child.data, datum );
-				child.trigger( 'insert', datum );
-			};
-		}else{
-			insert = ( datum ) => {
-				Array.prototype.push.call( child.data, datum );
-			};
-		}
-
 		for ( let i = 0, c = arr.length; i < c; i++ ){
 			datum = arr[i];
 			if ( dex.go(datum) ){
-				insert(datum);
+				child.add(datum);
 			}
 		}
 
@@ -310,16 +286,44 @@ function filter( dex, parent, settings ){
 
 class Collection extends Feed {
 
+	_add( datum ){
+		if ( this.settings.follow && datum.on ){
+			datum.on[this.$$bmoorUid] = datum.on('update',() => {
+				this.go();
+			});
+		}
+
+		super._add( datum );
+	}
+
 	// remove a datum from the collection
-	remove( datum ){
+	_remove( datum ){
 		var dex = this.data.indexOf( datum );
 		
 		if ( dex !== -1 ){
-			this.data.splice( dex, 1 );
+			if ( dex === 0 ){
+				this.data.shift();
+			}else{
+				this.data.splice( dex, 1 );
+			}
 
-			this.trigger( 'remove', datum );
+			if ( this.settings.follow && datum.on ){
+				datum.on[this.$$bmoorUid]();
+			}
+
+			return datum;
+		}
+	}
+
+	remove( datum ){
+		var rtn = this._remove(datum);
+
+		if ( rtn ){
+			this.trigger('remove', rtn);
 
 			this.trigger('update');
+
+			return rtn;
 		}
 	}
 
@@ -327,15 +331,14 @@ class Collection extends Feed {
 	empty(){
 		var arr = this.data;
 
-		if ( this.hasWaiting('remove') ){
-			for ( let i = 0, c = arr.length; i < c; i++ ){
-				this.trigger( 'remove', arr[i] );
-			}
+		while ( arr.length ){
+			let d = arr[0];
+
+			this._remove( d );
+			this.trigger( 'remove', d );
 		}
 
 		this.trigger('update');
-
-		arr.length = 0;
 	}
 
 	// follow a parent collection
@@ -376,7 +379,7 @@ class Collection extends Feed {
 	getChild( settings ){
 		let ChildClass = (settings ? 
 				settings.childClass : null) || this.constructor,
-			child = new (ChildClass)( null, settings );
+			child = new (ChildClass)( settings );
 
 		child.parent = this;
 

@@ -669,15 +669,20 @@ var bmoor = __webpack_require__(0),
 var Feed = function (_Eventing) {
 	_inherits(Feed, _Eventing);
 
-	function Feed(src) {
+	function Feed(src, settings) {
 		_classCallCheck(this, Feed);
 
 		var _this = _possibleConstructorReturn(this, (Feed.__proto__ || Object.getPrototypeOf(Feed)).call(this));
 
 		if (!src) {
 			src = [];
-		} else {
+			_this.settings = {};
+		} else if (Array.isArray(src)) {
+			_this.settings = settings || {};
 			src.push = src.unshift = _this.add.bind(_this);
+		} else {
+			_this.settings = src;
+			src = [];
 		}
 
 		setUid(_this);
@@ -687,9 +692,14 @@ var Feed = function (_Eventing) {
 	}
 
 	_createClass(Feed, [{
+		key: '_add',
+		value: function _add(datum) {
+			oldPush.call(this.data, datum);
+		}
+	}, {
 		key: 'add',
 		value: function add(datum) {
-			oldPush.call(this.data, datum);
+			this._add(datum);
 
 			this.trigger('insert', datum);
 
@@ -700,12 +710,10 @@ var Feed = function (_Eventing) {
 		value: function consume(arr) {
 			var i, c;
 
-			oldPush.apply(this.data, arr);
-
-			if (this.hasWaiting('insert')) {
-				for (i = 0, c = arr.length; i < c; i++) {
-					this.trigger('insert', arr[i]);
-				}
+			for (i = 0, c = arr.length; i < c; i++) {
+				var d = arr[i];
+				this._add(d);
+				this.trigger('insert', d);
 			}
 
 			this.trigger('update');
@@ -723,16 +731,22 @@ var Feed = function (_Eventing) {
 					_this2.remove(datum);
 				},
 				process: function process() {
-					_this2.go();
+					if (_this2.go) {
+						_this2.go();
+					}
 				},
 				destroy: function destroy() {
 					_this2.destroy();
 				}
 			}, settings));
 		}
+
+		// I want to remove this
+
 	}, {
 		key: 'sort',
 		value: function sort(fn) {
+			console.warn('this will be removed soon');
 			this.data.sort(fn);
 		}
 	}]);
@@ -3318,6 +3332,8 @@ module.exports = validate;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _get2 = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -3478,7 +3494,8 @@ function _index(dex, parent) {
 function _sorted(dex, parent, settings) {
 	var child;
 
-	settings = Object.assign({}, {
+	settings = Object.assign({
+		follow: true,
 		insert: function insert(datum) {
 			child.add(datum);
 			child.go();
@@ -3528,7 +3545,6 @@ function mapped(dex, parent, settings) {
 
 	child.go = bmoor.flow.window(function () {
 		var datum,
-		    insert,
 		    arr = parent.data;
 
 		child.empty();
@@ -3537,22 +3553,10 @@ function mapped(dex, parent, settings) {
 			settings.before();
 		}
 
-		if (child.hasWaiting('insert')) {
-			// performance optimization
-			insert = function insert(datum) {
-				Array.prototype.push.call(child.data, datum);
-				child.trigger('insert', datum);
-			};
-		} else {
-			insert = function insert(datum) {
-				Array.prototype.push.call(child.data, datum);
-			};
-		}
-
 		for (var i = 0, c = arr.length; i < c; i++) {
 			datum = arr[i];
 
-			insert(dex.go(datum));
+			child.add(dex.go(datum));
 		}
 
 		if (settings.after) {
@@ -3570,7 +3574,8 @@ function mapped(dex, parent, settings) {
 function _filter(dex, parent, settings) {
 	var child;
 
-	settings = Object.assign({}, {
+	settings = Object.assign({
+		follow: true,
 		insert: function insert(datum) {
 			if (dex.go(datum)) {
 				child.add(datum);
@@ -3582,7 +3587,6 @@ function _filter(dex, parent, settings) {
 
 	child.go = bmoor.flow.window(function () {
 		var datum,
-		    insert,
 		    arr = parent.data;
 
 		child.empty();
@@ -3591,22 +3595,10 @@ function _filter(dex, parent, settings) {
 			settings.before();
 		}
 
-		if (child.hasWaiting('insert')) {
-			// performance optimization
-			insert = function insert(datum) {
-				Array.prototype.push.call(child.data, datum);
-				child.trigger('insert', datum);
-			};
-		} else {
-			insert = function insert(datum) {
-				Array.prototype.push.call(child.data, datum);
-			};
-		}
-
 		for (var i = 0, c = arr.length; i < c; i++) {
 			datum = arr[i];
 			if (dex.go(datum)) {
-				insert(datum);
+				child.add(datum);
 			}
 		}
 
@@ -3632,19 +3624,51 @@ var Collection = function (_Feed) {
 	}
 
 	_createClass(Collection, [{
-		key: 'remove',
+		key: '_add',
+		value: function _add(datum) {
+			var _this2 = this;
 
+			if (this.settings.follow && datum.on) {
+				datum.on[this.$$bmoorUid] = datum.on('update', function () {
+					_this2.go();
+				});
+			}
+
+			_get2(Collection.prototype.__proto__ || Object.getPrototypeOf(Collection.prototype), '_add', this).call(this, datum);
+		}
 
 		// remove a datum from the collection
-		value: function remove(datum) {
+
+	}, {
+		key: '_remove',
+		value: function _remove(datum) {
 			var dex = this.data.indexOf(datum);
 
 			if (dex !== -1) {
-				this.data.splice(dex, 1);
+				if (dex === 0) {
+					this.data.shift();
+				} else {
+					this.data.splice(dex, 1);
+				}
 
-				this.trigger('remove', datum);
+				if (this.settings.follow && datum.on) {
+					datum.on[this.$$bmoorUid]();
+				}
+
+				return datum;
+			}
+		}
+	}, {
+		key: 'remove',
+		value: function remove(datum) {
+			var rtn = this._remove(datum);
+
+			if (rtn) {
+				this.trigger('remove', rtn);
 
 				this.trigger('update');
+
+				return rtn;
 			}
 		}
 
@@ -3655,15 +3679,14 @@ var Collection = function (_Feed) {
 		value: function empty() {
 			var arr = this.data;
 
-			if (this.hasWaiting('remove')) {
-				for (var i = 0, c = arr.length; i < c; i++) {
-					this.trigger('remove', arr[i]);
-				}
+			while (arr.length) {
+				var d = arr[0];
+
+				this._remove(d);
+				this.trigger('remove', d);
 			}
 
 			this.trigger('update');
-
-			arr.length = 0;
 		}
 
 		// follow a parent collection
@@ -3671,20 +3694,20 @@ var Collection = function (_Feed) {
 	}, {
 		key: 'follow',
 		value: function follow(parent, settings) {
-			var _this2 = this;
+			var _this3 = this;
 
 			var disconnect = parent.subscribe(Object.assign({
 				insert: function insert(datum) {
-					_this2.add(datum);
+					_this3.add(datum);
 				},
 				remove: function remove(datum) {
-					_this2.remove(datum);
+					_this3.remove(datum);
 				},
 				process: function process() {
-					_this2.go();
+					_this3.go();
 				},
 				destroy: function destroy() {
-					_this2.destroy();
+					_this3.destroy();
 				}
 			}, settings));
 
@@ -3706,7 +3729,7 @@ var Collection = function (_Feed) {
 		key: 'getChild',
 		value: function getChild(settings) {
 			var ChildClass = (settings ? settings.childClass : null) || this.constructor,
-			    child = new ChildClass(null, settings);
+			    child = new ChildClass(settings);
 
 			child.parent = this;
 

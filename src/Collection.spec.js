@@ -1,5 +1,6 @@
 describe('bmoor-data.Collection', function(){
-	var Collection = require('./Collection.js');
+	var Proxy = require('./object/Proxy.js'),
+		Collection = require('./Collection.js');
 
 	it('should be defined', function(){
 		expect( Collection ).toBeDefined();
@@ -193,6 +194,35 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data.length ).toBe( 5 );
 
 			child.destroy();
+		});
+
+		it('should filter on the change of an object', function(done){
+			var a = new Proxy({foo:'eins'}),
+				b = new Proxy({foo:'zwei'}),
+				t = [
+					a,
+					b,
+					new Proxy({foo:'einser'}),
+					new Proxy({foo:'eins'}),
+					new Proxy({foo:'eins'}),
+					new Proxy({foo:'zwei'}),
+					new Proxy({foo:'drei'})
+				],
+				feed = new Collection(t),
+				child = feed.filter(
+					{ foo: 'eins' },
+					{ massage: d => d.getDatum() }
+				);
+
+			expect( child.data.length ).toBe( 3 );
+
+			child.on('process', function(){
+				expect( child.data.length ).toBe( 2 );
+
+				done();
+			});
+
+			a.merge({foo:'nope'});
 		});
 
 		it('should be able to filter by array index', function( done ){
