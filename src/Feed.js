@@ -24,6 +24,18 @@ class Feed extends Eventing {
 		setUid(this);
 
 		this.data = src;
+
+		if ( this.settings.controller ){
+			this.controller = new (this.settings.controller)( this );
+		}
+
+		this.ready = bmoor.flow.window( () => {
+			if ( this.controller && this.controller.ready ){
+				this.controller.ready();
+			}
+
+			this.trigger('update');
+		}, this.settings.windowMin||0, this.settings.windowMax||30);
 	}
 
 	_add( datum ){
@@ -35,7 +47,7 @@ class Feed extends Eventing {
 
 		this.trigger( 'insert', datum );
 
-		this.trigger( 'update' );
+		this.ready();
 	}
 
 	consume( arr ){
@@ -47,7 +59,7 @@ class Feed extends Eventing {
 			this.trigger( 'insert', d );
 		}
 
-		this.trigger( 'update' );
+		this.ready();
 	}
 
 	follow( parent, settings ){

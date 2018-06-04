@@ -48,7 +48,7 @@ function isDirty( obj ){
 	return false;
 }
 
-function getChanges( obj ){
+function getChanges( obj, cmp ){
 	var rtn = {},
 		valid = false,
 		keys = Object.keys( obj );
@@ -57,17 +57,18 @@ function getChanges( obj ){
 		let k = keys[i];
 
 		if ( k.charAt(0) !== '$' ){
-			let d = obj[k];
+			let datum = obj[k];
 
-			if ( bmoor.isObject(d) ){
-				d = getChanges(d);
-				if ( d ){
+			if ( bmoor.isObject(datum) ){
+				let res = getChanges( datum, cmp?cmp[k]:null );
+				
+				if ( res ){
 					valid = true;
-					rtn[k] = d;
+					rtn[k] = res;
 				}
-			}else{
+			}else if ( !cmp || !(k in cmp) || cmp[k] !== datum ){
 				valid = true;
-				rtn[k] = d;
+				rtn[k] = datum;
 			}
 		}
 	}
@@ -119,7 +120,7 @@ class Proxy extends Eventing {
 	}
 
 	getChanges(){
-		return getChanges( this.mask );
+		return getChanges( this.mask, this.getDatum() );
 	}
 
 	isDirty(){
@@ -149,13 +150,17 @@ class Proxy extends Eventing {
 
 	merge( delta ){
 		if ( !delta ){
-			delta = this.mask;
+			delta = this.getChanges();
+		}else{
+			delta = getChanges( delta, this.getDatum() );
 		}
 
-		bmoor.object.merge( this.getDatum(), delta );
+		if ( delta ){
+			bmoor.object.merge( this.getDatum(), delta );
 
-		this.mask = null;
-		this.trigger( 'update', delta );
+			this.mask = null;
+			this.trigger( 'update', delta );
+		}
 	}
 
 	trigger(){

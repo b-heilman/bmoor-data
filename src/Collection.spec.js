@@ -621,7 +621,7 @@ describe('bmoor-data.Collection', function(){
 			expect( child.get('monkey').data.length ).toBe( 1 );
 		});
 
-		it('should properly reroute buckets', function(){
+		it('should properly reroute buckets', function( done ){
 			var t = child.get('dog').data[0],
 				dog = false,
 				pig = false;
@@ -643,10 +643,14 @@ describe('bmoor-data.Collection', function(){
 			expect( child.get('pig').data.length ).toBe( 1 );
 			expect( child.get('pig').data[0].id ).toBe( 1 );
 
-			expect( dog ).toBe( true );
-			expect( pig ).toBe( true );
+			setTimeout(function(){
+				expect( dog ).toBe( true );
+				expect( pig ).toBe( true );
 
-			child.disconnect();
+				child.disconnect();
+
+				done();
+			}, 30);
 		});
 	});
 });

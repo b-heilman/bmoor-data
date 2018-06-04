@@ -217,6 +217,53 @@ describe('bmoor-data.object.Proxy', function(){
 		});
 	});
 
+	describe('::merge', function(){
+		it('should not call update if no changes are merged', function(){
+			var called = false,
+				target = {
+					foo: 'bar',
+					hello: 'world'
+				},
+				proxy = new Proxy( target );
+
+			proxy.on('update', function(){
+				called = true;
+			});
+
+			proxy.merge({foo:'bar'});
+
+			expect( called ).toBe( false );
+
+			proxy.merge({foo:'bared'});
+
+			expect( called ).toBe( true ); 
+		});
+
+		it('should not call update if no changes are merged', function(){
+			var called = false,
+				target = {
+					foo: 'bar',
+					hello: 'world'
+				},
+				proxy = new Proxy( target ),
+				mask = proxy.getMask();
+
+			proxy.on('update', function(){
+				called = true;
+			});
+
+			mask.foo = 'bar';
+			proxy.merge();
+
+			expect( called ).toBe( false );
+
+			mask.foo = 'bared';
+			proxy.merge();
+
+			expect( called ).toBe( true ); 
+		});
+	});
+
 	describe('$ for accessing', function(){
 		it('should work on a base level', function(){
 			var target = {

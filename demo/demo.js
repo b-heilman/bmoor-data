@@ -688,6 +688,18 @@ var Feed = function (_Eventing) {
 		setUid(_this);
 
 		_this.data = src;
+
+		if (_this.settings.controller) {
+			_this.controller = new _this.settings.controller(_this);
+		}
+
+		_this.ready = bmoor.flow.window(function () {
+			if (_this.controller && _this.controller.ready) {
+				_this.controller.ready();
+			}
+
+			_this.trigger('update');
+		}, _this.settings.windowMin || 0, _this.settings.windowMax || 30);
 		return _this;
 	}
 
@@ -703,7 +715,7 @@ var Feed = function (_Eventing) {
 
 			this.trigger('insert', datum);
 
-			this.trigger('update');
+			this.ready();
 		}
 	}, {
 		key: 'consume',
@@ -716,7 +728,7 @@ var Feed = function (_Eventing) {
 				this.trigger('insert', d);
 			}
 
-			this.trigger('update');
+			this.ready();
 		}
 	}, {
 		key: 'follow',
@@ -1045,6 +1057,8 @@ function build(obj) {
 }
 
 var Hash = function Hash(ops, settings) {
+	var _this = this;
+
 	_classCallCheck(this, Hash);
 
 	var fn, hash;
@@ -1066,16 +1080,20 @@ var Hash = function Hash(ops, settings) {
 	}
 
 	this.hash = settings.hash || hash;
-	this.go = function (search) {
-		if (!bmoor.isObject(search)) {
-			return search;
+	this.fn = fn;
+	this.parse = function (search) {
+		if (bmoor.isObject(search)) {
+			return _this.fn(search);
 		} else {
-			if (settings.massage) {
-				search = settings.massage(search);
-			}
-
-			return fn(search);
+			return search;
 		}
+	};
+	this.go = function (search) {
+		if (settings.massage && bmoor.isObject(search)) {
+			search = settings.massage(search);
+		}
+
+		return _this.parse(search);
 	};
 };
 
@@ -1130,6 +1148,8 @@ function build(obj) {
 }
 
 var Test = function Test(ops, settings) {
+	var _this = this;
+
 	_classCallCheck(this, Test);
 
 	var fn, hash;
@@ -1151,12 +1171,13 @@ var Test = function Test(ops, settings) {
 	}
 
 	this.hash = settings.hash || hash;
+	this.parse = fn;
 	this.go = function (search) {
 		if (settings.massage) {
 			search = settings.massage(search);
 		}
 
-		return fn(search);
+		return _this.parse(search);
 	};
 };
 
@@ -1270,10 +1291,10 @@ module.exports = {
 	Pool: __webpack_require__(25),
 	Collection: __webpack_require__(31),
 	stream: {
-		Converter: __webpack_require__(32)
+		Converter: __webpack_require__(39)
 	},
 	object: {
-		Proxy: __webpack_require__(33),
+		Proxy: __webpack_require__(40),
 		Test: __webpack_require__(7),
 		Hash: __webpack_require__(6)
 	}
@@ -3332,7 +3353,7 @@ module.exports = validate;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _get2 = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -3344,275 +3365,13 @@ var bmoor = __webpack_require__(0),
     Feed = __webpack_require__(3),
     Hash = __webpack_require__(6),
     Test = __webpack_require__(7),
-    setUid = bmoor.data.setUid;
-
-function testStack(old, fn) {
-	if (old) {
-		return function (massaged, ctx) {
-			if (fn(massaged, ctx)) {
-				return true;
-			} else {
-				return old(massaged, ctx);
-			}
-		};
-	} else {
-		return fn;
-	}
-}
-
-function memorized(parent, cache, expressor, generator, settings) {
-	var rtn, index, oldDisconnect;
-
-	if (!parent[cache]) {
-		parent[cache] = {};
-	}
-
-	index = parent[cache];
-
-	rtn = index[expressor.hash];
-
-	if (!rtn) {
-		if (!settings) {
-			settings = {};
-		}
-
-		if (settings.disconnect) {
-			oldDisconnect = settings.disconnect;
-		}
-
-		settings.disconnect = function () {
-			if (oldDisconnect) {
-				oldDisconnect();
-			}
-
-			index[expressor.hash] = null;
-		};
-
-		rtn = generator(expressor, parent, settings);
-
-		index[expressor.hash] = rtn;
-	}
-
-	return rtn;
-}
-
-function _route(dex, parent) {
-	var old = {},
-	    index = {},
-	    _get = function _get(key) {
-		var collection = index[key];
-
-		if (!collection) {
-			collection = parent.getChild(false);
-			index[key] = collection;
-		}
-
-		return collection;
-	};
-
-	function add(datum) {
-		var d = dex.go(datum);
-
-		old[setUid(datum)] = d;
-
-		_get(d).add(datum);
-	}
-
-	function _remove(datum) {
-		var dex = setUid(datum);
-
-		if (dex in old) {
-			_get(old[dex]).remove(datum);
-		}
-	}
-
-	for (var i = 0, c = parent.data.length; i < c; i++) {
-		add(parent.data[i]);
-	}
-
-	var _disconnect = parent.subscribe({
-		insert: function insert(datum) {
-			add(datum);
-		},
-		remove: function remove(datum) {
-			_remove(datum);
-		}
-	});
-
-	return {
-		get: function get(search) {
-			return _get(dex.go(search));
-		},
-		reroute: function reroute(datum) {
-			_remove(datum);
-			add(datum);
-		},
-		keys: function keys() {
-			return Object.keys(index);
-		},
-		disconnect: function disconnect() {
-			_disconnect();
-		}
-	};
-}
-
-function _index(dex, parent) {
-	var index = {};
-
-	for (var i = 0, c = parent.data.length; i < c; i++) {
-		var datum = parent.data[i],
-		    key = dex.go(datum);
-
-		index[key] = datum;
-	}
-
-	var _disconnect2 = parent.subscribe({
-		insert: function insert(datum) {
-			var key = dex.go(datum);
-			index[key] = datum;
-		},
-		remove: function remove(datum) {
-			var key = dex.go(datum);
-			delete index[key];
-		}
-	});
-
-	return {
-		get: function get(search) {
-			var key = dex.go(search);
-			return index[key];
-		},
-		keys: function keys() {
-			return Object.keys(index);
-		},
-		disconnect: function disconnect() {
-			_disconnect2();
-		}
-	};
-}
-
-function _sorted(dex, parent, settings) {
-	var child;
-
-	settings = Object.assign({
-		follow: true,
-		insert: function insert(datum) {
-			child.add(datum);
-			child.go();
-		},
-		update: function update() {
-			child.go();
-		}
-	}, settings);
-
-	child = parent.getChild(settings);
-
-	for (var i = 0, c = parent.data.length; i < c; i++) {
-		child.add(parent.data[i]);
-	}
-
-	child.go = bmoor.flow.window(function () {
-		if (settings.before) {
-			settings.before();
-		}
-
-		child.data.sort(dex.go);
-
-		if (settings.after) {
-			settings.after();
-		}
-
-		child.trigger('process');
-	}, settings.min || 5, settings.max || 30);
-
-	child.go.flush();
-
-	return child;
-}
-
-function mapped(dex, parent, settings) {
-	var child;
-
-	settings = Object.assign({}, {
-		insert: function insert(datum) {
-			// I only need to 
-			child.add(dex.go(datum));
-		}
-		// remove should use a look-aside
-	}, settings);
-
-	child = parent.getChild(settings);
-
-	child.go = bmoor.flow.window(function () {
-		var datum,
-		    arr = parent.data;
-
-		child.empty();
-
-		if (settings.before) {
-			settings.before();
-		}
-
-		for (var i = 0, c = arr.length; i < c; i++) {
-			datum = arr[i];
-
-			child.add(dex.go(datum));
-		}
-
-		if (settings.after) {
-			settings.after();
-		}
-
-		child.trigger('process');
-	}, settings.min || 5, settings.max || 30);
-
-	child.go.flush();
-
-	return child;
-}
-
-function _filter(dex, parent, settings) {
-	var child;
-
-	settings = Object.assign({
-		follow: true,
-		insert: function insert(datum) {
-			if (dex.go(datum)) {
-				child.add(datum);
-			}
-		}
-	}, settings);
-
-	child = parent.getChild(settings);
-
-	child.go = bmoor.flow.window(function () {
-		var datum,
-		    arr = parent.data;
-
-		child.empty();
-
-		if (settings.before) {
-			settings.before();
-		}
-
-		for (var i = 0, c = arr.length; i < c; i++) {
-			datum = arr[i];
-			if (dex.go(datum)) {
-				child.add(datum);
-			}
-		}
-
-		if (settings.after) {
-			settings.after();
-		}
-
-		child.trigger('process');
-	}, settings.min || 5, settings.max || 30);
-
-	child.go.flush();
-
-	return child;
-}
+    _route = __webpack_require__(32).fn,
+    _index = __webpack_require__(33).fn,
+    _filter = __webpack_require__(34).fn,
+    _sorted = __webpack_require__(35).fn,
+    mapped = __webpack_require__(36).fn,
+    testStack = __webpack_require__(37).test,
+    memorized = __webpack_require__(38).memorized;
 
 var Collection = function (_Feed) {
 	_inherits(Collection, _Feed);
@@ -3626,15 +3385,11 @@ var Collection = function (_Feed) {
 	_createClass(Collection, [{
 		key: '_add',
 		value: function _add(datum) {
-			var _this2 = this;
-
 			if (this.settings.follow && datum.on) {
-				datum.on[this.$$bmoorUid] = datum.on('update', function () {
-					_this2.go();
-				});
+				datum.on[this.$$bmoorUid] = datum.on('update', this.settings.follow);
 			}
 
-			_get2(Collection.prototype.__proto__ || Object.getPrototypeOf(Collection.prototype), '_add', this).call(this, datum);
+			_get(Collection.prototype.__proto__ || Object.getPrototypeOf(Collection.prototype), '_add', this).call(this, datum);
 		}
 
 		// remove a datum from the collection
@@ -3666,7 +3421,7 @@ var Collection = function (_Feed) {
 			if (rtn) {
 				this.trigger('remove', rtn);
 
-				this.trigger('update');
+				this.ready();
 
 				return rtn;
 			}
@@ -3686,7 +3441,7 @@ var Collection = function (_Feed) {
 				this.trigger('remove', d);
 			}
 
-			this.trigger('update');
+			this.ready();
 		}
 
 		// follow a parent collection
@@ -3694,20 +3449,20 @@ var Collection = function (_Feed) {
 	}, {
 		key: 'follow',
 		value: function follow(parent, settings) {
-			var _this3 = this;
+			var _this2 = this;
 
 			var disconnect = parent.subscribe(Object.assign({
 				insert: function insert(datum) {
-					_this3.add(datum);
+					_this2.add(datum);
 				},
 				remove: function remove(datum) {
-					_this3.remove(datum);
+					_this2.remove(datum);
 				},
 				process: function process() {
-					_this3.go();
+					_this2.go();
 				},
 				destroy: function destroy() {
-					_this3.destroy();
+					_this2.destroy();
 				}
 			}, settings));
 
@@ -3762,7 +3517,7 @@ var Collection = function (_Feed) {
 	}, {
 		key: 'get',
 		value: function get(search, settings) {
-			this.index(search, settings).get(search);
+			return this.index(search, settings).get(search);
 		}
 	}, {
 		key: 'route',
@@ -3937,6 +3692,352 @@ module.exports = Collection;
 "use strict";
 
 
+var bmoor = __webpack_require__(0),
+    setUid = bmoor.data.setUid;
+
+module.exports = {
+	fn: function route(dex, parent) {
+		var old = {},
+		    index = {},
+		    _get = function _get(key) {
+			var collection = index[key];
+
+			if (!collection) {
+				collection = parent.getChild(false);
+				index[key] = collection;
+			}
+
+			return collection;
+		};
+
+		function add(datum) {
+			var d = dex.go(datum);
+
+			old[setUid(datum)] = d;
+
+			_get(d).add(datum);
+		}
+
+		function _remove(datum) {
+			var dex = setUid(datum);
+
+			if (dex in old) {
+				_get(old[dex]).remove(datum);
+			}
+		}
+
+		for (var i = 0, c = parent.data.length; i < c; i++) {
+			add(parent.data[i]);
+		}
+
+		var _disconnect = parent.subscribe({
+			insert: function insert(datum) {
+				add(datum);
+			},
+			remove: function remove(datum) {
+				_remove(datum);
+			}
+		});
+
+		return {
+			get: function get(search) {
+				return _get(dex.parse(search));
+			},
+			reroute: function reroute(datum) {
+				_remove(datum);
+				add(datum);
+			},
+			keys: function keys() {
+				return Object.keys(index);
+			},
+			disconnect: function disconnect() {
+				_disconnect();
+			}
+		};
+	}
+};
+
+/***/ }),
+/* 33 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = {
+	fn: function index(dex, parent) {
+		var index = {};
+
+		for (var i = 0, c = parent.data.length; i < c; i++) {
+			var datum = parent.data[i],
+			    key = dex.go(datum);
+
+			index[key] = datum;
+		}
+
+		var _disconnect = parent.subscribe({
+			insert: function insert(datum) {
+				var key = dex.go(datum);
+				index[key] = datum;
+			},
+			remove: function remove(datum) {
+				var key = dex.go(datum);
+				delete index[key];
+			}
+		});
+
+		return {
+			get: function get(search) {
+				var key = dex.parse(search);
+				return index[key];
+			},
+			keys: function keys() {
+				return Object.keys(index);
+			},
+			disconnect: function disconnect() {
+				_disconnect();
+			}
+		};
+	}
+};
+
+/***/ }),
+/* 34 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var bmoor = __webpack_require__(0);
+
+module.exports = {
+	fn: function fn(dex, parent, settings) {
+		var child;
+
+		settings = Object.assign({
+			follow: function follow() {
+				// TODO: does go actually need to be called?
+				child.go();
+			},
+			insert: function insert(datum) {
+				if (dex.go(datum)) {
+					child.add(datum);
+				}
+			}
+		}, settings);
+
+		child = parent.getChild(settings);
+
+		child.go = bmoor.flow.window(function () {
+			var datum,
+			    arr = parent.data;
+
+			child.empty();
+
+			if (settings.before) {
+				settings.before();
+			}
+
+			for (var i = 0, c = arr.length; i < c; i++) {
+				datum = arr[i];
+				if (dex.go(datum)) {
+					child.add(datum);
+				}
+			}
+
+			if (settings.after) {
+				settings.after();
+			}
+
+			child.trigger('process');
+		}, settings.min || 5, settings.max || 30);
+
+		child.go.flush();
+
+		return child;
+	}
+};
+
+/***/ }),
+/* 35 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var bmoor = __webpack_require__(0);
+
+module.exports = {
+	fn: function fn(dex, parent, settings) {
+		var child;
+
+		settings = Object.assign({
+			follow: function follow() {
+				// TODO: does go actually need to be called?
+				child.go();
+			},
+			insert: function insert(datum) {
+				child.add(datum);
+				child.go();
+			},
+			update: function update() {
+				child.go();
+			}
+		}, settings);
+
+		child = parent.getChild(settings);
+
+		for (var i = 0, c = parent.data.length; i < c; i++) {
+			child.add(parent.data[i]);
+		}
+
+		child.go = bmoor.flow.window(function () {
+			if (settings.before) {
+				settings.before();
+			}
+
+			child.data.sort(dex.go);
+
+			if (settings.after) {
+				settings.after();
+			}
+
+			child.trigger('process');
+		}, settings.min || 5, settings.max || 30);
+
+		child.go.flush();
+
+		return child;
+	}
+};
+
+/***/ }),
+/* 36 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var bmoor = __webpack_require__(0);
+
+module.exports = {
+	fn: function fn(dex, parent, settings) {
+		var child;
+
+		settings = Object.assign({}, {
+			insert: function insert(datum) {
+				// I only need to 
+				child.add(dex.go(datum));
+			}
+			// remove should use a look-aside
+		}, settings);
+
+		child = parent.getChild(settings);
+
+		child.go = bmoor.flow.window(function () {
+			var datum,
+			    arr = parent.data;
+
+			child.empty();
+
+			if (settings.before) {
+				settings.before();
+			}
+
+			for (var i = 0, c = arr.length; i < c; i++) {
+				datum = arr[i];
+
+				child.add(dex.go(datum));
+			}
+
+			if (settings.after) {
+				settings.after();
+			}
+
+			child.trigger('process');
+		}, settings.min || 5, settings.max || 30);
+
+		child.go.flush();
+
+		return child;
+	}
+};
+
+/***/ }),
+/* 37 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = {
+	test: function test(old, fn) {
+		if (old) {
+			return function () {
+				if (fn.apply(this, arguments)) {
+					return true;
+				} else {
+					return old.apply(this, arguments);
+				}
+			};
+		} else {
+			return fn;
+		}
+	}
+};
+
+/***/ }),
+/* 38 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = {
+	memorized: function memorized(parent, cache, expressor, generator, settings) {
+		var rtn, index, oldDisconnect;
+
+		if (!parent[cache]) {
+			parent[cache] = {};
+		}
+
+		index = parent[cache];
+
+		rtn = index[expressor.hash];
+
+		if (!rtn) {
+			if (!settings) {
+				settings = {};
+			}
+
+			if (settings.disconnect) {
+				oldDisconnect = settings.disconnect;
+			}
+
+			settings.disconnect = function () {
+				if (oldDisconnect) {
+					oldDisconnect();
+				}
+
+				index[expressor.hash] = null;
+			};
+
+			rtn = generator(expressor, parent, settings);
+
+			index[expressor.hash] = rtn;
+		}
+
+		return rtn;
+	}
+};
+
+/***/ }),
+/* 39 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -4072,7 +4173,7 @@ var Converter = function (_Eventing) {
 module.exports = Converter;
 
 /***/ }),
-/* 33 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4134,7 +4235,7 @@ function _isDirty(obj) {
 	return false;
 }
 
-function _getChanges(obj) {
+function _getChanges(obj, cmp) {
 	var rtn = {},
 	    valid = false,
 	    keys = Object.keys(obj);
@@ -4143,17 +4244,18 @@ function _getChanges(obj) {
 		var k = keys[i];
 
 		if (k.charAt(0) !== '$') {
-			var d = obj[k];
+			var datum = obj[k];
 
-			if (bmoor.isObject(d)) {
-				d = _getChanges(d);
-				if (d) {
+			if (bmoor.isObject(datum)) {
+				var res = _getChanges(datum, cmp ? cmp[k] : null);
+
+				if (res) {
 					valid = true;
-					rtn[k] = d;
+					rtn[k] = res;
 				}
-			} else {
+			} else if (!cmp || !(k in cmp) || cmp[k] !== datum) {
 				valid = true;
-				rtn[k] = d;
+				rtn[k] = datum;
 			}
 		}
 	}
@@ -4214,7 +4316,7 @@ var Proxy = function (_Eventing) {
 	}, {
 		key: 'getChanges',
 		value: function getChanges() {
-			return _getChanges(this.mask);
+			return _getChanges(this.mask, this.getDatum());
 		}
 	}, {
 		key: 'isDirty',
@@ -4250,13 +4352,17 @@ var Proxy = function (_Eventing) {
 		key: 'merge',
 		value: function merge(delta) {
 			if (!delta) {
-				delta = this.mask;
+				delta = this.getChanges();
+			} else {
+				delta = _getChanges(delta, this.getDatum());
 			}
 
-			bmoor.object.merge(this.getDatum(), delta);
+			if (delta) {
+				bmoor.object.merge(this.getDatum(), delta);
 
-			this.mask = null;
-			this.trigger('update', delta);
+				this.mask = null;
+				this.trigger('update', delta);
+			}
 		}
 	}, {
 		key: 'trigger',

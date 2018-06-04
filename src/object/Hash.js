@@ -64,16 +64,20 @@ class Hash {
 		}
 
 		this.hash = settings.hash || hash;
-		this.go = function( search ){
-			if ( !bmoor.isObject(search) ) {
-				return search; 
+		this.fn = fn;
+		this.parse = ( search ) => {
+			if ( bmoor.isObject(search) ) {
+				return this.fn( search );
 			}else{
-				if ( settings.massage ){
-					search = settings.massage(search);
-				}
-
-				return fn(search);
+				return search; 
 			}
+		};
+		this.go = ( search ) => {
+			if ( settings.massage && bmoor.isObject(search) ){
+				search = settings.massage(search);
+			}
+
+			return this.parse(search);
 		};
 	}
 }

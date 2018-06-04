@@ -64,12 +64,13 @@ class Test {
 		}
 
 		this.hash = settings.hash || hash;
-		this.go = function( search ){
+		this.parse = fn;
+		this.go = ( search ) => {
 			if ( settings.massage ){
 				search = settings.massage(search);
 			}
 
-			return fn(search);
+			return this.parse(search);
 		};
 	}
 }
