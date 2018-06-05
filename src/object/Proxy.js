@@ -30,8 +30,12 @@ function makeMask( target, override ){
 	return mask;
 }
 
-function isDirty( obj ){
+function isDirty( obj, cmp ){
 	var keys = Object.keys( obj );
+
+	if ( !cmp ){
+		cmp = Object.getPrototypeOf( obj );
+	}
 
 	for( let i = 0, c = keys.length; i < c; i++ ){
 		let k = keys[i];
@@ -39,7 +43,9 @@ function isDirty( obj ){
 		if ( k.charAt(0) !== '$' ){
 			let t = obj[k];
 
-			if ( !bmoor.isObject(t) || isDirty(t) ){
+			if ( (!bmoor.isObject(t) && t !== cmp[k]) || 
+				isDirty(t,cmp[k]) 
+			){
 				return true;
 			}
 		}
@@ -52,6 +58,10 @@ function getChanges( obj, cmp ){
 	var rtn = {},
 		valid = false,
 		keys = Object.keys( obj );
+
+	if ( !cmp ){
+		cmp = Object.getPrototypeOf( obj );
+	}
 
 	for( let i = 0, c = keys.length; i < c; i++ ){
 		let k = keys[i];
@@ -66,7 +76,7 @@ function getChanges( obj, cmp ){
 					valid = true;
 					rtn[k] = res;
 				}
-			}else if ( !cmp || !(k in cmp) || cmp[k] !== datum ){
+			}else if ( !(k in cmp) || cmp[k] !== datum ){
 				valid = true;
 				rtn[k] = datum;
 			}
@@ -120,7 +130,7 @@ class Proxy extends Eventing {
 	}
 
 	getChanges(){
-		return getChanges( this.mask, this.getDatum() );
+		return getChanges( this.mask );
 	}
 
 	isDirty(){

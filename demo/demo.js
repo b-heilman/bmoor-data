@@ -4217,8 +4217,12 @@ function makeMask(target, override) {
 	return mask;
 }
 
-function _isDirty(obj) {
+function _isDirty(obj, cmp) {
 	var keys = Object.keys(obj);
+
+	if (!cmp) {
+		cmp = Object.getPrototypeOf(obj);
+	}
 
 	for (var i = 0, c = keys.length; i < c; i++) {
 		var k = keys[i];
@@ -4226,7 +4230,7 @@ function _isDirty(obj) {
 		if (k.charAt(0) !== '$') {
 			var t = obj[k];
 
-			if (!bmoor.isObject(t) || _isDirty(t)) {
+			if (!bmoor.isObject(t) && t !== cmp[k] || _isDirty(t, cmp[k])) {
 				return true;
 			}
 		}
@@ -4239,6 +4243,10 @@ function _getChanges(obj, cmp) {
 	var rtn = {},
 	    valid = false,
 	    keys = Object.keys(obj);
+
+	if (!cmp) {
+		cmp = Object.getPrototypeOf(obj);
+	}
 
 	for (var i = 0, c = keys.length; i < c; i++) {
 		var k = keys[i];
@@ -4253,7 +4261,7 @@ function _getChanges(obj, cmp) {
 					valid = true;
 					rtn[k] = res;
 				}
-			} else if (!cmp || !(k in cmp) || cmp[k] !== datum) {
+			} else if (!(k in cmp) || cmp[k] !== datum) {
 				valid = true;
 				rtn[k] = datum;
 			}
@@ -4316,7 +4324,7 @@ var Proxy = function (_Eventing) {
 	}, {
 		key: 'getChanges',
 		value: function getChanges() {
-			return _getChanges(this.mask, this.getDatum());
+			return _getChanges(this.mask);
 		}
 	}, {
 		key: 'isDirty',
