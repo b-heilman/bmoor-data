@@ -88,7 +88,7 @@ function getChanges( obj, cmp ){
 	}
 }
 
-function map( delta, obj ){
+function map( obj, delta ){
 	var keys = Object.keys( delta );
 
 	for( let i = 0, c = keys.length; i < c; i++ ){
@@ -99,13 +99,47 @@ function map( delta, obj ){
 		if ( k.charAt(0) !== '$' ){
 			if ( d !== o ){
 				if ( bmoor.isObject(d) && bmoor.isObject(o) ){
-					map( d, o );
+					map( o, d );
 				}else{
 					obj[k] = d;
 				}
 			}
 		}
 	}
+}
+
+function flatten( obj, cmp ){
+	var rtn = {};
+
+	if ( !cmp ){
+		cmp = Object.getPrototypeOf( obj );
+	}
+
+	Object.keys( cmp ).forEach(function( key ){
+		if ( key.charAt(0) !== '$' ){
+			let v = cmp[key];
+
+			if ( bmoor.isObject(v) && !obj.hasOwnProperty(key) ){
+				rtn[key] = bmoor.object.copy( {}, v );
+			}else{
+				rtn[key] = v;
+			}
+		}
+	});
+
+	Object.keys( obj ).forEach(function( key ){
+		if ( key.charAt(0) !== '$' ){
+			let v = obj[key];
+
+			if ( bmoor.isObject(v) ){
+				rtn[key] = flatten( v, cmp[key] );
+			}else{
+				rtn[key] = v;
+			}
+		}
+	});
+
+	return rtn;
 }
 
 class Proxy extends Eventing {
@@ -140,7 +174,7 @@ class Proxy extends Eventing {
 	map( delta ){
 		var mask = this.getMask();
 
-		map( delta, mask );
+		map( mask, delta );
 
 		return mask;
 	}
@@ -173,6 +207,14 @@ class Proxy extends Eventing {
 		}
 	}
 
+	flatten( delta ){
+		if ( delta ){
+			return flatten( delta, this.getDatum() );
+		}else{
+			return flatten( this.getMask() );
+		}
+	}
+
 	trigger(){
 		// always make the datum be the last argument passed
 		arguments[arguments.length] = this.getDatum();
@@ -186,7 +228,9 @@ class Proxy extends Eventing {
 	}
 }
 
+Proxy.map = map;
 Proxy.isDirty = isDirty;
+Proxy.flatten = flatten;
 Proxy.getChanges = getChanges;
 
 module.exports = Proxy;

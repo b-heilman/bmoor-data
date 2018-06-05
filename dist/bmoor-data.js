@@ -4186,7 +4186,7 @@ function _getChanges(obj, cmp) {
 	}
 }
 
-function _map(delta, obj) {
+function _map(obj, delta) {
 	var keys = Object.keys(delta);
 
 	for (var i = 0, c = keys.length; i < c; i++) {
@@ -4197,13 +4197,47 @@ function _map(delta, obj) {
 		if (k.charAt(0) !== '$') {
 			if (d !== o) {
 				if (bmoor.isObject(d) && bmoor.isObject(o)) {
-					_map(d, o);
+					_map(o, d);
 				} else {
 					obj[k] = d;
 				}
 			}
 		}
 	}
+}
+
+function _flatten(obj, cmp) {
+	var rtn = {};
+
+	if (!cmp) {
+		cmp = Object.getPrototypeOf(obj);
+	}
+
+	Object.keys(cmp).forEach(function (key) {
+		if (key.charAt(0) !== '$') {
+			var v = cmp[key];
+
+			if (bmoor.isObject(v) && !obj.hasOwnProperty(key)) {
+				rtn[key] = bmoor.object.copy({}, v);
+			} else {
+				rtn[key] = v;
+			}
+		}
+	});
+
+	Object.keys(obj).forEach(function (key) {
+		if (key.charAt(0) !== '$') {
+			var v = obj[key];
+
+			if (bmoor.isObject(v)) {
+				rtn[key] = _flatten(v, cmp[key]);
+			} else {
+				rtn[key] = v;
+			}
+		}
+	});
+
+	return rtn;
 }
 
 var Proxy = function (_Eventing) {
@@ -4249,7 +4283,7 @@ var Proxy = function (_Eventing) {
 		value: function map(delta) {
 			var mask = this.getMask();
 
-			_map(delta, mask);
+			_map(mask, delta);
 
 			return mask;
 		}
@@ -4286,6 +4320,15 @@ var Proxy = function (_Eventing) {
 			}
 		}
 	}, {
+		key: 'flatten',
+		value: function flatten(delta) {
+			if (delta) {
+				return _flatten(delta, this.getDatum());
+			} else {
+				return _flatten(this.getMask());
+			}
+		}
+	}, {
 		key: 'trigger',
 		value: function trigger() {
 			// always make the datum be the last argument passed
@@ -4304,7 +4347,9 @@ var Proxy = function (_Eventing) {
 	return Proxy;
 }(Eventing);
 
+Proxy.map = _map;
 Proxy.isDirty = _isDirty;
+Proxy.flatten = _flatten;
 Proxy.getChanges = _getChanges;
 
 module.exports = Proxy;

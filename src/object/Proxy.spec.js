@@ -264,6 +264,67 @@ describe('bmoor-data.object.Proxy', function(){
 		});
 	});
 
+	describe('::flatten', function(){
+		it('should copy in objects', function(){
+			var target = {
+					foo: 'bar',
+					obj: {
+						eins: 1,
+						zwei: 2
+					},
+					boop: 'bop'
+				},
+				proxy = new Proxy( target ),
+				res = proxy.flatten({
+					foo: 'bar2',
+					hello: 'world',
+					obj: {
+						drei: 3
+					}
+				});
+
+			target.eins = 10;
+
+			expect( res.foo ).toBe( 'bar2' );
+			expect( res.obj.eins ).toBe( 1 );
+			expect( res.obj.zwei ).toBe( 2 );
+			expect( res.obj.drei ).toBe( 3 );
+			expect( res.hello ).toBe( 'world' );
+			expect( res.boop ).toBe( 'bop' );
+		});
+
+		it('should copy in objects', function(){
+			var target = {
+					foo: 'bar',
+					obj: {
+						eins: 1,
+						zwei: 2
+					},
+					boop: 'bop'
+				},
+				proxy = new Proxy( target );
+
+			proxy.getMask({
+				foo: 'bar2',
+				hello: 'world',
+				obj: {
+					drei: 3
+				}
+			});
+
+			let res = proxy.flatten();
+			
+			target.eins = 10;
+
+			expect( res.foo ).toBe( 'bar2' );
+			expect( res.obj.eins ).toBe( 1 );
+			expect( res.obj.zwei ).toBe( 2 );
+			expect( res.obj.drei ).toBe( 3 );
+			expect( res.hello ).toBe( 'world' );
+			expect( res.boop ).toBe( 'bop' );
+		});
+	});
+
 	describe('$ for accessing', function(){
 		it('should work on a base level', function(){
 			var target = {
