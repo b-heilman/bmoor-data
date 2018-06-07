@@ -4230,7 +4230,9 @@ function _isDirty(obj, cmp) {
 		if (k.charAt(0) !== '$') {
 			var t = obj[k];
 
-			if (!bmoor.isObject(t) && t !== cmp[k] || _isDirty(t, cmp[k])) {
+			if (t === cmp[k]) {
+				continue;
+			} else if (!bmoor.isObject(t) || _isDirty(t, cmp[k])) {
 				return true;
 			}
 		}

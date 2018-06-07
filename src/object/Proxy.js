@@ -43,9 +43,9 @@ function isDirty( obj, cmp ){
 		if ( k.charAt(0) !== '$' ){
 			let t = obj[k];
 
-			if ( (!bmoor.isObject(t) && t !== cmp[k]) || 
-				isDirty(t,cmp[k]) 
-			){
+			if ( t === cmp[k] ){
+				continue;
+			}else if ( !bmoor.isObject(t) || isDirty(t,cmp[k]) ){
 				return true;
 			}
 		}

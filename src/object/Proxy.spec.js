@@ -6,7 +6,7 @@ describe('bmoor-data.object.Proxy', function(){
 		expect( Proxy ).toBeDefined();
 	});
 
-	describe('isDirty', function(){
+	describe('::isDirty', function(){
 		it('should work with null', function(){
 			var target = {
 					foo: 'bar',
@@ -24,6 +24,28 @@ describe('bmoor-data.object.Proxy', function(){
 			expect( proxy.isDirty() ).toBe( false );
 
 			mask.foo = null;
+
+			expect( proxy.isDirty() ).toBe( true );
+		});
+
+		it('should work with string', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					},
+					blah: {
+						blah: 'blah'
+					}
+				},
+				proxy = new Proxy( target ),
+				mask = proxy.getMask();
+
+			expect( proxy.isDirty() ).toBe( false );
+
+			mask.hello.cruel = 'world';
+			mask.hello.junk = 'it changed';
 
 			expect( proxy.isDirty() ).toBe( true );
 		});
@@ -50,7 +72,7 @@ describe('bmoor-data.object.Proxy', function(){
 		});
 	});
 
-	describe('getChanges', function(){
+	describe('::getChanges', function(){
 		it('should work with null', function(){
 			var target = {
 					foo: 'bar',
