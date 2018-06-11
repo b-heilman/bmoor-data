@@ -3,7 +3,7 @@ var bmoor = require('bmoor'),
 
 function makeMask( target, override ){
 	var mask = bmoor.isArray(target) ?
-		target.slice(0) : Object.create( target );
+		target.slice(0) : bmoor.object.mask( target );
 	
 	// I'm being lazy
 	Object.keys(target).forEach( ( k ) => {
@@ -21,7 +21,7 @@ function makeMask( target, override ){
 				o = override[k],
 				bothObj = bmoor.isObject(m) && bmoor.isObject(o);
 
-			if ( (!(k in mask) || !bothObj) && o !== m ){
+			if ( !(bothObj && k in mask) && o !== m ){
 				mask[k] = o;
 			}
 		});
@@ -61,6 +61,8 @@ function getChanges( obj, cmp ){
 
 	if ( !cmp ){
 		cmp = Object.getPrototypeOf( obj );
+	}else if ( !bmoor.isObject(cmp) ){
+		return bmoor.object.merge(rtn,obj);
 	}
 
 	for( let i = 0, c = keys.length; i < c; i++ ){
@@ -151,12 +153,44 @@ class Proxy extends Eventing {
 		};
 	}
 
+	// a 'deep copy' of the datum, but using mask() to have the original
+	// as the object's prototype.
 	getMask( override ){
 		if ( !this.mask || override ){
 			this.mask = makeMask( this.getDatum(), override );
 		}
 
 		return this.mask;
+	}
+
+	// create a true deep copy of the datum.  if applyMask == true, 
+	// we copy the mask on top as well.  Can be used for stringify then
+	copy( applyMask ){
+		var rtn = {};
+
+		bmoor.object.merge( rtn, this.getDatum() );
+		if ( applyMask ){
+			bmoor.object.merge( rtn, 
+				bmoor.isObject(applyMask) ? applyMask : this.getMask()
+			);
+		}
+
+		return rtn;
+	}
+
+	// create a shallow copy of the datum.  if applyMask == true, 
+	// we copy the mask on top as well.  Can be used for stringify then
+	extend( applyMask ){
+		var rtn = {};
+
+		bmoor.object.extend( rtn, this.getDatum() );
+		if ( applyMask ){
+			bmoor.object.extend( rtn, 
+				bmoor.isObject(applyMask) ? applyMask : this.getMask()
+			);
+		}
+
+		return rtn;
 	}
 
 	$( path ){
@@ -177,19 +211,6 @@ class Proxy extends Eventing {
 		map( mask, delta );
 
 		return mask;
-	}
-
-	// create a deep copy of the datum.  if applyMask == true, 
-	// we copy the mask on top as well.  Can be used for stringify then
-	copy( applyMask ){
-		var rtn = {};
-
-		bmoor.object.merge( rtn, this.getDatum() );
-		if ( applyMask ){
-			bmoor.object.merge( rtn, this.getMask() );
-		}
-
-		return rtn;
 	}
 
 	merge( delta ){

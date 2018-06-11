@@ -4106,7 +4106,7 @@ var bmoor = __webpack_require__(0),
     Eventing = bmoor.Eventing;
 
 function makeMask(target, override) {
-	var mask = bmoor.isArray(target) ? target.slice(0) : Object.create(target);
+	var mask = bmoor.isArray(target) ? target.slice(0) : bmoor.object.mask(target);
 
 	// I'm being lazy
 	Object.keys(target).forEach(function (k) {
@@ -4121,7 +4121,7 @@ function makeMask(target, override) {
 			    o = override[k],
 			    bothObj = bmoor.isObject(m) && bmoor.isObject(o);
 
-			if ((!(k in mask) || !bothObj) && o !== m) {
+			if (!(bothObj && k in mask) && o !== m) {
 				mask[k] = o;
 			}
 		});
@@ -4161,6 +4161,8 @@ function _getChanges(obj, cmp) {
 
 	if (!cmp) {
 		cmp = Object.getPrototypeOf(obj);
+	} else if (!bmoor.isObject(cmp)) {
+		return bmoor.object.merge(rtn, obj);
 	}
 
 	for (var i = 0, c = keys.length; i < c; i++) {
@@ -4256,6 +4258,10 @@ var Proxy = function (_Eventing) {
 		return _this;
 	}
 
+	// a 'deep copy' of the datum, but using mask() to have the original
+	// as the object's prototype.
+
+
 	_createClass(Proxy, [{
 		key: 'getMask',
 		value: function getMask(override) {
@@ -4264,6 +4270,38 @@ var Proxy = function (_Eventing) {
 			}
 
 			return this.mask;
+		}
+
+		// create a true deep copy of the datum.  if applyMask == true, 
+		// we copy the mask on top as well.  Can be used for stringify then
+
+	}, {
+		key: 'copy',
+		value: function copy(applyMask) {
+			var rtn = {};
+
+			bmoor.object.merge(rtn, this.getDatum());
+			if (applyMask) {
+				bmoor.object.merge(rtn, bmoor.isObject(applyMask) ? applyMask : this.getMask());
+			}
+
+			return rtn;
+		}
+
+		// create a shallow copy of the datum.  if applyMask == true, 
+		// we copy the mask on top as well.  Can be used for stringify then
+
+	}, {
+		key: 'extend',
+		value: function extend(applyMask) {
+			var rtn = {};
+
+			bmoor.object.extend(rtn, this.getDatum());
+			if (applyMask) {
+				bmoor.object.extend(rtn, bmoor.isObject(applyMask) ? applyMask : this.getMask());
+			}
+
+			return rtn;
 		}
 	}, {
 		key: '$',
@@ -4288,22 +4326,6 @@ var Proxy = function (_Eventing) {
 			_map(mask, delta);
 
 			return mask;
-		}
-
-		// create a deep copy of the datum.  if applyMask == true, 
-		// we copy the mask on top as well.  Can be used for stringify then
-
-	}, {
-		key: 'copy',
-		value: function copy(applyMask) {
-			var rtn = {};
-
-			bmoor.object.merge(rtn, this.getDatum());
-			if (applyMask) {
-				bmoor.object.merge(rtn, this.getMask());
-			}
-
-			return rtn;
 		}
 	}, {
 		key: 'merge',

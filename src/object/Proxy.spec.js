@@ -94,6 +94,52 @@ describe('bmoor-data.object.Proxy', function(){
 			expect( proxy.getChanges() ).toEqual( {foo:null} );
 		});
 
+		it('should work if type changes to object', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					},
+					blah: {
+						blah: 'blah'
+					}
+				},
+				proxy = new Proxy( target ),
+				mask = proxy.getMask();
+
+			expect( proxy.getChanges() ).toBeUndefined();
+
+			mask.foo = { screw: 'trump' };
+
+			expect( proxy.getChanges() ).toEqual( {
+				foo:{ screw: 'trump' }
+			});
+		});
+
+		it('should work if type changes from object', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					},
+					blah: {
+						blah: 'blah'
+					}
+				},
+				proxy = new Proxy( target ),
+				mask = proxy.getMask();
+
+			expect( proxy.getChanges() ).toBeUndefined();
+
+			mask.hello = 'world';
+
+			expect( proxy.getChanges() ).toEqual({
+				hello: 'world'
+			});
+		});
+
 		it('should work with null, via static method', function(){
 			var target = {
 					foo: 'bar',
@@ -113,6 +159,42 @@ describe('bmoor-data.object.Proxy', function(){
 			mask.foo = null;
 
 			expect( proxy.getChanges() ).toEqual( {foo:null} );
+		});
+
+		it('should work with null, via static method on mask', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					},
+					blah: {
+						blah: 'blah'
+					}
+				},
+				proxy = new Proxy( target ),
+				mask = proxy.getMask();
+
+			expect( Proxy.getChanges(mask) ).toBeUndefined();
+
+			mask.foo = null;
+
+			expect( Proxy.getChanges(mask) ).toEqual( {foo:null} );
+		});
+
+		it('should work with null, via static method on pojo', function(){
+			var target = {
+					foo: 'bar',
+					hello: {
+						cruel: 'world',
+						junk: 'junk'
+					},
+					blah: {
+						blah: 'blah'
+					}
+				};
+
+			expect( Proxy.getChanges(target) ).toEqual( target );
 		});
 	});
 
