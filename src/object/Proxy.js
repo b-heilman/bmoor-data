@@ -31,7 +31,11 @@ function makeMask( target, override ){
 }
 
 function isDirty( obj, cmp ){
-	var keys = Object.keys( obj );
+	if ( !obj ){
+		return false;
+	}
+
+	let keys = Object.keys( obj );
 
 	if ( !cmp ){
 		cmp = Object.getPrototypeOf( obj );
@@ -55,7 +59,11 @@ function isDirty( obj, cmp ){
 }
 
 function getChanges( obj, cmp ){
-	var rtn = {},
+	if ( !obj ){
+		return;
+	}
+
+	let rtn = {},
 		valid = false,
 		keys = Object.keys( obj );
 

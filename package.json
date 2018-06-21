@@ -1,6 +1,6 @@
 {
   "name": "bmoor-data",
-  "version": "0.4.23",
+  "version": "0.4.24",
   "author": "Brian Heilman <das.ist.junk@gmail.com>",
   "description": "Data structures for daily life",
   "license": "MIT",
@@ -14,8 +14,8 @@
     "build": "gulp build"
   },
   "dependencies": {
-    "bmoor": "~0.4.6",
-    "bmoor-schema": "~0.4.3",
+    "bmoor": "~0.4.9",
+    "bmoor-schema": "~0.4.4",
     "babel-polyfill": "^6.26.0",
     "formdata-polyfill": "^3.0.9"
   },
@@ -31,7 +31,7 @@
     "jasmine": "^2.9.0",
     "jshint": "^2.9.5",
     "jshint-stylish": "2.1.0",
-    "karma": "^2.0.2",
+    "karma": "^2.0.4",
     "karma-chrome-launcher": "^2.2.0",
     "karma-ie-launcher": "^1.0.0",
     "karma-jasmine": "^1.1.1",
