@@ -12,20 +12,27 @@ var bmoor = require('bmoor'),
 
 class Collection extends Feed {
 
+	//--- array methods
+	indexOf( obj, start ){
+		return this.data.indexOf( obj, start );
+	}
+
+	//--- collection methods
 	_add( datum ){
 		if ( this.settings.follow && datum.on ){
 			datum.on[this.$$bmoorUid] = 
 				datum.on('update', this.settings.follow);
 		}
 
-		super._add( datum );
+		return super._add( datum );
 	}
 
-	// remove a datum from the collection
 	_remove( datum ){
-		var dex = this.data.indexOf( datum );
+		var dex = this.indexOf( datum );
 		
 		if ( dex !== -1 ){
+			let rtn = this.data[dex];
+
 			if ( dex === 0 ){
 				this.data.shift();
 			}else{
@@ -35,8 +42,8 @@ class Collection extends Feed {
 			if ( this.settings.follow && datum.on ){
 				datum.on[this.$$bmoorUid]();
 			}
-
-			return datum;
+			
+			return rtn;
 		}
 	}
 
@@ -52,7 +59,6 @@ class Collection extends Feed {
 		}
 	}
 
-	// remove all datums from the collection
 	empty(){
 		var arr = this.data;
 
@@ -66,7 +72,6 @@ class Collection extends Feed {
 		this.ready();
 	}
 
-	// follow a parent collection
 	follow( parent, settings ){
 		var disconnect = parent.subscribe(Object.assign(
 			{
@@ -96,12 +101,12 @@ class Collection extends Feed {
 			this.disconnect = disconnect;
 		}
 
-		// if you just want to disconnect form this one
+		// if you just want to disconnect from this one
 		// you can later be specific
 		return disconnect; 
 	}
 
-	getChild( settings ){
+	makeChild( settings ){
 		let ChildClass = (settings ? 
 				settings.childClass : null) || this.constructor,
 			child = new (ChildClass)( settings );
@@ -144,22 +149,13 @@ class Collection extends Feed {
 		return this.index( search, settings ).get( search );
 	}
 
+	//--- child generators
 	route( search, settings ){
 		return memorized(
 			this,
 			'routes',
 			search instanceof Hash ? search : new Hash( search, settings ),
 			route,
-			settings
-		);
-	}
-
-	filter( search, settings ){
-		return memorized(
-			this,
-			'filters',
-			search instanceof Test ? search : new Test( search, settings ),
-			filter,
 			settings
 		);
 	}
@@ -191,7 +187,27 @@ class Collection extends Feed {
 		);
 	}
 
+	_filter( search, settings ){
+		return memorized(
+			this,
+			'filters',
+			search instanceof Test ? search : new Test( search, settings ),
+			filter,
+			settings
+		);
+	}
+
+	filter( search, settings ){
+		return this._filter(search, settings);
+	}
+
+	// TODO::migration search -> select
 	search( settings ){
+		console.warn('Collection::search, will be removed soon');
+		return this.select( settings );
+	}
+
+	select( settings ){
 		var ctx,
 			test;
 
@@ -199,7 +215,7 @@ class Collection extends Feed {
 			test = testStack( test, settings.tests[i] );
 		}
 
-		return this.filter(
+		return this._filter(
 			function( datum ){
 				if ( !datum.$massaged ){
 					datum.$massaged = settings.massage(datum);
@@ -241,7 +257,7 @@ class Collection extends Feed {
 			settings
 		);
 
-		child = this.getChild( settings );
+		child = this.makeChild( settings );
 
 		let origSize = settings.size;
 

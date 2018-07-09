@@ -13,7 +13,7 @@ describe('bmoor-data.Collection', function(){
 		expect( feed.data ).toBeDefined();
 	});
 
-	it('should return the same class via getChild', function(){
+	it('should return the same class via makeChild', function(){
 		class MyCollection extends Collection{
 			newProp(){
 				return 'ok';
@@ -22,7 +22,7 @@ describe('bmoor-data.Collection', function(){
 
 		var coll = new MyCollection();
 
-		expect( coll.getChild() instanceof MyCollection )
+		expect( coll.makeChild() instanceof MyCollection )
 		.toBe( true );
 	});
 
@@ -259,7 +259,7 @@ describe('bmoor-data.Collection', function(){
 		});
 	});
 
-	describe('::search', function(){
+	describe('::select', function(){
 		it('should work correctly', function(){
 			var t = [
 					{id:1, foo:'eins',value:'yes'},
@@ -269,7 +269,7 @@ describe('bmoor-data.Collection', function(){
 				],
 				feed = new Collection(t),
 				test = {},
-				child = feed.search({
+				child = feed.select({
 					normalize: function(){
 						if ( test.value ){
 							return test.value.toLowerCase();
@@ -450,7 +450,7 @@ describe('bmoor-data.Collection', function(){
 				],
 				feed = new Collection(t),
 				test = {},
-				child = feed.search({
+				child = feed.select({
 					normalize: function(){
 						if ( test.value ){
 							return test.value.toLowerCase();
@@ -514,7 +514,7 @@ describe('bmoor-data.Collection', function(){
 				],
 				feed = new Collection(t),
 				test = {},
-				child = feed.search({
+				child = feed.select({
 					normalize: function(){
 						if ( test.value ){
 							return test.value.toLowerCase();

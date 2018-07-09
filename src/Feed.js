@@ -24,6 +24,7 @@ class Feed extends Eventing {
 		setUid(this);
 
 		this.data = src;
+		this.$dirty = false;
 
 		if ( this.settings.controller ){
 			this.controller = new (this.settings.controller)( this );
@@ -40,23 +41,30 @@ class Feed extends Eventing {
 
 	_add( datum ){
 		oldPush.call( this.data, datum );
+
+		this.$dirty = true;
+
+		return datum;
 	}
 
 	add( datum ){
-		this._add( datum );
+		var added = this._add( datum );
 
-		this.trigger( 'insert', datum );
+		this.trigger( 'insert', added );
 
 		this.ready();
+
+		return added;
 	}
 
 	consume( arr ){
 		var i, c;
 
 		for ( i = 0, c = arr.length; i < c; i++ ){
-			let d = arr[i];
-			this._add( d );
-			this.trigger( 'insert', d );
+			let d = arr[i],
+				added = this._add( d );
+				
+			this.trigger( 'insert', added );
 		}
 
 		this.ready();
@@ -86,8 +94,18 @@ class Feed extends Eventing {
 
 	// I want to remove this
 	sort( fn ){
-		console.warn('this will be removed soon');
+		console.warn('Feed::sort, will be removed soon');
 		this.data.sort( fn );
+	}
+
+	getData(){
+		if ( !this.$clone || this.$dirty ){
+			this.$dirty = false;
+
+			this.$clone = this.data.slice(0);
+		}
+
+		return this.$clone;
 	}
 }
 
