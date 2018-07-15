@@ -12,5 +12,9 @@ module.exports = {
 		Proxy: require('./src/object/Proxy.js'),
 		Test: require('./src/object/Test.js'),
 		Hash: require('./src/object/Hash.js')
+	},
+	structure: {
+		Model: require('./src/structure/Model.js').default,
+		Schema: require('./src/structure/Schema.js').default
 	}
 };
