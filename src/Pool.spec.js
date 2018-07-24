@@ -1,3 +1,4 @@
+/*
 describe('bmoor-data.Pool', function(){
 	var Feed = require('./Feed.js'),
 		Pool = require('./Pool.js');
@@ -67,3 +68,4 @@ describe('bmoor-data.Pool', function(){
 		});
 	});
 });
+*/

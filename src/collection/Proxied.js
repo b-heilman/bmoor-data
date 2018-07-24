@@ -57,6 +57,20 @@ class Proxied extends DataCollection {
 		}
 	}
 
+	mergeChanges(){
+		return this.data.map( p => {
+			p.merge();
+
+			return p.getDatum();
+		});
+	}
+
+	flattenAll(){
+		return this.data.map( p => {
+			return p.flatten();
+		});
+	}
+
 	//--- collection methods
 	_wrap( datum ){
 		var proxy;

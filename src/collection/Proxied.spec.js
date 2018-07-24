@@ -14,6 +14,40 @@ describe('bmoor-data.collection.Proxied', function(){
 		expect( feed.data[0] instanceof DataProxy ).toBe( true );
 	});
 
+	describe('proxy methods', function(){
+		describe('::mergeChanges', function(){
+			it('should reduce correctly', function(){
+				var feed = new Proxied();
+
+				feed.add({id:1, foo:'eins'});
+				feed.add({id:2, foo:'zwei'});
+
+				feed.data[1].getMask().foo = 'bar';
+
+				expect( feed.mergeChanges() ).toEqual([
+					{id: 1, foo:'eins'},
+					{id: 2, foo:'bar'}
+				]);
+			});
+		});
+
+		describe('::flattenAll', function(){
+			it('should reduce correctly', function(){
+				var feed = new Proxied();
+
+				feed.add({id:1, foo:'eins'});
+				feed.add({id:2, foo:'zwei'});
+
+				feed.data[1].getMask().foo = 'bar';
+
+				expect( feed.flattenAll() ).toEqual([
+					{id: 1, foo:'eins'},
+					{id: 2, foo:'bar'}
+				]);
+			});
+		});
+	});
+
 	describe('::filter', function(){
 		it('should work with proxies correctly', function( done ){
 			var n = {foo:'bar'},

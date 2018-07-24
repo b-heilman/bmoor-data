@@ -1,6 +1,6 @@
 {
   "name": "bmoor-data",
-  "version": "0.4.25",
+  "version": "0.4.26",
   "author": "Brian Heilman <das.ist.junk@gmail.com>",
   "description": "Data structures for daily life",
   "license": "MIT",
@@ -16,7 +16,7 @@
   "dependencies": {
     "babel-polyfill": "^6.26.0",
     "bmoor": "~0.4.10",
-    "bmoor-schema": "^0.4.5",
+    "bmoor-schema": "^0.4.7",
     "formdata-polyfill": "^3.0.11"
   },
   "devDependencies": {
