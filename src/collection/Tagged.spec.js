@@ -12,10 +12,10 @@ describe('bmoor-data.collection.Tagged', function(){
 					value: 'YeS'
 				},
 				child = feed.choose({
-					normalize: function(){
+					normalizeContext: function(){
 						return test.value.toLowerCase();
 					},
-					massage: function( datum ){
+					normalizeDatum: function( datum ){
 						return { value: datum.value.toLowerCase() };
 					},
 					tests: [

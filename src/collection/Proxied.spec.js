@@ -142,15 +142,58 @@ describe('bmoor-data.collection.Proxied', function(){
 				feed = new Proxied(t),
 				test = {},
 				child = feed.select({
-					normalize: function(){
+					massage: function( proxy ){
+						return proxy.getDatum();
+					},
+					normalizeDatum: function( datum ){
+						return { value: datum.value.toLowerCase() };
+					},
+					normalizeContext: function(){
 						if ( test.value ){
 							return test.value.toLowerCase();
 						}else{
 							return null;
 						}
 					},
-					massage: function( datum ){
+					tests: [
+						function( datum, ctx ){
+							return ctx === null;
+						},
+						function( datum, ctx ){
+							return datum.value === ctx;
+						}
+					]
+				});
+
+			expect( child.data.length ).toBe( 4 );
+		
+			test.value = 'YeS';
+			child.go.flush();
+
+			expect( child.data.length ).toBe( 2 );
+
+			child.disconnect();
+		});
+
+		it('should work with proxies correctly not defining own massage', function(){
+			var t = [
+					{id:1, foo:'eins',value:'yes'},
+					{id:3, foo:'zwei',value:'no'},
+					{id:2, foo:'bar',value:'no'},
+					{id:4, foo:'fier',value:'YES'}
+				],
+				feed = new Proxied(t),
+				test = {},
+				child = feed.select({
+					normalizeDatum: function( datum ){
 						return { value: datum.value.toLowerCase() };
+					},
+					normalizeContext: function(){
+						if ( test.value ){
+							return test.value.toLowerCase();
+						}else{
+							return null;
+						}
 					},
 					tests: [
 						function( datum, ctx ){

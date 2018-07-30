@@ -21,7 +21,7 @@ class Tagged extends ProxyCollection {
 		if ( settings.massage ){
 			let old = settings.massage;
 			settings.massage = function( proxy ){
-				return old(proxy.tags || {});
+				return old(proxy.tags || {}, proxy);
 			};
 		}else{
 			settings.massage = function( proxy ){

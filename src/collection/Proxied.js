@@ -12,12 +12,7 @@ function configSettings( settings ){
 		settings = {};
 	}
 
-	if ( settings.massage ){
-		let old = settings.massage;
-		settings.massage = function( proxy ){
-			return old(proxy.getDatum());
-		};
-	}else if ( !('massage' in settings) ){
+	if ( !('massage' in settings) ){
 		settings.massage = function( proxy ){
 			return proxy.getDatum();
 		};

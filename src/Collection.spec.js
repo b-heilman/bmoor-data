@@ -270,15 +270,15 @@ describe('bmoor-data.Collection', function(){
 				feed = new Collection(t),
 				test = {},
 				child = feed.select({
-					normalize: function(){
+					normalizeDatum: function( datum ){
+						return { value: datum.value.toLowerCase() };
+					},
+					normalizeContext: function(){
 						if ( test.value ){
 							return test.value.toLowerCase();
 						}else{
 							return null;
 						}
-					},
-					massage: function( datum ){
-						return { value: datum.value.toLowerCase() };
 					},
 					tests: [
 						function( datum, ctx ){
@@ -451,15 +451,15 @@ describe('bmoor-data.Collection', function(){
 				feed = new Collection(t),
 				test = {},
 				child = feed.select({
-					normalize: function(){
+					normalizeDatum: function( datum ){
+						return { value: datum.value.toLowerCase() };
+					},
+					normalizeContext: function(){
 						if ( test.value ){
 							return test.value.toLowerCase();
 						}else{
 							return null;
 						}
-					},
-					massage: function( datum ){
-						return { value: datum.value.toLowerCase() };
 					},
 					tests: [
 						function( datum, ctx ){
@@ -515,15 +515,15 @@ describe('bmoor-data.Collection', function(){
 				feed = new Collection(t),
 				test = {},
 				child = feed.select({
-					normalize: function(){
+					normalizeDatum: function( datum ){
+						return { value: datum.value.toLowerCase() };
+					},
+					normalizeContext: function(){
 						if ( test.value ){
 							return test.value.toLowerCase();
 						}else{
 							return null;
 						}
-					},
-					massage: function( datum ){
-						return { value: datum.value.toLowerCase() };
 					},
 					tests: [
 						function( datum, ctx ){

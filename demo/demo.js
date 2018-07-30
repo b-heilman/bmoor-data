@@ -1418,17 +1418,17 @@ var Collection = function (_Feed) {
 			}
 
 			return this._filter(function (datum) {
-				if (!datum.$massaged) {
-					datum.$massaged = settings.massage(datum);
+				if (!datum.$normalized) {
+					datum.$normalized = settings.normalizeDatum(datum);
 				}
 
-				return test(datum.$massaged, ctx);
-			}, {
+				return test(datum.$normalized, ctx);
+			}, Object.assign(settings, {
 				before: function before() {
-					ctx = settings.normalize();
+					ctx = settings.normalizeContext();
 				},
 				hash: 'search:' + Date.now()
-			});
+			}));
 		}
 
 		// settings { size }
@@ -4793,12 +4793,7 @@ function configSettings(settings) {
 		settings = {};
 	}
 
-	if (settings.massage) {
-		var old = settings.massage;
-		settings.massage = function (proxy) {
-			return old(proxy.getDatum());
-		};
-	} else if (!('massage' in settings)) {
+	if (!('massage' in settings)) {
 		settings.massage = function (proxy) {
 			return proxy.getDatum();
 		};
