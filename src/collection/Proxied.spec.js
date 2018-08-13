@@ -85,6 +85,39 @@ describe('bmoor-data.collection.Proxied', function(){
 
 			child.disconnect();
 		});
+
+		it('should allow a datum to be passed between', function(done){
+			var proxy = new DataProxy({v:true});
+			var t = [
+				new DataProxy({v:true}),
+				new DataProxy({v:false}),
+				new DataProxy({v:true}),
+				new DataProxy({v:false}),
+				proxy
+			];
+			var collection = new Proxied(t);
+			var truthy = collection.filter({v:true});
+			var falsey = collection.filter({v:false});
+
+			expect(truthy.data.length).toBe(3);
+			expect(falsey.data.length).toBe(2);
+
+			proxy.merge({v:false});
+
+			setTimeout(function(){
+				expect(truthy.data.length).toBe(2);
+				expect(falsey.data.length).toBe(3);
+
+				proxy.merge({v:true});
+
+				setTimeout(function(){
+					expect(truthy.data.length).toBe(3);
+					expect(falsey.data.length).toBe(2);
+
+					done();
+				},5);
+			},5); // let it clear, hard to hook
+		});
 	});
 
 	describe('::index', function(){

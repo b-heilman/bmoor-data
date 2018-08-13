@@ -16,6 +16,10 @@ class Feed extends Eventing {
 		}else if ( Array.isArray(src) ){
 			this.settings = settings || {};
 			src.push = src.unshift = this.add.bind( this );
+
+			src.forEach(datum => {
+				this._track(datum);
+			});
 		}else{
 			this.settings = src;
 			src = [];
@@ -39,10 +43,14 @@ class Feed extends Eventing {
 		}, this.settings.windowMin||0, this.settings.windowMax||30);
 	}
 
+	_track(){
+		this.$dirty = true;
+	}
+
 	_add( datum ){
 		oldPush.call( this.data, datum );
 
-		this.$dirty = true;
+		this._track(datum);
 
 		return datum;
 	}

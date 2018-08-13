@@ -18,13 +18,17 @@ class Collection extends Feed {
 	}
 
 	//--- collection methods
-	_add( datum ){
-		if ( this.settings.follow && datum.on ){
-			datum.on[this.$$bmoorUid] = 
-				datum.on('update', this.settings.follow);
+	_track( datum ){
+		if (datum.on){
+			let fn = this.settings.follow ?
+				this.settings.follow : 
+				() => this.trigger('process');
+			
+			datum.on[this.$$bmoorUid] = datum.on(
+				'update',
+				fn
+			);
 		}
-
-		return super._add( datum );
 	}
 
 	_remove( datum ){
@@ -39,8 +43,13 @@ class Collection extends Feed {
 				this.data.splice( dex, 1 );
 			}
 
-			if ( this.settings.follow && datum.on ){
-				datum.on[this.$$bmoorUid]();
+			if ( datum.on ){
+				let fn = datum.on[this.$$bmoorUid];
+
+				if(fn){
+					fn();
+					datum.on[this.$$bmoorUid] = null;
+				}
 			}
 			
 			return rtn;
