@@ -249,14 +249,10 @@ class Collection extends Feed {
 		settings = Object.assign(
 			{},
 			{
-				insert: function( datum ){
-					child.add( datum );
-
+				insert: function(){
 					child.go();
 				},
-				remove: function( datum ){
-					child.remove( datum );
-
+				remove: function(){
 					child.go();
 				},
 				process: function(){

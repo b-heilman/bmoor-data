@@ -1456,14 +1456,10 @@ var Collection = function (_Feed) {
 			    parent = this;
 
 			settings = Object.assign({}, {
-				insert: function insert(datum) {
-					child.add(datum);
-
+				insert: function insert() {
 					child.go();
 				},
-				remove: function remove(datum) {
-					child.remove(datum);
-
+				remove: function remove() {
 					child.go();
 				},
 				process: function process() {
