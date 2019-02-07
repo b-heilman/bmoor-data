@@ -224,19 +224,27 @@ class Collection extends Feed {
 			test = testStack( test, settings.tests[i] );
 		}
 
+		const hash = settings.hash || 'search:'+Date.now();
+
 		return this._filter(
 			function( datum ){
 				if ( !datum.$normalized ){
-					datum.$normalized = settings.normalizeDatum(datum);
+					datum.$normalized = {};
 				}
 
-				return test(datum.$normalized, ctx);
+				let cache = datum.$normalized[hash];
+				if (!cache){
+					cache = settings.normalizeDatum(datum);
+					datum.$normalized[hash] = cache;
+				}
+
+				return test(cache, ctx);
 			},
 			Object.assign(settings,{
 				before: function(){
 					ctx = settings.normalizeContext();
 				},
-				hash: 'search:'+Date.now(),
+				hash,
 			})
 		);
 	}
