@@ -1,6 +1,6 @@
 describe('bmoor-data.Collection', function(){
-	var Proxy = require('./object/Proxy.js'),
-		Collection = require('./Collection.js');
+	const Proxy = require('./object/Proxy.js');
+	const Collection = require('./Collection.js');
 
 	it('should be defined', function(){
 		expect( Collection ).toBeDefined();
@@ -8,6 +8,13 @@ describe('bmoor-data.Collection', function(){
 
 	it('should instantiate correctly', function(){
 		var feed = new Collection();
+
+		expect( feed.on ).toBeDefined();
+		expect( feed.data ).toBeUndefined();
+	});
+
+	it('should instantiate correctly, with an prepop', function(){
+		var feed = new Collection([]);
 
 		expect( feed.on ).toBeDefined();
 		expect( feed.data ).toBeDefined();
@@ -31,9 +38,9 @@ describe('bmoor-data.Collection', function(){
 			n = {},
 			feed = new Collection(t);
 
-		feed.on('insert', function pushInsert( res ){
-			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBe( n );
+		feed.on('next', function pushInsert(res){
+			expect(feed.data[0]).toBe(n);
+			expect(res).toBe(feed);
 			
 			setTimeout(done,0); // I do this to keep the stack trace manageable
 		});
@@ -46,9 +53,9 @@ describe('bmoor-data.Collection', function(){
 			n = {},
 			feed = new Collection(t);
 
-		feed.on('insert', function originalInsert( res ){
-			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBe( n );
+		feed.on('next', function originalInsert(res){
+			expect(feed.data[0]).toBe(n);
+			expect(res).toBe(feed);
 			
 			setTimeout(done,0);
 		});
@@ -61,11 +68,11 @@ describe('bmoor-data.Collection', function(){
 			n = {},
 			feed = new Collection(t);
 
-		feed.on('insert', function correctInsert( res ){
-			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBe( n );
+		feed.on('next', function correctInsert( res ){
+			expect(feed.data[0]).toBe( n );
+			expect(res).toBe(feed);
 			
-			setTimeout(done,0);
+			done();
 		});
 
 		feed.add(n);
@@ -76,11 +83,11 @@ describe('bmoor-data.Collection', function(){
 			n = {},
 			feed = new Collection(t);
 
-		feed.on('update', function correctUpdate( res ){
-			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBeUndefined( n );
+		feed.on('next', function correctUpdate(res){
+			expect(feed.data[0]).toBe(n);
+			expect(res).toBe(feed);
 			
-			setTimeout(done,0);
+			setTimeout(done, 0);
 		});
 
 		feed.add(n);
@@ -91,12 +98,12 @@ describe('bmoor-data.Collection', function(){
 			t = [{foo:'eins'},{foo:'zwei'},n],
 			feed = new Collection(t);
 
-		feed.on('remove', function correctRemove( res ){
-			expect( feed.data.length ).toBe( 2 );
-			expect( feed.data[feed.data.length-1] ).not.toBe( n );
-			expect( res ).toBe( n );
+		feed.on('next', function correctRemove( res ){
+			expect(feed.data.length).toBe(2);
+			expect(feed.data[feed.data.length-1]).not.toBe(n);
+			expect(res).toBe(feed);
 			
-			setTimeout(done,0);
+			done();
 		});
 
 		feed.remove(n);
@@ -108,8 +115,8 @@ describe('bmoor-data.Collection', function(){
 				collection = new Collection(t);
 
 			let mapped = collection.map((d) => {
-					return { other: d.foo };
-				});
+				return { other: d.foo };
+			});
 
 			expect( mapped.data.length ).toBe( 3 );
 
@@ -119,13 +126,17 @@ describe('bmoor-data.Collection', function(){
 
 	describe('::sorted', function(){
 		it('should prepopulate', function(){
-			var t = [{foo:'eins'},{foo:'zwei'},{foo:'drei'}],
+			var t = [{
+					foo:'eins'},
+					{foo:'zwei'},
+					{foo:'drei'}
+				],
 				collection = new Collection(t);
 
 			let sorted = collection.sorted((a,b) => {
-					return a.foo < b.foo ? 
-						1 : (a.foo > b.foo ? -1 : 0);
-				});
+				return a.foo < b.foo ? 
+					1 : (a.foo > b.foo ? -1 : 0);
+			});
 
 			expect( sorted.data.length ).toBe( 3 );
 
@@ -136,7 +147,11 @@ describe('bmoor-data.Collection', function(){
 	describe('::filter', function(){
 		it('should work correctly', function( done ){
 			var n = {foo:'bar'},
-				t = [{foo:'eins'},{foo:'zwei'},n],
+				t = [
+					{foo:'eins'},
+					{foo:'zwei'},
+					n
+				],
 				feed = new Collection(t),
 				child = feed.filter(function( d ){
 					return d.foo[0] === 'e';
@@ -144,31 +159,30 @@ describe('bmoor-data.Collection', function(){
 
 			expect( child.data.length ).toBe( 1 );
 		
-			feed.add({foo:'zoo'});
-			
-			child.on('insert', function filterInsert( res ){
-				expect( child.data.length ).toBe( 2 );
-				expect( feed.data.length ).toBe( 5 );
-				expect( res.foo ).toBe( 'ever' );
+			feed.next.flush();
+			child.next.flush();
 
-				child.on('remove', function filterRemove( res ){
-					expect( child.data.length ).toBe( 1 );
-					expect( feed.data.length ).toBe( 4 );
-					expect( res.foo ).toBe( 'eins' );
-
-					setTimeout(done,0);
-				});
-
-				feed.remove( feed.data[0] );
-			});
-
-			
 			feed.add({foo:'ever'});
 
-			child.disconnect();
+			child.once('next', function filterInsert(){
+				expect(child.data.length).toBe(2);
+				expect(feed.data.length).toBe(4);
+				expect(child.data[child.data.length-1].foo).toBe('ever');
+
+				child.on('next', function filterRemove(){
+					expect(child.data.length).toBe(1);
+					expect(feed.data.length).toBe(3);
+					expect(feed.data[0].foo).toBe('zwei');
+					expect(child.data[0].foo).toBe('ever');
+
+					done();
+				});
+
+				feed.remove(feed.data[0]);
+			});
 		});
 
-		it('should be able to filter by object', function(){
+		it('should be able to filter by object', function(done){
 			var t = [
 					{foo:'eins'},
 					{foo:'zwei'},
@@ -185,15 +199,28 @@ describe('bmoor-data.Collection', function(){
 
 			expect( child.data.length ).toBe( 3 );
 		
+			feed.next.flush();
+			child.next.flush();
+
 			feed.add({foo:'eins'});
 			
-			expect( child.data.length ).toBe( 4 );
+			// I'm testing here the propagation delay
+			expect( feed.data.length ).toBe( 8 );
+			expect( child.data.length ).toBe( 3 );
 
-			child.add({foo:'eins'});
-			
-			expect( child.data.length ).toBe( 5 );
+			child.once('next', function(){
+				expect( child.data.length ).toBe( 4 );
 
-			child.destroy();
+				child.add({foo:'eins'});
+				
+				child.on('next', function(){
+					expect( child.data.length ).toBe( 5 );
+
+					child.destroy();
+
+					done();
+				});
+			});
 		});
 
 		it('should filter on the change of an object', function(done){
@@ -216,7 +243,9 @@ describe('bmoor-data.Collection', function(){
 
 			expect( child.data.length ).toBe( 3 );
 
-			child.on('process', function(){
+			child.next.flush();
+
+			child.on('next', function(){
 				expect( child.data.length ).toBe( 2 );
 
 				done();
@@ -227,35 +256,39 @@ describe('bmoor-data.Collection', function(){
 
 		it('should be able to filter by array index', function( done ){
 			var n = {foo:'bar'},
-				t = [{foo:'eins'},{foo:'zwei'},n],
+				t = [
+					{foo:'eins'},
+					{foo:'zwei'},
+					n
+				],
 				feed = new Collection(t),
 				child = feed.filter(
 					{ foo:{ 0: 'e' } }
 				);
 
 			expect( child.data.length ).toBe( 1 );
-		
-			feed.add({foo:'zoo'});
 
-			child.on('insert', function filterInsert( res ){
-				expect( child.data.length ).toBe( 2 );
-				expect( feed.data.length ).toBe( 5 );
-				expect( res.foo ).toBe( 'ever' );
+			feed.next.flush();
+			child.next.flush();
 
-				child.on('remove', function filterRemove( res ){
-					expect( child.data.length ).toBe( 1 );
-					expect( feed.data.length ).toBe( 4 );
-					expect( res.foo ).toBe( 'eins' );
+			child.once('next', function filterInsert(){
+				expect(child.data.length).toBe(2);
+				expect(feed.data.length).toBe(5);
+				expect(child.data[0].foo).toBe('eins');
 
-					setTimeout(done,0);
+				child.on('next', function filterRemove( res ){
+					expect(child.data.length).toBe(1);
+					expect(feed.data.length).toBe(4);
+					expect(res.data[0].foo).toBe('ever');
+
+					done();
 				});
 
-				feed.remove( feed.data[0] );
+				feed.remove(feed.data[0]);
 			});
 			
+			feed.add({foo:'zoo'});
 			feed.add({foo:'ever'});
-
-			child.disconnect();
 		});
 	});
 
@@ -293,7 +326,7 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data.length ).toBe( 4 );
 		
 			test.value = 'YeS';
-			child.go.flush();
+			child.go();
 
 			expect( child.data.length ).toBe( 2 );
 
@@ -326,7 +359,7 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data[0].foo ).toBe( 'eins' );
 			
 			child.nav.next();
-			child.go.flush();
+			child.go();
 
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(1);
@@ -337,13 +370,13 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data[0].foo ).toBe( 'bar' );
 
 			child.nav.next();
-			child.go.flush();
+			child.go();
 			
 			expect( child.data.length ).toBe( 2 );
 			expect( child.data[0].foo ).toBe( 'funf' );
 
 			child.nav.next();
-			child.go.flush();
+			child.go();
 			
 			expect( child.data.length ).toBe( 1 );
 			expect( child.nav.pos ).toBe(3);
@@ -355,7 +388,7 @@ describe('bmoor-data.Collection', function(){
 
 			child.nav.prev();
 			child.nav.prev();
-			child.go.flush();
+			child.go();
 			
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(1);
@@ -382,7 +415,7 @@ describe('bmoor-data.Collection', function(){
 				});
 
 			child.nav.goto(t[2]);
-			child.go.flush();
+			child.go();
 
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(1);
@@ -393,7 +426,7 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data[0].foo ).toBe( 'bar' );
 
 			child.nav.goto(t[3]);
-			child.go.flush();
+			child.go();
 
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(1);
@@ -404,7 +437,7 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data[0].foo ).toBe( 'bar' );
 
 			child.nav.goto(t[5]);
-			child.go.flush();
+			child.go();
 
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(2);
@@ -415,7 +448,7 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data[0].foo ).toBe( 'funf' );
 
 			child.nav.goto(t[6]);
-			child.go.flush();
+			child.go();
 
 			expect( child.data.length ).toBe( 1 );
 			expect( child.nav.pos ).toBe(3);
@@ -427,7 +460,7 @@ describe('bmoor-data.Collection', function(){
 
 			// search for something out of the list
 			child.nav.goto({});
-			child.go.flush();
+			child.go();
 
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(0);
@@ -473,6 +506,9 @@ describe('bmoor-data.Collection', function(){
 					size: 2
 				});
 
+			child.parent.go();
+			child.go();
+
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(0);
 			expect( child.nav.start ).toBe(0);
@@ -483,8 +519,8 @@ describe('bmoor-data.Collection', function(){
 			
 			test.value = 'Yes';
 
-			child.parent.go.flush();
-			child.go.flush();
+			child.parent.go();
+			child.go();
 
 			expect( child.data.length ).toBe( 2 );
 			expect( child.nav.pos ).toBe(0);
@@ -495,7 +531,7 @@ describe('bmoor-data.Collection', function(){
 			expect( child.data[0].foo ).toBe( 'eins' );
 
 			child.nav.next();
-			child.go.flush();
+			child.go();
 			
 			expect( child.data.length ).toBe( 1 );
 			expect( child.nav.pos ).toBe(1);
@@ -537,7 +573,7 @@ describe('bmoor-data.Collection', function(){
 					size: 2
 				});
 
-			child.on('process', function(){
+			child.on('next', function(){
 				expect( bool ).toBe( true );
 				done();
 			});
@@ -563,6 +599,8 @@ describe('bmoor-data.Collection', function(){
 			child = parent.index(function( d ){
 				return d.id;
 			});
+
+			parent.next.flush();
 		});
 
 		it('should take all elements from the parent', function(){
@@ -575,12 +613,16 @@ describe('bmoor-data.Collection', function(){
 		it('should index new insertions', function(){
 			parent.add({ 'type': 'dog', id:4 });
 
-			expect( child.get(4) ).toBe( parent.data[3] );
+			parent.on('next', function(){
+				expect( child.get(4) ).toBe( parent.data[3] );
+			});
 		});
 
 		it('should unindex removals', function(){
 			parent.remove( child.get(2) );
 
+			parent.next.flush();
+			
 			expect( child.get(2) ).toBeUndefined();
 
 			child.disconnect();
@@ -608,13 +650,15 @@ describe('bmoor-data.Collection', function(){
 		});
 
 		it('should return back a collection even on a miss', function(){
-			expect( child.get('woot').data.length ).toBe( 0 );
+			expect(child.get('woot').data).toBe(null);
 		});
 
 		it('should route new elements to proper buckets', function(){
 			parent.add({ 'type': 'dog', id:4 });
 			parent.add({ 'type': 'cat', id:5 });
 			parent.add({ 'type': 'monkey', id: 6 });
+
+			parent.next.flush();
 
 			expect( child.get('dog').data.length ).toBe( 3 );
 			expect( child.get('cat').data.length ).toBe( 2 );
@@ -628,11 +672,11 @@ describe('bmoor-data.Collection', function(){
 
 			t.type = 'pig';
 
-			child.get('dog').on('update', function(){
+			child.get('dog').on('next', function(){
 				dog = true;
 			});
 
-			child.get('pig').on('update', function(){
+			child.get('pig').on('next', function(){
 				pig = true;
 			});
 
@@ -651,6 +695,62 @@ describe('bmoor-data.Collection', function(){
 
 				done();
 			}, 30);
+		});
+	});
+
+	describe('::promise', function(){
+		it('should not fire if there is no data defined', function(done){
+			const collection = new Collection();
+
+			let fired = false;
+
+			collection.promise().then(() => {
+				fired = true;
+			});
+
+			setTimeout(function(){
+				expect(fired).toBe(false);
+
+				done();
+			}, 100);
+		});
+
+		it('should fire if there is data defined', function(done){
+			const collection = new Collection([
+				{foo:'bar'}
+			]);
+
+			let fired = false;
+
+			collection.promise().then(() => {
+				fired = true;
+			});
+
+			setTimeout(function(){
+				expect(fired).toBe(true);
+				
+				done();
+			}, 100);
+		});
+
+		it('should fire if there is data is added', function(done){
+			const collection = new Collection();
+
+			let fired = false;
+
+			collection.promise().then(() => {
+				fired = true;
+			});
+
+			collection.add({
+				foo: 'bar2'
+			});
+
+			setTimeout(function(){
+				expect(fired).toBe(true);
+				
+				done();
+			}, 100);
 		});
 	});
 });

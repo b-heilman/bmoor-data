@@ -51,7 +51,11 @@ describe('bmoor-data.collection.Proxied', function(){
 	describe('::filter', function(){
 		it('should work with proxies correctly', function( done ){
 			var n = {foo:'bar'},
-				t = [{foo:'eins'},{foo:'zwei'},n],
+				t = [
+					{foo:'eins'},
+					{foo:'zwei'},
+					n
+				],
 				feed = new Proxied(t),
 				child = feed.filter(
 					function( d ){
@@ -61,29 +65,27 @@ describe('bmoor-data.collection.Proxied', function(){
 
 			expect( child.data.length ).toBe( 1 );
 		
-			feed.add({foo:'zoo'});
+			feed.next.flush();
+			child.next.flush();
 			
-			child.on('insert', function filterInsert( res ){
+			child.once('next', function filterInsert(){
 				expect( child.data.length ).toBe( 2 );
 				expect( feed.data.length ).toBe( 5 );
-				expect( res.$('foo') ).toBe( 'ever' );
+				expect( child.data[0].$('foo') ).toBe('eins');
 
-				child.on('remove', function filterRemove( res ){
+				child.on('next', function filterRemove(){
 					expect( child.data.length ).toBe( 1 );
 					expect( feed.data.length ).toBe( 4 );
-					expect( res.$('foo') ).toBe( 'eins' );
+					expect( child.data[0].$('foo') ).toBe('ever');
 
-					setTimeout(done,0);
+					done();
 				});
 
 				feed.remove( feed.data[0].getDatum() );
-
-				done();
 			});
 			
+			feed.add({foo:'zoo'});
 			feed.add({foo:'ever'});
-
-			child.disconnect();
 		});
 
 		it('should allow a datum to be passed between', function(done){
@@ -201,7 +203,7 @@ describe('bmoor-data.collection.Proxied', function(){
 			expect( child.data.length ).toBe( 4 );
 		
 			test.value = 'YeS';
-			child.go.flush();
+			child.go();
 
 			expect( child.data.length ).toBe( 2 );
 
@@ -241,7 +243,7 @@ describe('bmoor-data.collection.Proxied', function(){
 			expect( child.data.length ).toBe( 4 );
 		
 			test.value = 'YeS';
-			child.go.flush();
+			child.go();
 
 			expect( child.data.length ).toBe( 2 );
 

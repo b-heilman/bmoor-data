@@ -22,12 +22,14 @@ function configSettings( settings ){
 }
 
 class Proxied extends DataCollection {
-	constructor( src, settings ){
-		super(src,settings);
+	constructor(src, settings){
+		super(src, settings);
 
-		this.data.forEach( ( datum, i ) => {
-			this.data[i] = this._wrap(datum);
-		});
+		if (src){
+			this.data.forEach( ( datum, i ) => {
+				this.data[i] = this._wrap(datum);
+			});
+		}
 	}
 
 	//--- array methods

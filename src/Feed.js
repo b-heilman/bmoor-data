@@ -7,48 +7,35 @@ var bmoor = require('bmoor'),
 // src -> feed -> target
 class Feed extends Eventing {
 
-	constructor( src, settings ){
+	constructor(src, settings = {}){
 		super();
 
-		if ( !src ){
-			src = [];
-			this.settings = {};
-		}else if ( Array.isArray(src) ){
-			this.settings = settings || {};
+		this.settings = settings;
+
+		// need to define next here because _track can call it
+		this.next = bmoor.flow.window(() => {
+			this.trigger('next', this);
+		}, settings.windowMin||0, settings.windowMax||30);
+
+		if (src){
 			src.push = src.unshift = this.add.bind( this );
 
 			src.forEach(datum => {
 				this._track(datum);
 			});
-		}else{
-			this.settings = src;
-			src = [];
 		}
 
 		setUid(this);
 
 		this.data = src;
-		this.$dirty = false;
-
-		if ( this.settings.controller ){
-			this.controller = new (this.settings.controller)( this );
-		}
-
-		this.ready = bmoor.flow.window( () => {
-			if ( this.controller && this.controller.ready ){
-				this.controller.ready();
-			}
-
-			this.trigger('update');
-		}, this.settings.windowMin||0, this.settings.windowMax||30);
 	}
 
-	_track(){
-		this.$dirty = true;
+	_track(/*datum*/){
+		// just a stub for now
 	}
 
-	_add( datum ){
-		oldPush.call( this.data, datum );
+	_add(datum){
+		oldPush.call(this.data, datum);
 
 		this._track(datum);
 
@@ -56,64 +43,127 @@ class Feed extends Eventing {
 	}
 
 	add( datum ){
-		var added = this._add( datum );
+		if (!this.data){
+			this.data = [];
+		}
 
-		this.trigger( 'insert', added );
+		const added = this._add(datum);
 
-		this.ready();
+		this.next();
 
 		return added;
 	}
 
 	consume( arr ){
-		var i, c;
-
-		for ( i = 0, c = arr.length; i < c; i++ ){
-			let d = arr[i],
-				added = this._add( d );
-				
-			this.trigger( 'insert', added );
+		if (!this.data){
+			this.data = [];
 		}
 
-		this.ready();
+		for (let i = 0, c = arr.length; i < c; i++){
+			this._add(arr[i]);
+		}
+
+		this.next();
 	}
 
-	follow( parent, settings ){
-		parent.subscribe(Object.assign(
+	empty(){
+		if (this.data){
+			this.data.length = 0;
+		}
+
+		this.next();
+	}
+
+	go(parent){
+		this.empty();
+
+		this.consume(parent.data);
+	}
+
+	destroy(){
+		this.data = null;
+		this.disconnect();
+
+		this.trigger('complete');
+	}
+
+	subscribe(onNext, onError, onComplete){
+		let config = null;
+
+		if (bmoor.isFunction(onNext)){
+			config = {
+				next: onNext,
+				error: onError || function(){
+					// anything for default?
+				},
+				complete: onComplete || function(){
+					// anything for default?
+				}
+			};
+		} else {
+			config = onNext;
+		}
+
+		if (this.data && config.next){
+			// make it act like a hot observable
+			config.next(this);
+		}
+
+		return super.subscribe(config);
+	}
+
+	promise(){
+		if (!this._promise){
+			if (this.data){
+				this._promise = Promise.resolve(this);
+			} else {
+				this._promise = new Promise((resolve, reject) => {
+					this.once('next', resolve);
+					this.once('error', reject);
+				});
+			}
+		}
+
+		return this._promise;
+	}
+
+	follow(parent, settings){
+		const disconnect = parent.subscribe(Object.assign(
 			{
-				insert: ( datum ) => {
-					this.add( datum );
+				next: (source) => {
+					this.go(source);
 				},
-				remove: ( datum ) => {
-					this.remove( datum );
-				},
-				process: () => {
-					if ( this.go ){
-						this.go();
-					}
-				},
-				destroy: () => {
+				complete: () => {
 					this.destroy();
+				},
+				error: () => {
+					// TODO : what to call?
 				}
 			},
 			settings
 		));
+
+		if ( this.disconnect ){
+			let old = this.disconnect;
+			this.disconnect = function(){
+				old();
+				disconnect();
+			};
+		}else{
+			this.disconnect = function(){
+				disconnect();
+
+				if (settings.disconnect){
+					settings.disconnect();
+				}
+			};
+		}
 	}
 
 	// I want to remove this
 	sort( fn ){
 		console.warn('Feed::sort, will be removed soon');
 		this.data.sort( fn );
-	}
-
-	getData(){
-		if ( !this.$clone || this.$dirty ){
-			this.$dirty = false;
-
-			this.$clone = this.data.slice(0);
-		}
-
-		return this.$clone;
 	}
 }
 

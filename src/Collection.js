@@ -13,26 +13,22 @@ var bmoor = require('bmoor'),
 class Collection extends Feed {
 
 	//--- array methods
-	indexOf( obj, start ){
-		return this.data.indexOf( obj, start );
+	indexOf(obj, start){
+		return this.data.indexOf(obj, start);
 	}
 
 	//--- collection methods
 	_track( datum ){
 		if (datum.on){
-			let fn = this.settings.follow ?
-				this.settings.follow : 
-				() => this.trigger('process');
-			
 			datum.on[this.$$bmoorUid] = datum.on(
 				'update',
-				fn
+				this.next
 			);
 		}
 	}
 
 	_remove( datum ){
-		var dex = this.indexOf( datum );
+		var dex = this.indexOf(datum);
 		
 		if ( dex !== -1 ){
 			let rtn = this.data[dex];
@@ -43,7 +39,7 @@ class Collection extends Feed {
 				this.data.splice( dex, 1 );
 			}
 
-			if ( datum.on ){
+			if (datum.on){
 				let fn = datum.on[this.$$bmoorUid];
 
 				if(fn){
@@ -59,87 +55,37 @@ class Collection extends Feed {
 	remove( datum ){
 		var rtn = this._remove(datum);
 
-		if ( rtn ){
-			this.trigger('remove', rtn);
-
-			this.ready();
+		if (rtn){
+			this.next();
 
 			return rtn;
 		}
 	}
 
 	empty(){
-		var arr = this.data;
+		if (this.data){
+			var arr = this.data;
 
-		while ( arr.length ){
-			let d = arr[0];
-
-			this._remove( d );
-			this.trigger( 'remove', d );
+			while (arr.length){
+				this._remove(arr[0]);
+			}
 		}
 
-		this.ready();
+		this.next();
 	}
 
-	follow( parent, settings ){
-		var disconnect = parent.subscribe(Object.assign(
-			{
-				insert: ( datum ) => {
-					this.add( datum );
-				},
-				remove: ( datum ) => {
-					this.remove( datum );
-				},
-				process: () => {
-					this.go();
-				},
-				destroy: () => {
-					this.destroy();
-				}
-			},
-			settings
-		));
-
-		if ( this.disconnect ){
-			let old = this.disconnect;
-			this.disconnect = function(){
-				old();
-				disconnect();
-			};
-		}else{
-			this.disconnect = disconnect;
-		}
-
-		// if you just want to disconnect from this one
-		// you can later be specific
-		return disconnect; 
-	}
-
-	makeChild( settings ){
-		let ChildClass = (settings ? 
-				settings.childClass : null) || this.constructor,
-			child = new (ChildClass)( settings );
+	makeChild(settings, goFn){
+		const ChildClass = (settings ? 
+				settings.childClass : null) || this.constructor;
+		const child = new (ChildClass)(null, settings);
 
 		child.parent = this;
 
-		if ( settings !== false ){
-			child.follow( this, settings );
-			let done = child.disconnect;
-
-			child.disconnect = function(){
-				if ( settings.disconnect ){
-					settings.disconnect();
-				}
-
-				done();
-			};
-
-			child.destroy = function(){
-				child.disconnect();
-
-				child.trigger('destroy');
-			};
+		if (goFn){
+			child.go = goFn;
 		}
+
+		child.follow(this, settings);
 
 		return child;
 	}
@@ -148,7 +94,7 @@ class Collection extends Feed {
 		return memorized( 
 			this,
 			'indexes', 
-			search instanceof Hash ? search : new Hash( search, settings ),
+			search instanceof Hash ? search : new Hash(search, settings),
 			index,
 			settings
 		);
@@ -163,7 +109,7 @@ class Collection extends Feed {
 		return memorized(
 			this,
 			'routes',
-			search instanceof Hash ? search : new Hash( search, settings ),
+			search instanceof Hash ? search : new Hash(search, settings),
 			route,
 			settings
 		);
@@ -200,7 +146,7 @@ class Collection extends Feed {
 		return memorized(
 			this,
 			'filters',
-			search instanceof Test ? search : new Test( search, settings ),
+			search instanceof Test ? search : new Test(search, settings),
 			filter,
 			settings
 		);
@@ -251,57 +197,12 @@ class Collection extends Feed {
 
 	// settings { size }
 	paginate( settings ){
-		var child,
-			parent = this;
+		let child = null;
 
-		settings = Object.assign(
-			{},
-			{
-				insert: function(){
-					child.go();
-				},
-				remove: function(){
-					child.go();
-				},
-				process: function(){
-					child.go();
-				}
-			},
-			settings
-		);
+		const parent = this;
+		const origSize = settings.size;
 
-		child = this.makeChild( settings );
-
-		let origSize = settings.size;
-
-		child.go = bmoor.flow.window(function(){
-			var span = settings.size,
-				length = parent.data.length,
-				steps = Math.ceil( length / span );
-
-			this.nav.span = span;
-			this.nav.steps = steps;
-			this.nav.count = length;
-
-			let start = this.nav.pos * span,
-				stop = start + span;
-
-			this.nav.start = start;
-			if ( stop > length ){
-				stop = length;
-			}
-			this.nav.stop = stop;
-
-			this.empty();
-
-			for( let i = start; i < stop; i++ ){
-				this.add( this.parent.data[i] );
-			}
-
-			child.trigger('process');
-		}, settings.min||5, settings.max||30, { context: child });
-
-		let nav = {
+		const nav = {
 			pos: settings.start || 0,
 			goto: function( pos ){
 				if ( bmoor.isObject(pos) ){
@@ -348,8 +249,34 @@ class Collection extends Feed {
 			}
 		};
 
+		child = this.makeChild(settings, function(){
+			var span = settings.size,
+				length = parent.data.length,
+				steps = Math.ceil( length / span );
+
+			nav.span = span;
+			nav.steps = steps;
+			nav.count = length;
+
+			const start = nav.pos * span;
+			let stop = start + span;
+
+			nav.start = start;
+			if ( stop > length ){
+				stop = length;
+			}
+			nav.stop = stop;
+
+			this.empty();
+
+			for( let i = start; i < stop; i++ ){
+				this.add( this.parent.data[i] );
+			}
+
+			this.next();
+		});
+		
 		child.nav = nav;
-		child.go.flush();
 
 		return child;
 	}

@@ -30,9 +30,10 @@ describe('bmoor-data.collection.Tagged', function(){
 			feed.add({id:2, foo:'bar'},{value:'no'});
 			feed.add({id:4, foo:'fier'},{value:'YES'});
 
-			expect( child.data.length ).toBe( 2 );
+			feed.next.flush();
+			child.next.flush();
 			
-			child.disconnect();
+			expect( child.data.length ).toBe( 2 );
 		});
 	});
 });
