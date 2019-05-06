@@ -783,23 +783,41 @@ var Feed = function (_Eventing) {
 
 			return _get(Feed.prototype.__proto__ || Object.getPrototypeOf(Feed.prototype), 'subscribe', this).call(this, config);
 		}
+
+		// return back a promise that is active on the 'next'
+
 	}, {
 		key: 'promise',
 		value: function promise() {
 			var _this2 = this;
 
-			if (!this._promise) {
-				if (this.data) {
-					this._promise = Promise.resolve(this);
+			if (this.next.active() || !this.data) {
+				if (this._promise) {
+					return this._promise;
 				} else {
 					this._promise = new Promise(function (resolve, reject) {
-						_this2.once('next', resolve);
-						_this2.once('error', reject);
+						var next = null;
+						var error = null;
+
+						next = _this2.once('next', function (collection) {
+							_this2._promise = null;
+
+							error();
+							resolve(collection);
+						});
+						error = _this2.once('error', function (ex) {
+							_this2._promise = null;
+
+							next();
+							reject(ex);
+						});
 					});
 				}
-			}
 
-			return this._promise;
+				return this._promise;
+			} else {
+				return Promise.resolve(this);
+			}
 		}
 	}, {
 		key: 'follow',
@@ -905,6 +923,10 @@ module.exports = function (cb, min, max, settings) {
 
 	fn.shift = function (diff) {
 		limit += diff;
+	};
+
+	fn.active = function () {
+		return !!limit;
 	};
 
 	return fn;
@@ -2401,6 +2423,10 @@ module.exports = function (cb, time, settings) {
 		fn.clear();
 	};
 
+	fn.active = function () {
+		return !!timeout;
+	};
+
 	return fn;
 };
 
@@ -2458,6 +2484,10 @@ module.exports = function (cb, time, settings) {
 
 	fn.shift = function (diff) {
 		limit += diff;
+	};
+
+	fn.active = function () {
+		return !!timeout;
 	};
 
 	return fn;
@@ -2722,6 +2752,59 @@ function difference(arr1, arr2) {
 	return rtn;
 }
 
+function watch(arr, insert, remove, preload) {
+	if (insert) {
+		var oldPush = arr.push.bind(arr);
+		var oldUnshift = arr.unshift.bind(arr);
+
+		arr.push = function () {
+			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+				args[_key] = arguments[_key];
+			}
+
+			args.forEach(insert);
+
+			oldPush.apply(undefined, args);
+		};
+
+		arr.unshift = function () {
+			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+				args[_key2] = arguments[_key2];
+			}
+
+			args.forEach(insert);
+
+			oldUnshift.apply(undefined, args);
+		};
+
+		if (preload) {
+			arr.forEach(insert);
+		}
+	}
+
+	if (remove) {
+		var oldShift = arr.shift.bind(arr);
+		var oldPop = arr.pop.bind(arr);
+		var oldSplice = arr.splice.bind(arr);
+
+		arr.shift = function () {
+			remove(oldShift.apply(undefined, arguments));
+		};
+
+		arr.pop = function () {
+			remove(oldPop.apply(undefined, arguments));
+		};
+
+		arr.splice = function () {
+			var res = oldSplice.apply(undefined, arguments);
+
+			res.forEach(remove);
+
+			return res;
+		};
+	}
+}
+
 module.exports = {
 	remove: remove,
 	removeAll: removeAll,
@@ -2729,7 +2812,8 @@ module.exports = {
 	compare: compare,
 	unique: unique,
 	intersection: intersection,
-	difference: difference
+	difference: difference,
+	watch: watch
 };
 
 /***/ }),
@@ -3179,6 +3263,8 @@ function equals(obj1, obj2) {
 
 	return false;
 }
+
+// TODO : property watch
 
 module.exports = {
 	keys: keys,

@@ -112,19 +112,35 @@ class Feed extends Eventing {
 		return super.subscribe(config);
 	}
 
+	// return back a promise that is active on the 'next'
 	promise(){
-		if (!this._promise){
-			if (this.data){
-				this._promise = Promise.resolve(this);
+		if (this.next.active() || !this.data){
+			if (this._promise){
+				return this._promise;
 			} else {
 				this._promise = new Promise((resolve, reject) => {
-					this.once('next', resolve);
-					this.once('error', reject);
+					let next = null;
+					let error = null;
+
+					next = this.once('next', collection => {
+						this._promise = null;
+
+						error();
+						resolve(collection);
+					});
+					error = this.once('error', ex => {
+						this._promise = null;
+
+						next();
+						reject(ex);
+					});
 				});
 			}
-		}
 
-		return this._promise;
+			return this._promise;
+		} else {
+			return Promise.resolve(this);
+		}
 	}
 
 	follow(parent, settings){
