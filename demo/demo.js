@@ -713,35 +713,27 @@ var Feed = function (_Eventing) {
 	}, {
 		key: 'add',
 		value: function add(datum) {
-			if (this.cold) {
-				this.cold = false;
-			}
-
 			var added = this._add(datum);
 
-			this.next();
+			this.goHot();
 
 			return added;
 		}
 	}, {
 		key: 'consume',
 		value: function consume(arr) {
-			if (this.cold) {
-				this.cold = false;
-			}
-
 			for (var i = 0, c = arr.length; i < c; i++) {
 				this._add(arr[i]);
 			}
 
-			this.next();
+			this.goHot();
 		}
 	}, {
 		key: 'empty',
 		value: function empty() {
 			this.data.length = 0;
 
-			this.next();
+			this.goHot();
 		}
 	}, {
 		key: 'go',
@@ -749,6 +741,12 @@ var Feed = function (_Eventing) {
 			this.empty();
 
 			this.consume(parent.data);
+		}
+	}, {
+		key: 'goHot',
+		value: function goHot() {
+			this.cold = false;
+			this.next();
 		}
 	}, {
 		key: 'destroy',

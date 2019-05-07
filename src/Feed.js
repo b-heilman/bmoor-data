@@ -46,39 +46,36 @@ class Feed extends Eventing {
 	}
 
 	add( datum ){
-		if (this.cold){
-			this.cold = false;
-		}
-
 		const added = this._add(datum);
 
-		this.next();
+		this.goHot();
 
 		return added;
 	}
 
 	consume( arr ){
-		if (this.cold){
-			this.cold = false;
-		}
-
 		for (let i = 0, c = arr.length; i < c; i++){
 			this._add(arr[i]);
 		}
 
-		this.next();
+		this.goHot();
 	}
 
 	empty(){
 		this.data.length = 0;
 
-		this.next();
+		this.goHot();
 	}
 
 	go(parent){
 		this.empty();
 
 		this.consume(parent.data);
+	}
+
+	goHot(){
+		this.cold = false;
+		this.next();
 	}
 
 	destroy(){
