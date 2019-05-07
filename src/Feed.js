@@ -59,7 +59,7 @@ class Feed extends Eventing {
 
 	consume( arr ){
 		if (this.cold){
-			this.cold = true;
+			this.cold = false;
 		}
 
 		for (let i = 0, c = arr.length; i < c; i++){

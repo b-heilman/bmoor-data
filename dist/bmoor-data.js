@@ -727,7 +727,7 @@ var Feed = function (_Eventing) {
 		key: 'consume',
 		value: function consume(arr) {
 			if (this.cold) {
-				this.cold = true;
+				this.cold = false;
 			}
 
 			for (var i = 0, c = arr.length; i < c; i++) {
