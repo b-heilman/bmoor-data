@@ -23,11 +23,14 @@ class Feed extends Eventing {
 			src.forEach(datum => {
 				this._track(datum);
 			});
+		} else {
+			src = [];
 		}
 
 		setUid(this);
 
 		this.data = src;
+		this.cold = !src.length;
 	}
 
 	_track(/*datum*/){
@@ -43,8 +46,8 @@ class Feed extends Eventing {
 	}
 
 	add( datum ){
-		if (!this.data){
-			this.data = [];
+		if (this.cold){
+			this.cold = false;
 		}
 
 		const added = this._add(datum);
@@ -55,8 +58,8 @@ class Feed extends Eventing {
 	}
 
 	consume( arr ){
-		if (!this.data){
-			this.data = [];
+		if (this.cold){
+			this.cold = true;
 		}
 
 		for (let i = 0, c = arr.length; i < c; i++){
@@ -67,9 +70,7 @@ class Feed extends Eventing {
 	}
 
 	empty(){
-		if (this.data){
-			this.data.length = 0;
-		}
+		this.data.length = 0;
 
 		this.next();
 	}
@@ -81,6 +82,7 @@ class Feed extends Eventing {
 	}
 
 	destroy(){
+		this.cold = true;
 		this.data = null;
 		this.disconnect();
 
@@ -104,7 +106,7 @@ class Feed extends Eventing {
 			config = onNext;
 		}
 
-		if (this.data && config.next){
+		if (!this.cold && config.next){
 			// make it act like a hot observable
 			config.next(this);
 		}
@@ -114,7 +116,7 @@ class Feed extends Eventing {
 
 	// return back a promise that is active on the 'next'
 	promise(){
-		if (this.next.active() || !this.data){
+		if (this.next.active() || this.cold){
 			if (this._promise){
 				return this._promise;
 			} else {

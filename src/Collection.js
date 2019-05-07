@@ -63,12 +63,10 @@ class Collection extends Feed {
 	}
 
 	empty(){
-		if (this.data){
-			var arr = this.data;
+		var arr = this.data;
 
-			while (arr.length){
-				this._remove(arr[0]);
-			}
+		while (arr.length){
+			this._remove(arr[0]);
 		}
 
 		this.next();
@@ -190,7 +188,7 @@ class Collection extends Feed {
 				before: function(){
 					ctx = settings.normalizeContext();
 				},
-				hash,
+				hash
 			})
 		);
 	}

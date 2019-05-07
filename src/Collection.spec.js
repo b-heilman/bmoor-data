@@ -10,7 +10,7 @@ describe('bmoor-data.Collection', function(){
 		var feed = new Collection();
 
 		expect( feed.on ).toBeDefined();
-		expect( feed.data ).toBeUndefined();
+		expect( feed.data.length ).toBe(0);
 	});
 
 	it('should instantiate correctly, with an prepop', function(){
@@ -650,7 +650,7 @@ describe('bmoor-data.Collection', function(){
 		});
 
 		it('should return back a collection even on a miss', function(){
-			expect(child.get('woot').data).toBe(null);
+			expect(child.get('woot').data.length).toBe(0);
 		});
 
 		it('should route new elements to proper buckets', function(){

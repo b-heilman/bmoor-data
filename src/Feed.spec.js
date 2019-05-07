@@ -9,7 +9,7 @@ describe('bmoor-data.Feed', function(){
 		var feed = new Feed();
 
 		expect( feed.on ).toBeDefined();
-		expect( feed.data ).toBeUndefined();
+		expect( feed.data.length ).toBe(0);
 	});
 
 	it('should instantiate correctly', function(){
