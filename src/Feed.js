@@ -1,23 +1,20 @@
+// TODO : test
+
 var bmoor = require('bmoor'),
-	Eventing = bmoor.Eventing,
 	setUid = bmoor.data.setUid,
-	oldPush = Array.prototype.push;
+	oldPush = Array.prototype.push,
+	Observable = bmoor.Observable;
 
 // designed for one way data flows.
 // src -> feed -> target
-class Feed extends Eventing {
+class Feed extends Observable {
 
 	constructor(src, settings = {}){
-		super();
+		super(settings);
 
-		this.settings = settings;
-
-		// need to define next here because _track can call it
-		this.next = bmoor.flow.window(() => {
-			this.trigger('next', this);
-		}, settings.windowMin||0, settings.windowMax||30);
-
+		let hot = false;
 		if (src){
+			hot = true;
 			src.push = src.unshift = this.add.bind( this );
 
 			src.forEach(datum => {
@@ -30,7 +27,11 @@ class Feed extends Eventing {
 		setUid(this);
 
 		this.data = src;
-		this.cold = !src.length;
+		this.parents = [];
+
+		if (hot){
+			this.next();
+		}
 	}
 
 	_track(/*datum*/){
@@ -67,96 +68,63 @@ class Feed extends Eventing {
 		this.goHot();
 	}
 
-	go(parent){
-		this.empty();
+	go(){
+		// only rerun if this has parents, otherwise go does nothing
+		if (this.parents.length){
+			this.empty();
 
-		this.consume(parent.data);
+			// definitely not performance friendly, not caring which parent
+			// triggered and brute forcing
+			this.parents.forEach(parent => {
+				this.consume(parent.data);
+			});
+		} else {
+			this.next();
+		}
+	}
+
+	next(){
+		super.next(this.data);
 	}
 
 	goHot(){
-		this.cold = false;
 		this.next();
 	}
 
 	destroy(){
-		this.cold = true;
 		this.data = null;
 		this.disconnect();
-
-		this.trigger('complete');
-	}
-
-	subscribe(onNext, onError, onComplete){
-		let config = null;
-
-		if (bmoor.isFunction(onNext)){
-			config = {
-				next: onNext,
-				error: onError || function(){
-					// anything for default?
-				},
-				complete: onComplete || function(){
-					// anything for default?
-				}
-			};
-		} else {
-			config = onNext;
-		}
-
-		if (!this.cold && config.next){
-			// make it act like a hot observable
-			config.next(this);
-		}
-
-		return super.subscribe(config);
-	}
-
-	// return back a promise that is active on the 'next'
-	promise(){
-		if (this.next.active() || this.cold){
-			if (this._promise){
-				return this._promise;
-			} else {
-				this._promise = new Promise((resolve, reject) => {
-					let next = null;
-					let error = null;
-
-					next = this.once('next', collection => {
-						this._promise = null;
-
-						error();
-						resolve(collection);
-					});
-					error = this.once('error', ex => {
-						this._promise = null;
-
-						next();
-						reject(ex);
-					});
-				});
-			}
-
-			return this._promise;
-		} else {
-			return Promise.resolve(this);
-		}
 	}
 
 	follow(parent, settings){
-		const disconnect = parent.subscribe(Object.assign(
+		this.parents.push(parent);
+
+		let disconnect = null;
+		const parentDisconnect = parent.subscribe(Object.assign(
 			{
 				next: (source) => {
 					this.go(source);
 				},
 				complete: () => {
-					this.destroy();
-				},
-				error: () => {
-					// TODO : what to call?
+					disconnect();
+
+					if (!this.parents.length){
+						this.destroy();
+					}
 				}
 			},
 			settings
 		));
+
+		disconnect = () => {
+			bmoor.array.remove(this.parents, parent);
+
+			parentDisconnect();
+
+			if (settings.disconnect){
+				settings.disconnect();
+			}
+		};
 
 		if ( this.disconnect ){
 			let old = this.disconnect;
@@ -164,20 +132,19 @@ class Feed extends Eventing {
 				old();
 				disconnect();
 			};
-		}else{
+		} else {
 			this.disconnect = function(){
 				disconnect();
-
-				if (settings.disconnect){
-					settings.disconnect();
-				}
 			};
 		}
+
+		return parentDisconnect;
 	}
 
 	// I want to remove this
 	sort( fn ){
 		console.warn('Feed::sort, will be removed soon');
+
 		this.data.sort( fn );
 	}
 }

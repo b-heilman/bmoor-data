@@ -22,7 +22,9 @@ class Collection extends Feed {
 		if (datum.on){
 			datum.on[this.$$bmoorUid] = datum.on(
 				'update',
-				this.next
+				() => {
+					this.go();
+				}
 			);
 		}
 	}

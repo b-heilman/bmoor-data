@@ -27,7 +27,7 @@ describe('bmoor-data.Feed', function(){
 
 		feed.on('next', function( res ){
 			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBe(feed);
+			expect( res ).toBe(feed.data);
 			done();
 		});
 
@@ -41,7 +41,7 @@ describe('bmoor-data.Feed', function(){
 
 		feed.on('next', function( res ){
 			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBe(feed);
+			expect( res ).toBe(feed.data);
 			done();
 		});
 
@@ -55,7 +55,7 @@ describe('bmoor-data.Feed', function(){
 
 		feed.on('next', function( res ){
 			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBe(feed);
+			expect( res ).toBe(feed.data);
 			done();
 		});
 
@@ -69,7 +69,7 @@ describe('bmoor-data.Feed', function(){
 
 		feed.on('next', function( res ){
 			expect(feed.data[0]).toBe(n);
-			expect(res).toBe(feed);
+			expect(res).toBe(feed.data);
 			done();
 		});
 
@@ -84,12 +84,12 @@ describe('bmoor-data.Feed', function(){
 		feed.once('next', function( res ){
 			expect(feed.data[0]).toBe(n);
 			expect(feed.data.length).toBe(1);
-			expect(res).toEqual(feed);
+			expect(res).toEqual(feed.data);
 
 			feed.on('next', function(res){
 				expect(feed.data[0]).toBe(n);
 				expect(feed.data.length).toBe(3);
-				expect(res).toEqual(feed);
+				expect(res).toEqual(feed.data);
 
 				done();
 			});
