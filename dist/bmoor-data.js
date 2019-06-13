@@ -76,7 +76,7 @@ var bmoor = Object.create(__webpack_require__(1));
 bmoor.dom = __webpack_require__(15);
 bmoor.data = __webpack_require__(16);
 bmoor.flow = __webpack_require__(17);
-bmoor.array = __webpack_require__(5);
+bmoor.array = __webpack_require__(3);
 bmoor.build = __webpack_require__(20);
 bmoor.object = __webpack_require__(24);
 bmoor.string = __webpack_require__(25);
@@ -621,289 +621,6 @@ module.exports = function (cb, min, max, settings) {
 "use strict";
 
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var bmoor = __webpack_require__(0),
-    makeGetter = bmoor.makeGetter,
-
-// makeSetter = bmoor.makeSetter,
-// Writer = require('./path/Writer.js').default,
-// Reader = require('./path/Reader.js').default,
-Tokenizer = __webpack_require__(7).default;
-
-var Path = function () {
-	// normal path: foo.bar
-	// array path : foo[].bar
-	function Path(path) {
-		_classCallCheck(this, Path);
-
-		if (path instanceof Tokenizer) {
-			this.tokenizer = path;
-		} else {
-			this.tokenizer = new Tokenizer(path);
-		}
-
-		this.root = this.tokenizer.tokens[0];
-		this.hasArray = this.root.isArray;
-	}
-
-	_createClass(Path, [{
-		key: '_makeChild',
-		value: function _makeChild(path) {
-			return new this.constructor(path);
-		}
-
-		// converts something like [{a:1},{a:2}] to [1,2]
-		// when given [].a
-
-	}, {
-		key: 'flatten',
-		value: function flatten(obj) {
-			var target = [obj],
-			    chunks = this.tokenizer.getAccessors();
-
-			while (chunks.length) {
-				var chunk = chunks.shift(),
-				    getter = makeGetter(chunk);
-
-				target = target.map(getter).reduce(function (rtn, arr) {
-					return rtn.concat(arr);
-				}, []);
-			}
-
-			return target;
-		}
-
-		// call this method against 
-
-	}, {
-		key: 'exec',
-		value: function exec(obj, fn) {
-			this.flatten(obj).forEach(fn);
-		}
-	}, {
-		key: 'root',
-		value: function root(accessors) {
-			return this.tokenizer.root(accessors);
-		}
-	}, {
-		key: 'remainder',
-		value: function remainder() {
-			return this._makeChild(this.tokenizer.remainder());
-		}
-	}]);
-
-	return Path;
-}();
-
-module.exports = {
-	default: Path
-};
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-// TODO : test
-
-var bmoor = __webpack_require__(0),
-    setUid = bmoor.data.setUid,
-    oldPush = Array.prototype.push,
-    Observable = bmoor.Observable;
-
-// designed for one way data flows.
-// src -> feed -> target
-
-var Feed = function (_Observable) {
-	_inherits(Feed, _Observable);
-
-	function Feed(src) {
-		var settings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-		_classCallCheck(this, Feed);
-
-		var _this = _possibleConstructorReturn(this, (Feed.__proto__ || Object.getPrototypeOf(Feed)).call(this, settings));
-
-		var hot = false;
-		if (src) {
-			hot = true;
-			src.push = src.unshift = _this.add.bind(_this);
-
-			src.forEach(function (datum) {
-				_this._track(datum);
-			});
-		} else {
-			src = [];
-		}
-
-		setUid(_this);
-
-		_this.data = src;
-		_this.parents = [];
-
-		if (hot) {
-			_this.next();
-		}
-		return _this;
-	}
-
-	_createClass(Feed, [{
-		key: '_track',
-		value: function _track() /*datum*/{
-			// just a stub for now
-		}
-	}, {
-		key: '_add',
-		value: function _add(datum) {
-			oldPush.call(this.data, datum);
-
-			this._track(datum);
-
-			return datum;
-		}
-	}, {
-		key: 'add',
-		value: function add(datum) {
-			var added = this._add(datum);
-
-			this.goHot();
-
-			return added;
-		}
-	}, {
-		key: 'consume',
-		value: function consume(arr) {
-			for (var i = 0, c = arr.length; i < c; i++) {
-				this._add(arr[i]);
-			}
-
-			this.goHot();
-		}
-	}, {
-		key: 'empty',
-		value: function empty() {
-			this.data.length = 0;
-
-			this.goHot();
-		}
-	}, {
-		key: 'go',
-		value: function go() {
-			var _this2 = this;
-
-			// only rerun if this has parents, otherwise go does nothing
-			if (this.parents.length) {
-				this.empty();
-
-				// definitely not performance friendly, not caring which parent
-				// triggered and brute forcing
-				this.parents.forEach(function (parent) {
-					_this2.consume(parent.data);
-				});
-			} else {
-				this.next();
-			}
-		}
-	}, {
-		key: 'next',
-		value: function next() {
-			_get(Feed.prototype.__proto__ || Object.getPrototypeOf(Feed.prototype), 'next', this).call(this, this.data);
-		}
-	}, {
-		key: 'goHot',
-		value: function goHot() {
-			this.next();
-		}
-	}, {
-		key: 'destroy',
-		value: function destroy() {
-			this.data = null;
-			this.disconnect();
-		}
-	}, {
-		key: 'follow',
-		value: function follow(parent, settings) {
-			var _this3 = this;
-
-			this.parents.push(parent);
-
-			var disconnect = null;
-			var parentDisconnect = parent.subscribe(Object.assign({
-				next: function next(source) {
-					_this3.go(source);
-				},
-				complete: function complete() {
-					disconnect();
-
-					if (!_this3.parents.length) {
-						_this3.destroy();
-					}
-				}
-			}, settings));
-
-			disconnect = function disconnect() {
-				bmoor.array.remove(_this3.parents, parent);
-
-				parentDisconnect();
-
-				if (settings.disconnect) {
-					settings.disconnect();
-				}
-			};
-
-			if (this.disconnect) {
-				var old = this.disconnect;
-				this.disconnect = function () {
-					old();
-					disconnect();
-				};
-			} else {
-				this.disconnect = function () {
-					disconnect();
-				};
-			}
-
-			return parentDisconnect;
-		}
-
-		// I want to remove this
-
-	}, {
-		key: 'sort',
-		value: function sort(fn) {
-			console.warn('Feed::sort, will be removed soon');
-
-			this.data.sort(fn);
-		}
-	}]);
-
-	return Feed;
-}(Observable);
-
-module.exports = Feed;
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
 /**
  * Array helper functions
  * @module bmoor.array
@@ -1156,6 +873,22 @@ function difference(arr1, arr2) {
 	return rtn;
 }
 
+function equals(arr1, arr2) {
+	if (arr1 === arr2) {
+		return true;
+	} else if (arr1.length !== arr2.length) {
+		return false;
+	} else {
+		for (var i = 0, c = arr1.length; i < c; i++) {
+			if (arr1[i] !== arr2[i]) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+}
+
 function watch(arr, insert, remove, preload) {
 	if (insert) {
 		var oldPush = arr.push.bind(arr);
@@ -1217,8 +950,292 @@ module.exports = {
 	unique: unique,
 	intersection: intersection,
 	difference: difference,
-	watch: watch
+	watch: watch,
+	equals: equals
 };
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var bmoor = __webpack_require__(0),
+    makeGetter = bmoor.makeGetter,
+
+// makeSetter = bmoor.makeSetter,
+// Writer = require('./path/Writer.js').default,
+// Reader = require('./path/Reader.js').default,
+Tokenizer = __webpack_require__(7).default;
+
+var Path = function () {
+	// normal path: foo.bar
+	// array path : foo[].bar
+	function Path(path) {
+		_classCallCheck(this, Path);
+
+		if (path instanceof Tokenizer) {
+			this.tokenizer = path;
+		} else {
+			this.tokenizer = new Tokenizer(path);
+		}
+
+		this.root = this.tokenizer.tokens[0];
+		this.hasArray = this.root.isArray;
+	}
+
+	_createClass(Path, [{
+		key: '_makeChild',
+		value: function _makeChild(path) {
+			return new this.constructor(path);
+		}
+
+		// converts something like [{a:1},{a:2}] to [1,2]
+		// when given [].a
+
+	}, {
+		key: 'flatten',
+		value: function flatten(obj) {
+			var target = [obj],
+			    chunks = this.tokenizer.getAccessors();
+
+			while (chunks.length) {
+				var chunk = chunks.shift(),
+				    getter = makeGetter(chunk);
+
+				target = target.map(getter).reduce(function (rtn, arr) {
+					return rtn.concat(arr);
+				}, []);
+			}
+
+			return target;
+		}
+
+		// call this method against 
+
+	}, {
+		key: 'exec',
+		value: function exec(obj, fn) {
+			this.flatten(obj).forEach(fn);
+		}
+	}, {
+		key: 'root',
+		value: function root(accessors) {
+			return this.tokenizer.root(accessors);
+		}
+	}, {
+		key: 'remainder',
+		value: function remainder() {
+			return this._makeChild(this.tokenizer.remainder());
+		}
+	}]);
+
+	return Path;
+}();
+
+module.exports = {
+	default: Path
+};
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+// TODO : test
+
+var bmoor = __webpack_require__(0),
+    setUid = bmoor.data.setUid,
+    oldPush = Array.prototype.push,
+    Observable = bmoor.Observable;
+
+// designed for one way data flows.
+// src -> feed -> target
+
+var Feed = function (_Observable) {
+	_inherits(Feed, _Observable);
+
+	function Feed(src) {
+		var settings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		_classCallCheck(this, Feed);
+
+		var _this = _possibleConstructorReturn(this, (Feed.__proto__ || Object.getPrototypeOf(Feed)).call(this, settings));
+
+		var hot = false;
+		if (src) {
+			hot = true;
+			src.push = src.unshift = _this.add.bind(_this);
+
+			src.forEach(function (datum) {
+				_this._track(datum);
+			});
+		} else {
+			src = [];
+		}
+
+		setUid(_this);
+
+		_this.data = src;
+		_this.parents = [];
+
+		if (hot) {
+			_this.next();
+		}
+		return _this;
+	}
+
+	_createClass(Feed, [{
+		key: '_track',
+		value: function _track() /*datum*/{
+			// just a stub for now
+		}
+	}, {
+		key: '_add',
+		value: function _add(datum) {
+			oldPush.call(this.data, datum);
+
+			this._track(datum);
+
+			return datum;
+		}
+	}, {
+		key: 'add',
+		value: function add(datum) {
+			var added = this._add(datum);
+
+			this.goHot();
+
+			return added;
+		}
+	}, {
+		key: 'consume',
+		value: function consume(arr) {
+			for (var i = 0, c = arr.length; i < c; i++) {
+				this._add(arr[i]);
+			}
+
+			this.goHot();
+		}
+	}, {
+		key: 'empty',
+		value: function empty() {
+			this.data.length = 0;
+
+			this.goHot();
+		}
+	}, {
+		key: 'go',
+		value: function go() {
+			var _this2 = this;
+
+			// only rerun if this has parents, otherwise go does nothing
+			if (this.parents.length) {
+				this.empty();
+
+				// definitely not performance friendly, not caring which parent
+				// triggered and brute forcing
+				this.parents.forEach(function (parent) {
+					_this2.consume(parent.data);
+				});
+			} else {
+				this.next();
+			}
+		}
+	}, {
+		key: 'next',
+		value: function next() {
+			_get(Feed.prototype.__proto__ || Object.getPrototypeOf(Feed.prototype), 'next', this).call(this, this.data);
+		}
+	}, {
+		key: 'goHot',
+		value: function goHot() {
+			this.next();
+		}
+	}, {
+		key: 'destroy',
+		value: function destroy() {
+			this.data = null;
+			this.disconnect();
+		}
+	}, {
+		key: 'follow',
+		value: function follow(parent, settings) {
+			var _this3 = this;
+
+			this.parents.push(parent);
+
+			var disconnect = null;
+			var parentDisconnect = parent.subscribe(Object.assign({
+				next: function next(source) {
+					_this3.go(source);
+				},
+				complete: function complete() {
+					disconnect();
+
+					if (!_this3.parents.length) {
+						_this3.destroy();
+					}
+				}
+			}, settings));
+
+			disconnect = function disconnect() {
+				bmoor.array.remove(_this3.parents, parent);
+
+				parentDisconnect();
+
+				if (settings.disconnect) {
+					settings.disconnect();
+				}
+			};
+
+			if (this.disconnect) {
+				var old = this.disconnect;
+				this.disconnect = function () {
+					old();
+					disconnect();
+				};
+			} else {
+				this.disconnect = function () {
+					disconnect();
+				};
+			}
+
+			return parentDisconnect;
+		}
+
+		// I want to remove this
+
+	}, {
+		key: 'sort',
+		value: function sort(fn) {
+			console.warn('Feed::sort, will be removed soon');
+
+			this.data.sort(fn);
+		}
+	}]);
+
+	return Feed;
+}(Observable);
+
+module.exports = Feed;
 
 /***/ }),
 /* 6 */
@@ -1232,7 +1249,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var core = __webpack_require__(1);
-var array = __webpack_require__(5);
+var array = __webpack_require__(3);
 
 var Eventing = function () {
 	function Eventing() {
@@ -1606,7 +1623,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var bmoor = __webpack_require__(0),
-    Feed = __webpack_require__(4),
+    Feed = __webpack_require__(5),
     Hash = __webpack_require__(9),
     Test = __webpack_require__(10),
     _route = __webpack_require__(37).fn,
@@ -2419,7 +2436,7 @@ module.exports = __webpack_require__(14);
 
 
 module.exports = {
-	Feed: __webpack_require__(4),
+	Feed: __webpack_require__(5),
 	Pool: __webpack_require__(29),
 	Collection: __webpack_require__(8),
 	collection: {
@@ -3777,6 +3794,9 @@ var core = __webpack_require__(1);
 var flowWindow = __webpack_require__(2);
 var Eventing = __webpack_require__(6);
 
+var _require = __webpack_require__(3),
+    equals = _require.equals;
+
 var Observable = function (_Eventing) {
 	_inherits(Observable, _Eventing);
 
@@ -3794,7 +3814,6 @@ var Observable = function (_Eventing) {
 
 			_this.trigger.apply(_this, ['next'].concat(_toConsumableArray(args)));
 		}, settings.windowMin || 0, settings.windowMax || 30);
-
 		return _this;
 	}
 
@@ -3837,24 +3856,42 @@ var Observable = function (_Eventing) {
 			var disconnect = _get(Observable.prototype.__proto__ || Object.getPrototypeOf(Observable.prototype), 'subscribe', this).call(this, config);
 
 			if (this.currentArgs && config.next) {
-				this._next();
-				/**
-    * This would enable the observable to fire immediately, but I'm going to stick
-    * with trying to keep it async, even if hot
-    **
-    let fn = null;
-    		// make it act like a hot observable
-    const args = this.currentArgs;
-    const cb = config.next;
-    		if (core.isArray(cb)){
-    	if (cb.length){
-    		fn = cb.shift();
-    	}
-    } else {
-    	fn = cb;
-    }
-    		fn(...args);
-    */
+				var fn = null;
+
+				// make it act like a hot observable
+				var _args = this.currentArgs;
+				var cb = config.next;
+
+				if (core.isArray(cb)) {
+					if (cb.length) {
+						if (this._next.active()) {
+							fn = cb[0];
+
+							var myArgs = _args;
+							cb[0] = function () {
+								for (var _len2 = arguments.length, params = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+									params[_key2] = arguments[_key2];
+								}
+
+								if (equals(params, myArgs)) {
+									// stub it for when next fires
+									// there's a possible race condition with this, that a second value comes in as
+									// the window is active... the second value will get eaten, so the else
+									// blow tries to help there
+								} else {
+									var f = cb.shift();
+									f.apply(undefined, params);
+								}
+							};
+						} else {
+							fn = cb.shift();
+						}
+					}
+				} else {
+					fn = cb;
+				}
+
+				fn.apply(undefined, _toConsumableArray(_args));
 			}
 
 			return disconnect;
@@ -3891,9 +3928,9 @@ var Observable = function (_Eventing) {
 
 				return this._promise;
 			} else {
-				var _args = this.currentArgs;
+				var _args2 = this.currentArgs;
 
-				return Promise.resolve.apply(Promise, _toConsumableArray(_args));
+				return Promise.resolve.apply(Promise, _toConsumableArray(_args2));
 			}
 		}
 	}, {
@@ -3995,7 +4032,7 @@ module.exports = Pool;
 module.exports = {
 	encode: __webpack_require__(31),
 	Generator: __webpack_require__(34),
-	Path: __webpack_require__(3),
+	Path: __webpack_require__(4),
 	validate: __webpack_require__(36)
 };
 
@@ -4295,7 +4332,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var bmoor = __webpack_require__(0);
-var Path = __webpack_require__(3).default;
+var Path = __webpack_require__(4).default;
 var Writer = __webpack_require__(35).default;
 
 var generators = {
@@ -4545,7 +4582,7 @@ module.exports = {
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-var Path = __webpack_require__(3).default;
+var Path = __webpack_require__(4).default;
 
 var tests = [function (def, v, errors) {
 	if ((typeof v === 'undefined' ? 'undefined' : _typeof(v)) !== def.type && (def.required || v !== undefined)) {

@@ -138,13 +138,15 @@ describe('bmoor-data.Collection', function(){
 					1 : (a.foo > b.foo ? -1 : 0);
 			});
 
-			expect(sorted.data.length).toBe(0);
+			expect(sorted.data.length).toBe(3);
+			expect(sorted.data[0]).toEqual({foo:'zwei'});
 
+			sorted.data[0].foo = 'apple';
 			collection._next.flush();
 			sorted._next.flush();
 
 			expect(sorted.data.length).toBe(3);
-			expect(sorted.data[0]).toEqual({foo:'zwei'});
+			expect(sorted.data[0]).toEqual({foo:'eins'});
 		});
 	});
 
@@ -161,12 +163,14 @@ describe('bmoor-data.Collection', function(){
 					return d.foo[0] === 'e';
 				});
 
-			expect(child.data.length).toBe(0);
+			expect(child.data.length).toBe(1);
+			n.foo = 'eieio';
 		
 			feed._next.flush();
 			child._next.flush();
 
-			expect(child.data.length).toBe(1);
+			expect(child.data.length).toBe(2);
+			n.foo = 'boom';
 
 			feed.add({foo:'ever'});
 
@@ -202,11 +206,6 @@ describe('bmoor-data.Collection', function(){
 				child = feed.filter(
 					{ foo: 'eins' }
 				);
-
-			expect(child.data.length).toBe(0);
-		
-			feed._next.flush();
-			child._next.flush();
 
 			expect(child.data.length).toBe(3);
 
@@ -249,11 +248,6 @@ describe('bmoor-data.Collection', function(){
 					{ massage: d => d.getDatum() }
 				);
 
-			expect(child.data.length).toBe(0);
-
-			feed._next.flush();
-			child._next.flush();
-
 			expect(child.data.length).toBe(3);
 
 			child.on('next', function(res){
@@ -276,11 +270,6 @@ describe('bmoor-data.Collection', function(){
 				child = feed.filter(
 					{ foo:{ 0: 'e' } }
 				);
-
-			expect(child.data.length).toBe(0);
-
-			feed._next.flush();
-			child._next.flush();
 
 			expect(child.data.length).toBe(1);
 
@@ -336,7 +325,7 @@ describe('bmoor-data.Collection', function(){
 					]
 				});
 
-			expect(child.data.length).toBe(0);
+			expect(child.data.length).toBe(4);
 		
 			test.value = 'YeS';
 

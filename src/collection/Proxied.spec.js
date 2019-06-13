@@ -195,12 +195,12 @@ describe('bmoor-data.collection.Proxied', function(){
 					]
 				});
 
-			expect( child.data.length ).toBe( 0 );
+			expect(child.data.length).toBe(4);
 		
 			test.value = 'YeS';
 			child.go();
 
-			expect( child.data.length ).toBe( 2 );
+			expect(child.data.length).toBe(2);
 
 			child.disconnect();
 		});
@@ -235,7 +235,7 @@ describe('bmoor-data.collection.Proxied', function(){
 					]
 				});
 
-			expect( child.data.length ).toBe( 0 );
+			expect( child.data.length ).toBe( 4 );
 		
 			test.value = 'YeS';
 			child.go();
