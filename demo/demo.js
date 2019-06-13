@@ -4793,6 +4793,7 @@ module.exports = {
 		});
 
 		return {
+			go: makeIndex,
 			get: function get(search) {
 				var key = dex.parse(search);
 				return index[key];
