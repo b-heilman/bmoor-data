@@ -1,5 +1,6 @@
-var bmoor = require('bmoor'),
-	Eventing = bmoor.Eventing;
+
+const bmoor = require('bmoor');
+const {Subject} = require('rxjs');
 
 function makeMask( target, override ){
 	var mask = bmoor.isArray(target) ?
@@ -152,13 +153,19 @@ function flatten( obj, cmp ){
 	return rtn;
 }
 
-class Proxy extends Eventing {
-	constructor( obj ){
+class Proxy extends Subject {
+	constructor(obj){
 		super();
+
+		this._followers = {};
 
 		this.getDatum = function(){
 			return obj;
 		};
+	}
+
+	next(){
+		super.next(this.getDatum());
 	}
 
 	// a 'deep copy' of the datum, but using mask() to have the original
@@ -221,18 +228,18 @@ class Proxy extends Eventing {
 		return mask;
 	}
 
-	merge( delta ){
-		if ( !delta ){
+	merge(delta){
+		if (!delta){
 			delta = this.getChanges();
 		}else{
-			delta = getChanges( delta, this.getDatum() );
+			delta = getChanges(delta, this.getDatum());
 		}
 
-		if ( delta ){
-			bmoor.object.merge( this.getDatum(), delta );
+		if (delta){
+			bmoor.object.merge(this.getDatum(), delta);
 
 			this.mask = null;
-			this.trigger( 'update', delta );
+			this.next();
 		}
 	}
 
@@ -244,16 +251,20 @@ class Proxy extends Eventing {
 		}
 	}
 
-	trigger(){
-		// always make the datum be the last argument passed
-		arguments[arguments.length] = this.getDatum();
-		arguments.length++;
-
-		super.trigger.apply( this, arguments );
-	}
-
 	toJson(){
 		return JSON.stringify( this.getDatum() );
+	}
+
+	follow(fn, hash){
+		this._followers[hash] = this.subscribe(fn);
+	}
+
+	unfollow(hash){
+		const unfollow = this._followers[hash];
+
+		if (unfollow){
+			unfollow();
+		}
 	}
 }
 

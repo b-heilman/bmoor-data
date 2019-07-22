@@ -1,20 +1,20 @@
-// TODO : test
 
 var bmoor = require('bmoor'),
 	setUid = bmoor.data.setUid,
-	oldPush = Array.prototype.push,
-	Observable = bmoor.Observable;
+	oldPush = Array.prototype.push;
+
+const DataSubject = require('./Subject').Subject;
 
 // designed for one way data flows.
 // src -> feed -> target
-class Feed extends Observable {
+class Feed extends DataSubject {
 
 	constructor(src, settings = {}){
-		super(settings);
+		super(null, settings);
 
 		let hot = false;
 		if (src){
-			hot = true;
+			hot = !!src.length || settings.hot; // if it's a length of 0, don't go hot
 			src.push = src.unshift = this.add.bind( this );
 
 			src.forEach(datum => {
@@ -27,13 +27,16 @@ class Feed extends Observable {
 		setUid(this);
 
 		this.data = src;
-		this.parents = [];
-
+		
 		if (hot){
 			this.next();
 		}
 	}
-
+	/*
+	next(){
+		this._next();
+	}
+	*/
 	_track(/*datum*/){
 		// just a stub for now
 	}
@@ -46,106 +49,31 @@ class Feed extends Observable {
 		return datum;
 	}
 
-	add( datum ){
+	add(datum){
 		const added = this._add(datum);
 
-		this.goHot();
+		this._next();
 
 		return added;
 	}
 
-	consume( arr ){
+	consume(arr){
 		for (let i = 0, c = arr.length; i < c; i++){
 			this._add(arr[i]);
 		}
 
-		this.goHot();
+		this._next();
 	}
 
 	empty(){
 		this.data.length = 0;
 
-		this.goHot();
-	}
-
-	go(){
-		// only rerun if this has parents, otherwise go does nothing
-		if (this.parents.length){
-			this.empty();
-
-			// definitely not performance friendly, not caring which parent
-			// triggered and brute forcing
-			this.parents.forEach(parent => {
-				this.consume(parent.data);
-			});
-		} else {
-			this.next();
-		}
-	}
-
-	next(){
-		super.next(this.data);
-	}
-
-	goHot(){
-		this.next();
+		this._next();
 	}
 
 	destroy(){
 		this.data = null;
-		this.disconnect();
-	}
-
-	follow(parent, settings){
-		this.parents.push(parent);
-
-		let disconnect = null;
-		const parentDisconnect = parent.subscribe(Object.assign(
-			{
-				next: (source) => {
-					this.go(source);
-				},
-				complete: () => {
-					disconnect();
-
-					if (!this.parents.length){
-						this.destroy();
-					}
-				}
-			},
-			settings
-		));
-
-		disconnect = () => {
-			bmoor.array.remove(this.parents, parent);
-
-			parentDisconnect();
-
-			if (settings.disconnect){
-				settings.disconnect();
-			}
-		};
-
-		if ( this.disconnect ){
-			let old = this.disconnect;
-			this.disconnect = function(){
-				old();
-				disconnect();
-			};
-		} else {
-			this.disconnect = function(){
-				disconnect();
-			};
-		}
-
-		return parentDisconnect;
-	}
-
-	// I want to remove this
-	sort( fn ){
-		console.warn('Feed::sort, will be removed soon');
-
-		this.data.sort( fn );
+		this.complete();
 	}
 }
 

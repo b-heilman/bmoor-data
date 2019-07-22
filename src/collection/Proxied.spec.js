@@ -63,29 +63,33 @@ describe('bmoor-data.collection.Proxied', function(){
 					}
 				);
 
-			feed._next.flush();
-			child._next.flush();
-			
-			expect( child.data.length ).toBe( 1 );
+			child.callStack([
+				function(){
+					expect( child.data.length ).toBe( 1 );
 
-			child.once('next', function filterInsert(){
-				expect( child.data.length ).toBe( 2 );
-				expect( feed.data.length ).toBe( 5 );
-				expect( child.data[0].$('foo') ).toBe('eins');
+					feed.add({foo:'zoo'});
+				},
+				function(){
+					expect( child.data.length ).toBe( 1 );
+					expect( feed.data.length ).toBe( 4 );
 
-				child.on('next', function filterRemove(){
+					feed.add({foo:'ever'});
+				},
+				function(){
+					expect( child.data.length ).toBe( 2 );
+					expect( feed.data.length ).toBe( 5 );
+					expect( child.data[0].$('foo') ).toBe('eins');
+
+					feed.remove( feed.data[0].getDatum() );
+				},
+				function(){
 					expect( child.data.length ).toBe( 1 );
 					expect( feed.data.length ).toBe( 4 );
 					expect( child.data[0].$('foo') ).toBe('ever');
 
 					done();
-				});
-
-				feed.remove( feed.data[0].getDatum() );
-			});
-			
-			feed.add({foo:'zoo'});
-			feed.add({foo:'ever'});
+				}
+			]);
 		});
 
 		it('should allow a datum to be passed between', function(done){
@@ -101,14 +105,14 @@ describe('bmoor-data.collection.Proxied', function(){
 			var truthy = collection.filter({v:true});
 			var falsey = collection.filter({v:false});
 
-			collection._next.flush();
+			collection._next();
 
 			expect(truthy.data.length).toBe(3);
 			expect(falsey.data.length).toBe(2);
 
 			proxy.merge({v:false});
 
-			collection._next.flush();
+			collection._next();
 
 			expect(truthy.data.length).toBe(2);
 			expect(falsey.data.length).toBe(3);
@@ -133,13 +137,16 @@ describe('bmoor-data.collection.Proxied', function(){
 		});
 
 		it('should work corectly with proxies', function(){
-			expect( child.get(1) ).toBe( parent.data[0] );
-			expect( child.get(2) ).toBe( parent.data[1] );
-			expect( child.get(3) ).toBe( parent.data[2] );
-			expect( child.get(4) ).toBeUndefined();
+			child.subscribe(dex => {
+				expect( dex.get(1) ).toBe( parent.data[0] );
+				expect( dex.get(2) ).toBe( parent.data[1] );
+				expect( dex.get(3) ).toBe( parent.data[2] );
+				expect( dex.get(4) ).toBeUndefined();
+			});
 		});
 	});
 
+	/*
 	describe('::route', function(){
 		var child,
 			parent;
@@ -160,9 +167,10 @@ describe('bmoor-data.collection.Proxied', function(){
 			expect( child.get('cat').data.length ).toBe( 1 );
 		});
 	});
+	*/
 
 	describe('::select', function(){
-		it('should work with proxies correctly', function(){
+		it('should work with proxies correctly', function(done){
 			var t = [
 					{id:1, foo:'eins',value:'yes'},
 					{id:3, foo:'zwei',value:'no'},
@@ -195,17 +203,23 @@ describe('bmoor-data.collection.Proxied', function(){
 					]
 				});
 
-			expect(child.data.length).toBe(4);
-		
-			test.value = 'YeS';
-			child.go();
+			child.callStack([
+				data => {
+					expect(data.length).toBe(4);
+			
+					test.value = 'YeS';
 
-			expect(child.data.length).toBe(2);
+					child.go();
+				},
+				data => {
+					expect(data.length).toBe(2);
 
-			child.disconnect();
+					done();
+				}
+			]);
 		});
 
-		it('should work with proxies correctly not defining own massage', function(){
+		it('should work with proxies correctly not defining own massage', function(done){
 			var t = [
 					{id:1, foo:'eins',value:'yes'},
 					{id:3, foo:'zwei',value:'no'},
@@ -235,14 +249,20 @@ describe('bmoor-data.collection.Proxied', function(){
 					]
 				});
 
-			expect( child.data.length ).toBe( 4 );
-		
-			test.value = 'YeS';
-			child.go();
+			child.callStack([
+				data => {
+					expect(data.length).toBe(4);
+			
+					test.value = 'YeS';
 
-			expect( child.data.length ).toBe( 2 );
+					child.go();
+				},
+				data => {
+					expect(data.length).toBe(2);
 
-			child.disconnect();
+					done();
+				}
+			]);
 		});
 	});
 });

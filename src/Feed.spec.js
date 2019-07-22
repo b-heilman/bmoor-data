@@ -25,13 +25,26 @@ describe('bmoor-data.Feed', function(){
 			n = {},
 			feed = new Feed(t);
 
+		t.push(n);
+
+		feed.on('next', function( res ){
+			expect( feed.data[0] ).toBe( n );
+			expect( res ).toBe(feed.data);
+			done();
+		});
+	});
+
+	it('should allow adding to the feed', function( done ){
+		var n = {},
+			feed = new Feed();
+
 		feed.on('next', function( res ){
 			expect( feed.data[0] ).toBe( n );
 			expect( res ).toBe(feed.data);
 			done();
 		});
 
-		t.push(n);
+		feed.add(n);
 	});
 
 	it('should allow unshift on the original source', function( done ){
@@ -39,13 +52,13 @@ describe('bmoor-data.Feed', function(){
 			n = {},
 			feed = new Feed(t);
 
+		t.unshift(n);
+
 		feed.on('next', function( res ){
 			expect( feed.data[0] ).toBe( n );
 			expect( res ).toBe(feed.data);
 			done();
 		});
-
-		t.unshift(n);
 	});
 
 	it('should have add calling insert correctly', function( done ){
@@ -53,13 +66,13 @@ describe('bmoor-data.Feed', function(){
 			n = {},
 			feed = new Feed(t);
 
+		feed.add(n);
+
 		feed.on('next', function( res ){
 			expect( feed.data[0] ).toBe( n );
 			expect( res ).toBe(feed.data);
 			done();
 		});
-
-		feed.add(n);
 	});
 
 	it('should have add calling update correctly', function( done ){
@@ -67,19 +80,21 @@ describe('bmoor-data.Feed', function(){
 			n = {},
 			feed = new Feed(t);
 
+		feed.add(n);
+
 		feed.on('next', function( res ){
 			expect(feed.data[0]).toBe(n);
 			expect(res).toBe(feed.data);
 			done();
 		});
-
-		feed.add(n);
 	});
 
 	it('should have consume working correctly', function( done ){
 		var t = [],
 			n = {x:1},
 			feed = new Feed(t);
+
+		feed.add(n);
 
 		feed.once('next', function( res ){
 			expect(feed.data[0]).toBe(n);
@@ -96,7 +111,5 @@ describe('bmoor-data.Feed', function(){
 
 			feed.consume([{x:2},{x:3}]);
 		});
-
-		feed.add(n);
 	});
 });

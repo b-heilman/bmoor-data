@@ -330,7 +330,7 @@ describe('bmoor-data.object.Proxy', function(){
 				},
 				proxy = new Proxy( target );
 
-			proxy.on('update', function(){
+			proxy.subscribe(function(){
 				called = true;
 			});
 
@@ -352,7 +352,7 @@ describe('bmoor-data.object.Proxy', function(){
 				proxy = new Proxy( target ),
 				mask = proxy.getMask();
 
-			proxy.on('update', function(){
+			proxy.subscribe(function(){
 				called = true;
 			});
 

@@ -29,7 +29,7 @@ class Tagged extends ProxyCollection {
 			};
 		}
 
-		return DataCollection.prototype.select.call( this, settings );
+		return DataCollection.prototype.select.call(this, settings);
 	}
 }
 

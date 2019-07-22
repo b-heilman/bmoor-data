@@ -5,9 +5,6 @@ module.exports = {
 	collection: {
 		Proxied: require('./src/collection/Proxied.js')
 	},
-	stream: {
-		Converter: require('./src/stream/Converter.js')
-	},
 	object: {
 		Proxy: require('./src/object/Proxy.js'),
 		Test: require('./src/object/Test.js'),

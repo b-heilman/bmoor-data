@@ -24,6 +24,7 @@ module.exports = function(config) {
             'dist/bmoor-data.js',
             //------------
             'src/**/*.spec.js'
+            // 'src/collection/Proxied.spec.js'
         ],
 
         // list of files / patterns to exclude

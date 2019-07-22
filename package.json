@@ -1,6 +1,6 @@
 {
   "name": "bmoor-data",
-  "version": "0.5.8",
+  "version": "0.6.0",
   "author": "Brian Heilman <das.ist.junk@gmail.com>",
   "description": "Data structures for daily life",
   "license": "MIT",
@@ -40,6 +40,7 @@
     "map-stream": "0.0.6",
     "phantomjs-polyfill": "0.0.2",
     "phantomjs-prebuilt": "^2.1.16",
+    "rxjs": "^6.5.2",
     "webpack": "^3.10.0",
     "webpack-stream": "^4.0.0"
   }
