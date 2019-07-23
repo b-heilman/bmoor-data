@@ -6,6 +6,47 @@ describe('bmoor-data.object.Proxy', function(){
 		expect( Proxy ).toBeDefined();
 	});
 
+	describe('::follow', function(){
+		it('should allow ::unfollow', function(){
+			let called = false;
+
+			let proxy = new Proxy({
+				foo: 'bar'
+			});
+
+			proxy.follow(datum => {
+				expect(datum).toEqual({
+					foo: 'bar',
+					hello: 'world'
+				});
+
+				called = true;
+			}, 123);
+
+			proxy.getMask().hello = 'world';
+
+			expect(called).toBe(false);
+
+			proxy.merge();
+
+			expect(called).toBe(true);
+
+			proxy.unfollow(123);
+
+			called = false;
+
+			proxy.merge({value: 1});
+
+			expect(called).toBe(false);
+
+			expect(proxy.getDatum()).toEqual({
+				foo: 'bar',
+				hello: 'world',
+				value: 1
+			});
+		});
+	});
+
 	describe('::isDirty', function(){
 		it('should work with null', function(){
 			var target = {

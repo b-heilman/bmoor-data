@@ -14,7 +14,7 @@ class Collection extends Feed {
 	_track(datum){
 		if (datum instanceof ObjProxy){
 			datum.follow(() => {
-				this.next();
+				this.publish();
 			}, this.$$bmoorUid);
 		}
 	}
@@ -43,7 +43,7 @@ class Collection extends Feed {
 		var rtn = this._remove(datum);
 
 		if (rtn){
-			this.next();
+			this.publish();
 
 			return rtn;
 		}
@@ -56,7 +56,7 @@ class Collection extends Feed {
 			this._remove(arr[0]);
 		}
 
-		this.next();
+		this.publish();
 	}
 
 	// TODO : everything below needs to be removed in the next version
@@ -73,7 +73,6 @@ class Collection extends Feed {
 		return Actionable.prototype.route.call(this, search, settings);
 	}
 
-	// TODO : create the Compare class, then memorize this
 	sorted(sortFn, settings={}){
 		return Actionable.prototype.sorted.call(this, sortFn, settings);
 	}

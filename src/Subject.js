@@ -14,16 +14,8 @@ class Subject extends ReplaySubject {
 			this.data = data;
 		}
 
-		const oldNext = this.next;
-		this.next = () => {
-			this._next();
-		};
-		this._next = /*flowWindow(*/() => {
-			if (oldNext){
-				oldNext.call(this, this.data);
-			} else {
-				super.next(this.data);
-			}
+		this.publish = /*flowWindow(*/() => {
+			this.next(this.data);
 		}/*, settings.windowMin||0, settings.windowMax||30)*/;
 	}
 
@@ -84,6 +76,12 @@ class Subject extends ReplaySubject {
 		return new Promise((resolve, reject) => {
 			this.once(resolve, reject);
 		});
+	}
+
+	destroy(){
+		this.data = null;
+
+		this.complete();
 	}
 }
 

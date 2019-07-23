@@ -164,8 +164,8 @@ class Proxy extends Subject {
 		};
 	}
 
-	next(){
-		super.next(this.getDatum());
+	publish(){
+		this.next(this.getDatum());
 	}
 
 	// a 'deep copy' of the datum, but using mask() to have the original
@@ -239,7 +239,7 @@ class Proxy extends Subject {
 			bmoor.object.merge(this.getDatum(), delta);
 
 			this.mask = null;
-			this.next();
+			this.publish();
 		}
 	}
 
@@ -263,7 +263,7 @@ class Proxy extends Subject {
 		const unfollow = this._followers[hash];
 
 		if (unfollow){
-			unfollow();
+			unfollow.unsubscribe();
 		}
 	}
 }

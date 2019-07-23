@@ -88,10 +88,16 @@ class Proxied extends DataCollection {
 		return super._add( proxy );
 	}
 
-	index( search, settings ){
-		settings = configSettings( settings );
+	index(search, settings){
+		settings = configSettings(settings);
 
-		return super.index( search, settings );
+		return super.index(search, settings);
+	}
+
+	sorted(compare, settings){
+		settings = configSettings(settings);
+
+		return super.sorted(compare, settings);
 	}
 
 	//--- child generators 

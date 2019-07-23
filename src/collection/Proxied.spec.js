@@ -105,14 +105,14 @@ describe('bmoor-data.collection.Proxied', function(){
 			var truthy = collection.filter({v:true});
 			var falsey = collection.filter({v:false});
 
-			collection._next();
+			collection.publish();
 
 			expect(truthy.data.length).toBe(3);
 			expect(falsey.data.length).toBe(2);
 
 			proxy.merge({v:false});
 
-			collection._next();
+			collection.publish();
 
 			expect(truthy.data.length).toBe(2);
 			expect(falsey.data.length).toBe(3);
@@ -263,6 +263,41 @@ describe('bmoor-data.collection.Proxied', function(){
 					done();
 				}
 			]);
+		});
+	});
+
+	describe('chaining', function(){
+		it('should allow ::sorted ::index', function(){
+			const collection = new Proxied([
+				{dex: 4, val: 1},
+				{dex: 5, val: 2},
+				{dex: 1, val: 3},
+				{dex: 2, val: 1},
+				{dex: 3, val: 2},
+				{dex: 6, val: 3},
+			]);
+
+			const sorted = collection.sorted((a, b) => {
+				return a.$('dex') - b.$('dex');
+			});
+
+			sorted.subscribe(data => {
+				expect(data.length).toBe(6);
+				expect(data[0].$('dex')).toBe(1);
+				expect(data[5].$('dex')).toBe(6);
+			});
+
+			sorted.filter(p => p.dex%2 === 0)
+			.subscribe(data => {
+				expect(data.length).toBe(3);
+				expect(data[0].$('dex')).toBe(2);
+			});
+
+			sorted.filter({val: 1})
+			.subscribe(data => {
+				expect(data.length).toBe(2);
+				expect(data[0].$('dex')).toBe(2);
+			});
 		});
 	});
 });

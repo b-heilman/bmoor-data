@@ -2212,16 +2212,10 @@ var Feed = function (_DataSubject) {
 		_this.data = src;
 
 		if (hot) {
-			_this.next();
+			_this.publish();
 		}
 		return _this;
 	}
-	/*
- next(){
- 	this._next();
- }
- */
-
 
 	_createClass(Feed, [{
 		key: '_track',
@@ -2242,7 +2236,7 @@ var Feed = function (_DataSubject) {
 		value: function add(datum) {
 			var added = this._add(datum);
 
-			this._next();
+			this.publish();
 
 			return added;
 		}
@@ -2253,20 +2247,14 @@ var Feed = function (_DataSubject) {
 				this._add(arr[i]);
 			}
 
-			this._next();
+			this.publish();
 		}
 	}, {
 		key: 'empty',
 		value: function empty() {
 			this.data.length = 0;
 
-			this._next();
-		}
-	}, {
-		key: 'destroy',
-		value: function destroy() {
-			this.data = null;
-			this.complete();
+			this.publish();
 		}
 	}]);
 
@@ -3098,8 +3086,6 @@ module.exports = {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -3275,9 +3261,9 @@ var Proxy = function (_Subject) {
 	}
 
 	_createClass(Proxy, [{
-		key: 'next',
-		value: function next() {
-			_get(Proxy.prototype.__proto__ || Object.getPrototypeOf(Proxy.prototype), 'next', this).call(this, this.getDatum());
+		key: 'publish',
+		value: function publish() {
+			this.next(this.getDatum());
 		}
 
 		// a 'deep copy' of the datum, but using mask() to have the original
@@ -3361,7 +3347,7 @@ var Proxy = function (_Subject) {
 				bmoor.object.merge(this.getDatum(), delta);
 
 				this.mask = null;
-				this.next();
+				this.publish();
 			}
 		}
 	}, {
@@ -3389,7 +3375,7 @@ var Proxy = function (_Subject) {
 			var unfollow = this._followers[hash];
 
 			if (unfollow) {
-				unfollow();
+				unfollow.unsubscribe();
 			}
 		}
 	}]);
@@ -3534,8 +3520,6 @@ module.exports = Eventing;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -3564,16 +3548,8 @@ var Subject = function (_ReplaySubject) {
 			_this.data = data;
 		}
 
-		var oldNext = _this.next;
-		_this.next = function () {
-			_this._next();
-		};
-		_this._next = /*flowWindow(*/function () {
-			if (oldNext) {
-				oldNext.call(_this, _this.data);
-			} else {
-				_get(Subject.prototype.__proto__ || Object.getPrototypeOf(Subject.prototype), 'next', _this).call(_this, _this.data);
-			}
+		_this.publish = /*flowWindow(*/function () {
+			_this.next(_this.data);
 		} /*, settings.windowMin||0, settings.windowMax||30)*/;
 		return _this;
 	}
@@ -3640,6 +3616,13 @@ var Subject = function (_ReplaySubject) {
 			return new Promise(function (resolve, reject) {
 				_this2.once(resolve, reject);
 			});
+		}
+	}, {
+		key: 'destroy',
+		value: function destroy() {
+			this.data = null;
+
+			this.complete();
 		}
 	}]);
 
@@ -5005,7 +4988,7 @@ var Collection = function (_Feed) {
 
 			if (datum instanceof ObjProxy) {
 				datum.follow(function () {
-					_this2.next();
+					_this2.publish();
 				}, this.$$bmoorUid);
 			}
 		}
@@ -5036,7 +5019,7 @@ var Collection = function (_Feed) {
 			var rtn = this._remove(datum);
 
 			if (rtn) {
-				this.next();
+				this.publish();
 
 				return rtn;
 			}
@@ -5050,7 +5033,7 @@ var Collection = function (_Feed) {
 				this._remove(arr[0]);
 			}
 
-			this.next();
+			this.publish();
 		}
 
 		// TODO : everything below needs to be removed in the next version
@@ -5079,9 +5062,6 @@ var Collection = function (_Feed) {
 
 			return Actionable.prototype.route.call(this, search, settings);
 		}
-
-		// TODO : create the Compare class, then memorize this
-
 	}, {
 		key: 'sorted',
 		value: function sorted(sortFn) {
@@ -11028,6 +11008,8 @@ module.exports = {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -11057,7 +11039,9 @@ var _require = __webpack_require__(39),
 var Actionable = function (_Feed) {
 	_inherits(Actionable, _Feed);
 
-	function Actionable(parent, fn, settings) {
+	function Actionable(parent, fn) {
+		var settings = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
 		_classCallCheck(this, Actionable);
 
 		var _this = _possibleConstructorReturn(this, (Actionable.__proto__ || Object.getPrototypeOf(Actionable)).call(this, null, settings));
@@ -11065,7 +11049,7 @@ var Actionable = function (_Feed) {
 		_this.go = function () {
 			_this.data = fn(parent.data);
 
-			_this.next();
+			_this.publish();
 		};
 
 		_this.subscription = parent.subscribe(_this.go);
@@ -11074,8 +11058,12 @@ var Actionable = function (_Feed) {
 
 	_createClass(Actionable, [{
 		key: 'index',
-		value: function index(search, settings) {
+		value: function index(search) {
 			var _this2 = this;
+
+			var settings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+			settings = Object.assign(settings, this.settings);
 
 			return memorized(this, 'indexes', search instanceof Hash ? search : new Hash(search, settings), indexFn, function (fn) {
 				var rtn = new Subject();
@@ -11086,7 +11074,7 @@ var Actionable = function (_Feed) {
 					dex.disconnect = disconnect;
 
 					rtn.data = dex;
-					rtn.next();
+					rtn.publish();
 				});
 
 				return rtn;
@@ -11097,8 +11085,12 @@ var Actionable = function (_Feed) {
 
 	}, {
 		key: 'route',
-		value: function route(search, settings) {
+		value: function route(search) {
 			var _this3 = this;
+
+			var settings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+			settings = Object.assign(settings, this.settings);
 
 			return memorized(this, 'routes', search instanceof Hash ? search : new Hash(search, settings), function (dex, parent) {
 				return routeFn(dex, parent, function () {
@@ -11113,7 +11105,7 @@ var Actionable = function (_Feed) {
 					dex.disconnect = disconnect;
 
 					rtn.data = dex;
-					rtn.next();
+					rtn.publish();
 				});
 
 				return rtn;
@@ -11124,45 +11116,61 @@ var Actionable = function (_Feed) {
 
 	}, {
 		key: 'sorted',
-		value: function sorted(sortFn, settings) {
+		value: function sorted(sortFn) {
 			var _this4 = this;
+
+			var settings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+			settings = Object.assign(settings, this.settings);
 
 			return memorized(this, 'sorts', {
 				hash: sortFn.toString(),
 				go: sortFn
 			}, sortedFn, function (fn) {
-				return new Actionable(_this4, fn);
+				return new Actionable(_this4, fn, settings);
 			}, settings);
 		}
 	}, {
 		key: 'map',
-		value: function map(mapFn, settings) {
+		value: function map(mapFn) {
 			var _this5 = this;
+
+			var settings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+			settings = Object.assign(settings, this.settings);
 
 			return memorized(this, 'maps', {
 				hash: mapFn.toString(),
 				go: mapFn
 			}, mappedFn, function (fn) {
-				return new Actionable(_this5, fn);
+				return new Actionable(_this5, fn, settings);
 			}, settings);
 		}
 	}, {
 		key: '_filter',
-		value: function _filter(search, settings) {
+		value: function _filter(search) {
 			var _this6 = this;
 
+			var settings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+			settings = Object.assign(settings, this.settings);
+
 			return memorized(this, 'filters', search instanceof Test ? search : new Test(search, settings), filterFn, function (fn) {
-				return new Actionable(_this6, fn);
+				return new Actionable(_this6, fn, settings);
 			}, settings);
 		}
 	}, {
 		key: 'filter',
-		value: function filter(search, settings) {
+		value: function filter(search) {
+			var settings = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
 			return this._filter(search, settings);
 		}
 	}, {
 		key: 'select',
-		value: function select(settings) {
+		value: function select() {
+			var settings = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
 			var ctx, test;
 
 			for (var i = settings.tests.length - 1; i !== -1; i--) {
@@ -11170,6 +11178,8 @@ var Actionable = function (_Feed) {
 			}
 
 			var hash = settings.hash || 'search:' + Date.now();
+
+			settings = Object.assign(settings, this.settings);
 
 			return this._filter(function (datum) {
 				if (!datum.$normalized) {
@@ -11201,8 +11211,10 @@ var Actionable = function (_Feed) {
 
 	}, {
 		key: 'paginate',
-		value: function paginate(settings) {
+		value: function paginate() {
 			var _this7 = this;
+
+			var settings = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
 			var child = null;
 
@@ -11284,12 +11296,24 @@ var Actionable = function (_Feed) {
 				}
 
 				child.data = inside;
-				child.next();
+				child.publish();
 			};
 
 			this.subscribe(child.go);
 
 			return child;
+		}
+	}, {
+		key: 'disconnect',
+		value: function disconnect() {
+			this.subscription.unsubscribe();
+		}
+	}, {
+		key: 'destroy',
+		value: function destroy() {
+			this.disconnect();
+
+			_get(Actionable.prototype.__proto__ || Object.getPrototypeOf(Actionable.prototype), 'destroy', this).call(this);
 		}
 	}]);
 
@@ -11517,11 +11541,19 @@ module.exports = {
 				settings = {};
 			}
 
-			if (settings.disconnect) {
-				oldDisconnect = settings.disconnect;
+			child = chainFn(generator(expressor, parent, settings));
+
+			if (child.disconnect) {
+				oldDisconnect = child.disconnect;
 			}
 
-			child = chainFn(generator(expressor, parent, settings));
+			child.disconnect = function () {
+				if (oldDisconnect) {
+					oldDisconnect.call(child);
+				}
+
+				index[expressor.hash] = null;
+			};
 
 			index[expressor.hash] = child;
 		}
@@ -11657,6 +11689,13 @@ var Proxied = function (_DataCollection) {
 			settings = configSettings(settings);
 
 			return _get(Proxied.prototype.__proto__ || Object.getPrototypeOf(Proxied.prototype), 'index', this).call(this, search, settings);
+		}
+	}, {
+		key: 'sorted',
+		value: function sorted(compare, settings) {
+			settings = configSettings(settings);
+
+			return _get(Proxied.prototype.__proto__ || Object.getPrototypeOf(Proxied.prototype), 'sorted', this).call(this, compare, settings);
 		}
 
 		//--- child generators 

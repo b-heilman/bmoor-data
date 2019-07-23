@@ -143,7 +143,7 @@ describe('bmoor-data.Collection', function(){
 
 					sorted.data[0].foo = 'apple';
 
-					collection.next();
+					collection.publish();
 				},
 				function(){
 					expect(sorted.data.length).toBe(3);
@@ -173,7 +173,7 @@ describe('bmoor-data.Collection', function(){
 					expect(data.length).toBe(1);
 
 					n.foo = 'eieio';
-					feed._next();
+					feed.publish();
 				},
 				function(){
 					expect(child.data.length).toBe(2);
@@ -194,6 +194,33 @@ describe('bmoor-data.Collection', function(){
 					expect(feed.data.length).toBe(3);
 					expect(feed.data[0].foo).toBe('zwei');
 					expect(child.data[0].foo).toBe('ever');
+
+					done();
+				}
+			]);
+		});
+
+		it('should work correctly even with a miss', function( done ){
+			var n = {foo:'bar'},
+				t = [
+					{foo:'eins'},
+					{foo:'zwei'},
+					n
+				],
+				feed = new Collection(t),
+				child = feed.filter(function( d ){
+					return d.foo[0] === 'a';
+				});
+		
+			child.callStack([
+				function(data){
+					expect(data.length).toBe(0);
+
+					n.foo = 'eieio';
+					feed.publish();
+				},
+				function(){
+					expect(child.data.length).toBe(0);
 
 					done();
 				}
@@ -676,7 +703,7 @@ describe('bmoor-data.Collection', function(){
 				return d.id;
 			});
 
-			parent._next();
+			parent.publish();
 		});
 
 		it('should work correctly', function(done){
@@ -774,7 +801,7 @@ describe('bmoor-data.Collection', function(){
 						pig++;
 					});
 
-					parent.next();
+					parent.publish();
 				},
 				dex => {
 					expect( dex.get('dog').data.length ).toBe( 1 );

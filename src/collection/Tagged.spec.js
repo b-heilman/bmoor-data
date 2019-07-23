@@ -30,8 +30,7 @@ describe('bmoor-data.collection.Tagged', function(){
 			feed.add({id:2, foo:'bar'},{value:'no'});
 			feed.add({id:4, foo:'fier'},{value:'YES'});
 
-			feed._next();
-			child._next();
+			feed.publish();
 			
 			expect( child.data.length ).toBe( 2 );
 		});

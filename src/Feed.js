@@ -29,14 +29,10 @@ class Feed extends DataSubject {
 		this.data = src;
 		
 		if (hot){
-			this.next();
+			this.publish();
 		}
 	}
-	/*
-	next(){
-		this._next();
-	}
-	*/
+	
 	_track(/*datum*/){
 		// just a stub for now
 	}
@@ -52,7 +48,7 @@ class Feed extends DataSubject {
 	add(datum){
 		const added = this._add(datum);
 
-		this._next();
+		this.publish();
 
 		return added;
 	}
@@ -62,18 +58,13 @@ class Feed extends DataSubject {
 			this._add(arr[i]);
 		}
 
-		this._next();
+		this.publish();
 	}
 
 	empty(){
 		this.data.length = 0;
 
-		this._next();
-	}
-
-	destroy(){
-		this.data = null;
-		this.complete();
+		this.publish();
 	}
 }
 

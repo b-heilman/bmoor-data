@@ -19,19 +19,21 @@ const {Subject} = require('./Subject.js');
 
 class Actionable extends Feed {
 
-	constructor(parent, fn, settings){
+	constructor(parent, fn, settings = {}){
 		super(null, settings);
 
 		this.go = () => {
 			this.data = fn(parent.data);
 
-			this.next();
+			this.publish();
 		};
 
 		this.subscription = parent.subscribe(this.go);
 	}
 
-	index( search, settings ){
+	index( search, settings = {}){
+		settings = Object.assign(settings, this.settings);
+
 		return memorized( 
 			this,
 			'indexes', 
@@ -46,7 +48,7 @@ class Actionable extends Feed {
 					dex.disconnect = disconnect;
 					
 					rtn.data = dex;
-					rtn.next();
+					rtn.publish();
 				});
 
 				return rtn;
@@ -56,7 +58,9 @@ class Actionable extends Feed {
 	}
 
 	//--- child generators
-	route( search, settings ){
+	route( search, settings = {}){
+		settings = Object.assign(settings, this.settings);
+
 		return memorized(
 			this,
 			'routes',
@@ -76,7 +80,7 @@ class Actionable extends Feed {
 					dex.disconnect = disconnect;
 					
 					rtn.data = dex;
-					rtn.next();
+					rtn.publish();
 				});
 
 				return rtn;
@@ -86,7 +90,9 @@ class Actionable extends Feed {
 	}
 
 	// TODO : create the Compare class, then memorize this
-	sorted( sortFn, settings ){
+	sorted( sortFn, settings = {}){
+		settings = Object.assign(settings, this.settings);
+
 		return memorized(
 			this,
 			'sorts',
@@ -95,12 +101,14 @@ class Actionable extends Feed {
 				go: sortFn
 			},
 			sortedFn,
-			(fn) => new Actionable(this, fn),
+			(fn) => new Actionable(this, fn, settings),
 			settings
 		);
 	}
 
-	map( mapFn, settings ){
+	map( mapFn, settings = {}){
+		settings = Object.assign(settings, this.settings);
+
 		return memorized(
 			this,
 			'maps',
@@ -109,27 +117,29 @@ class Actionable extends Feed {
 				go: mapFn
 			},
 			mappedFn,
-			(fn) => new Actionable(this, fn),
+			(fn) => new Actionable(this, fn, settings),
 			settings
 		);
 	}
 
-	_filter( search, settings ){
+	_filter( search, settings = {}){
+		settings = Object.assign(settings, this.settings);
+
 		return memorized(
 			this,
 			'filters',
 			search instanceof Test ? search : new Test(search, settings),
 			filterFn,
-			(fn) => new Actionable(this, fn),
+			(fn) => new Actionable(this, fn, settings),
 			settings
 		);
 	}
 
-	filter( search, settings ){
+	filter( search, settings = {}){
 		return this._filter(search, settings);
 	}
 
-	select( settings ){
+	select( settings = {}){
 		var ctx,
 			test;
 
@@ -138,6 +148,8 @@ class Actionable extends Feed {
 		}
 
 		const hash = settings.hash || 'search:'+Date.now();
+
+		settings = Object.assign(settings, this.settings);
 
 		return this._filter(
 			function( datum ){
@@ -168,7 +180,7 @@ class Actionable extends Feed {
 	}
 
 	// settings { size }
-	paginate(settings){
+	paginate(settings = {}){
 		let child = null;
 
 		const parent = this;
@@ -249,12 +261,22 @@ class Actionable extends Feed {
 			}
 
 			child.data = inside;
-			child.next();
+			child.publish();
 		};
 
 		this.subscribe(child.go);
 
 		return child;
+	}
+
+	disconnect(){
+		this.subscription.unsubscribe();
+	}
+
+	destroy(){
+		this.disconnect();
+
+		super.destroy();
 	}
 }
 
