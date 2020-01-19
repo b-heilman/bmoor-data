@@ -1,3 +1,6 @@
+
+const {expect} = require('chai');
+
 describe('bmoor-data::Test', function(){
 
 	var Test = require('./Test.js');
@@ -12,8 +15,8 @@ describe('bmoor-data::Test', function(){
 					}
 				});
 
-			expect( filter.go({valid:0}) ).toBe( false );
-			expect( filter.go({valid:1}) ).toBe( true );
+			expect( filter.go({valid:0}) ).to.equal( false );
+			expect( filter.go({valid:1}) ).to.equal( true );
 		});
 	});
 
@@ -26,14 +29,14 @@ describe('bmoor-data::Test', function(){
 					}
 				});
 
-			expect( filter.hash ).toBe( 'boo=bar:eins.zwei=hello' );
+			expect( filter.hash ).to.equal( 'boo=bar:eins.zwei=hello' );
 
 			expect( filter.go({
 				boo: 'bar',
 				eins: {
 					zwei: 'hello'
 				}
-			}) ).toBe( true );
+			}) ).to.equal( true );
 
 			expect( filter.go({
 				boo: 'bar',
@@ -41,7 +44,7 @@ describe('bmoor-data::Test', function(){
 					zwei: 'hello',
 					world: 'false'
 				}
-			}) ).toBe( true );
+			}) ).to.equal( true );
 
 			expect( filter.go({
 				boo: 'bar2',
@@ -49,7 +52,7 @@ describe('bmoor-data::Test', function(){
 					zwei: 'hello',
 					world: 'false'
 				}
-			}) ).toBe( false );
+			}) ).to.equal( false );
 
 			expect( filter.go({
 				boo: 'bar2',
@@ -57,18 +60,18 @@ describe('bmoor-data::Test', function(){
 					zwei: 'hello',
 					world: 'false'
 				}
-			}) ).toBe( false );
+			}) ).to.equal( false );
 
 			expect( filter.go({
 				boo: 'bar',
 				eins: {
 					zwei: false
 				}
-			}) ).toBe( false );
+			}) ).to.equal( false );
 
 			expect( filter.go({
 				boo: 'bar'
-			}) ).toBe( false );
+			}) ).to.equal( false );
 		});
 
 		it('should match on undefined', function(){
@@ -78,20 +81,20 @@ describe('bmoor-data::Test', function(){
 					}
 				});
 
-			expect( filter.hash ).toBe( 'foo.bar=undefined' );
+			expect( filter.hash ).to.equal( 'foo.bar=undefined' );
 
 			expect( filter.go({
-			}) ).toBe( true );
+			}) ).to.equal( true );
 
 			expect( filter.go({
 				foo: true
-			}) ).toBe( true );
+			}) ).to.equal( true );
 
 			expect( filter.go({
 				foo: {
 					bar: true
 				}
-			}) ).toBe( false );
+			}) ).to.equal( false );
 		});
 
 		it('should allow massaging', function(){
@@ -102,19 +105,19 @@ describe('bmoor-data::Test', function(){
 					}
 				});
 
-			expect( filter.hash ).toBe( 'foo=bar' );
+			expect( filter.hash ).to.equal( 'foo=bar' );
 
 			expect( filter.go({
 				foo: 'bar'
-			}) ).toBe( false );
+			}) ).to.equal( false );
 
 			expect( filter.go({
 				info: {foo:'bar'}
-			}) ).toBe( true );
+			}) ).to.equal( true );
 
 			expect( filter.go({
 				info: { foo: { bar: true } }
-			}) ).toBe( false );
+			}) ).to.equal( false );
 		});
 	});
 });

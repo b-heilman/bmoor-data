@@ -1,8 +1,11 @@
+
+const {expect} = require('chai');
+
 describe('bmoor-data.collection.Tagged', function(){
-	var Tagged = require('./Tagged.js');
+	var {Tagged} = require('./Tagged.js');
 
 	it('should be defined', function(){
-		expect( Tagged ).toBeDefined();
+		expect( Tagged ).to.exist;
 	});
 
 	describe('::choose', function(){
@@ -32,7 +35,7 @@ describe('bmoor-data.collection.Tagged', function(){
 
 			feed.publish();
 			
-			expect( child.data.length ).toBe( 2 );
+			expect(child.data.length).to.equal(2);
 		});
 	});
 });

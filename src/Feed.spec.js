@@ -1,23 +1,26 @@
+
+const {expect} = require('chai');
+
 describe('bmoor-data.Feed', function(){
-	var Feed = require('./Feed.js');
+	var {Feed} = require('./Feed.js');
 
 	it('should be defined', function(){
-		expect( Feed ).toBeDefined();
+		expect( Feed ).to.exist;
 	});
 
 	it('should instantiate correctly', function(){
 		var feed = new Feed();
 
-		expect( feed.on ).toBeDefined();
-		expect( feed.data.length ).toBe(0);
+		expect( feed.on ).to.exist;
+		expect( feed.data.length ).to.equal(0);
 	});
 
 	it('should instantiate correctly', function(){
 		var t = [],
 			feed = new Feed(t);
 
-		expect( feed.on ).toBeDefined();
-		expect( feed.data ).toBe( t );
+		expect( feed.on ).to.exist;
+		expect( feed.data ).to.equal( t );
 	});
 
 	it('should allow a push on the original source', function( done ){
@@ -28,8 +31,8 @@ describe('bmoor-data.Feed', function(){
 		t.push(n);
 
 		feed.on('next', function( res ){
-			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBe(feed.data);
+			expect( feed.data[0] ).to.equal( n );
+			expect( res ).to.equal(feed.data);
 			done();
 		});
 	});
@@ -39,8 +42,8 @@ describe('bmoor-data.Feed', function(){
 			feed = new Feed();
 
 		feed.on('next', function( res ){
-			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBe(feed.data);
+			expect( feed.data[0] ).to.equal( n );
+			expect( res ).to.equal(feed.data);
 			done();
 		});
 
@@ -55,8 +58,8 @@ describe('bmoor-data.Feed', function(){
 		t.unshift(n);
 
 		feed.on('next', function( res ){
-			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBe(feed.data);
+			expect( feed.data[0] ).to.equal( n );
+			expect( res ).to.equal(feed.data);
 			done();
 		});
 	});
@@ -69,8 +72,8 @@ describe('bmoor-data.Feed', function(){
 		feed.add(n);
 
 		feed.on('next', function( res ){
-			expect( feed.data[0] ).toBe( n );
-			expect( res ).toBe(feed.data);
+			expect( feed.data[0] ).to.equal( n );
+			expect( res ).to.equal(feed.data);
 			done();
 		});
 	});
@@ -83,8 +86,8 @@ describe('bmoor-data.Feed', function(){
 		feed.add(n);
 
 		feed.on('next', function( res ){
-			expect(feed.data[0]).toBe(n);
-			expect(res).toBe(feed.data);
+			expect(feed.data[0]).to.equal(n);
+			expect(res).to.equal(feed.data);
 			done();
 		});
 	});
@@ -93,20 +96,49 @@ describe('bmoor-data.Feed', function(){
 		var t = [],
 			n = {x:1},
 			feed = new Feed(t);
-
+		
 		feed.add(n);
 
 		feed.once('next', function( res ){
-			expect(feed.data[0]).toBe(n);
-			expect(feed.data.length).toBe(1);
-			expect(res).toEqual(feed.data);
+			expect(feed.data[0]).to.equal(n);
+			expect(feed.data.length).to.equal(1);
+			expect(res).to.deep.equal(feed.data);
 
+			feed.consume([{x:2},{x:3}]);
+			
 			feed.on('next', function(res){
-				expect(feed.data[0]).toBe(n);
-				expect(feed.data.length).toBe(3);
-				expect(res).toEqual(feed.data);
+				expect(feed.data[0]).to.equal(n);
+				expect(feed.data.length).to.equal(3);
+				expect(res).to.deep.equal(feed.data);
 
 				done();
+			});
+		});
+	});
+
+	it('should have consume working correctly - twice', function( done ){
+		var t = [],
+			n = {x:1},
+			feed = new Feed(t);
+		
+		feed.add(n);
+
+		feed.once('next', function( res ){
+			expect(feed.data[0]).to.equal(n);
+			expect(feed.data.length).to.equal(1);
+			expect(res).to.deep.equal(feed.data);
+
+			let callCount = 0;
+			feed.on('next', function(res){
+				expect(feed.data[0]).to.equal(n);
+				expect(feed.data.length).to.equal(3);
+				expect(res).to.deep.equal(feed.data);
+
+				callCount++;
+
+				if (callCount === 2){
+					done();
+				}
 			});
 
 			feed.consume([{x:2},{x:3}]);

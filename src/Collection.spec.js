@@ -1,30 +1,33 @@
+
+const {expect} = require('chai');
+
 describe('bmoor-data.Collection', function(){
-	const Proxy = require('./object/Proxy.js');
-	const Collection = require('./Collection.js');
+	const {Proxy} = require('./object/Proxy.js');
+	const {Collection} = require('./Collection.js');
 
 	it('should be defined', function(){
-		expect( Collection ).toBeDefined();
+		expect( Collection ).to.exist;
 	});
 
 	it('should instantiate correctly', function(){
 		var feed = new Collection();
 
-		expect( feed.subscribe ).toBeDefined();
-		expect( feed.data.length ).toBe(0);
+		expect( feed.subscribe ).to.exist;
+		expect( feed.data.length ).to.equal(0);
 	});
 
 	it('should instantiate correctly, with an prepop', function(){
 		var feed = new Collection([]);
 
-		expect( feed.subscribe ).toBeDefined();
-		expect( feed.data ).toBeDefined();
+		expect( feed.subscribe ).to.exist;
+		expect( feed.data ).to.exist;
 	});
 
 	it('should instantiate correctly, with an prepop', function(){
 		var feed = new Collection([123]);
 
-		expect( feed.subscribe ).toBeDefined();
-		expect( feed.data.length ).toBe(1);
+		expect( feed.subscribe ).to.exist;
+		expect( feed.data.length ).to.equal(1);
 	});
 
 	it('should allow a push on the original source', function( done ){
@@ -33,8 +36,8 @@ describe('bmoor-data.Collection', function(){
 			feed = new Collection(t);
 
 		feed.on('next', function pushInsert(res){
-			expect(feed.data[0]).toBe(n);
-			expect(res).toBe(feed.data);
+			expect(feed.data[0]).to.equal(n);
+			expect(res).to.equal(feed.data);
 			
 			setTimeout(done,0); // I do this to keep the stack trace manageable
 		});
@@ -48,8 +51,8 @@ describe('bmoor-data.Collection', function(){
 			feed = new Collection(t);
 
 		feed.on('next', function originalInsert(res){
-			expect(feed.data[0]).toBe(n);
-			expect(res).toBe(feed.data);
+			expect(feed.data[0]).to.equal(n);
+			expect(res).to.equal(feed.data);
 			
 			done();
 		});
@@ -63,8 +66,8 @@ describe('bmoor-data.Collection', function(){
 			feed = new Collection(t);
 
 		feed.on('next', function correctInsert( res ){
-			expect(feed.data[0]).toBe( n );
-			expect(res).toBe(feed.data);
+			expect(feed.data[0]).to.equal( n );
+			expect(res).to.equal(feed.data);
 			
 			done();
 		});
@@ -78,8 +81,8 @@ describe('bmoor-data.Collection', function(){
 			feed = new Collection(t);
 
 		feed.on('next', function correctUpdate(res){
-			expect(feed.data[0]).toBe(n);
-			expect(res).toBe(feed.data);
+			expect(feed.data[0]).to.equal(n);
+			expect(res).to.equal(feed.data);
 			
 			setTimeout(done, 0);
 		});
@@ -92,15 +95,15 @@ describe('bmoor-data.Collection', function(){
 			t = [{foo:'eins'},{foo:'zwei'},n],
 			feed = new Collection(t);
 
+		feed.remove(n);
+
 		feed.on('next', function correctRemove( res ){
-			expect(feed.data.length).toBe(2);
-			expect(feed.data[feed.data.length-1]).not.toBe(n);
-			expect(res).toBe(feed.data);
+			expect(feed.data.length).to.equal(2);
+			expect(feed.data[feed.data.length-1]).not.to.equal(n);
+			expect(res).to.equal(feed.data);
 			
 			done();
 		});
-
-		feed.remove(n);
 	});
 
 	describe('::map', function(){
@@ -113,9 +116,9 @@ describe('bmoor-data.Collection', function(){
 			});
 
 			mapped.subscribe(data => {
-				expect(data.length).toBe(3);
+				expect(data.length).to.equal(3);
 
-				expect(data[0]).toEqual({other:'eins'});
+				expect(data[0]).to.deep.equal({other:'eins'});
 
 				done();
 			});
@@ -138,16 +141,16 @@ describe('bmoor-data.Collection', function(){
 
 			sorted.callStack([
 				function(){
-					expect(sorted.data.length).toBe(3);
-					expect(sorted.data[0]).toEqual({foo:'zwei'});
+					expect(sorted.data.length).to.equal(3);
+					expect(sorted.data[0]).to.deep.equal({foo:'zwei'});
 
 					sorted.data[0].foo = 'apple';
 
 					collection.publish();
 				},
 				function(){
-					expect(sorted.data.length).toBe(3);
-					expect(sorted.data[0]).toEqual({foo:'eins'});
+					expect(sorted.data.length).to.equal(3);
+					expect(sorted.data[0]).to.deep.equal({foo:'eins'});
 
 					done();
 				}
@@ -170,30 +173,30 @@ describe('bmoor-data.Collection', function(){
 		
 			child.callStack([
 				function(data){
-					expect(data.length).toBe(1);
+					expect(data.length).to.equal(1);
 
 					n.foo = 'eieio';
 					feed.publish();
 				},
 				function(){
-					expect(child.data.length).toBe(2);
+					expect(child.data.length).to.equal(2);
 
 					n.foo = 'boom';
 
 					feed.add({foo:'ever'});
 				},
 				function(){
-					expect(child.data.length).toBe(2);
-					expect(feed.data.length).toBe(4);
-					expect(child.data[child.data.length-1].foo).toBe('ever');
+					expect(child.data.length).to.equal(2);
+					expect(feed.data.length).to.equal(4);
+					expect(child.data[child.data.length-1].foo).to.equal('ever');
 
 					feed.remove(feed.data[0]);
 				},
 				function(){
-					expect(child.data.length).toBe(1);
-					expect(feed.data.length).toBe(3);
-					expect(feed.data[0].foo).toBe('zwei');
-					expect(child.data[0].foo).toBe('ever');
+					expect(child.data.length).to.equal(1);
+					expect(feed.data.length).to.equal(3);
+					expect(feed.data[0].foo).to.equal('zwei');
+					expect(child.data[0].foo).to.equal('ever');
 
 					done();
 				}
@@ -214,13 +217,13 @@ describe('bmoor-data.Collection', function(){
 		
 			child.callStack([
 				function(data){
-					expect(data.length).toBe(0);
+					expect(data.length).to.equal(0);
 
 					n.foo = 'eieio';
 					feed.publish();
 				},
 				function(){
-					expect(child.data.length).toBe(0);
+					expect(child.data.length).to.equal(0);
 
 					done();
 				}
@@ -264,19 +267,19 @@ describe('bmoor-data.Collection', function(){
 
 			child.callStack([
 				function(){
-					expect( child.data.length ).toBe( 3 );
+					expect( child.data.length ).to.equal( 3 );
 
 					feed.add({foo:'eins'});
 				},
 				
 				function(){
-					expect( child.data.length ).toBe( 4 );
+					expect( child.data.length ).to.equal( 4 );
 
 					child.add({foo:'eins'});
 				},
 					
 				function(){
-					expect( child.data.length ).toBe( 5 );
+					expect( child.data.length ).to.equal( 5 );
 
 					child.destroy();
 
@@ -305,12 +308,12 @@ describe('bmoor-data.Collection', function(){
 
 			child.callStack([
 				function(){
-					expect(child.data.length).toBe(3);
+					expect(child.data.length).to.equal(3);
 
 					a.merge({foo:'nope'});
 				},
 				function(res){
-					expect(res.length).toBe(2);
+					expect(res.length).to.equal(2);
 
 					done();
 				}
@@ -331,26 +334,26 @@ describe('bmoor-data.Collection', function(){
 
 			child.callStack([
 				function(){
-					expect(child.data.length).toBe(1);
+					expect(child.data.length).to.equal(1);
 
 					feed.add({foo:'zoo'});
 				},
 				function(){
-					expect(child.data.length).toBe(1);
+					expect(child.data.length).to.equal(1);
 
 					feed.add({foo:'ever'});
 				},
 				function(){
-					expect(child.data.length).toBe(2);
-					expect(feed.data.length).toBe(5);
-					expect(child.data[0].foo).toBe('eins');
+					expect(child.data.length).to.equal(2);
+					expect(feed.data.length).to.equal(5);
+					expect(child.data[0].foo).to.equal('eins');
 
 					feed.remove(feed.data[0]);
 				},
 				function(res){
-					expect(child.data.length).toBe(1);
-					expect(feed.data.length).toBe(4);
-					expect(res[0].foo).toBe('ever');
+					expect(child.data.length).to.equal(1);
+					expect(feed.data.length).to.equal(4);
+					expect(res[0].foo).to.equal('ever');
 
 					done();
 				}
@@ -391,14 +394,14 @@ describe('bmoor-data.Collection', function(){
 
 			child.callStack([
 				() => {
-					expect(child.data.length).toBe(4);
+					expect(child.data.length).to.equal(4);
 			
 					test.value = 'YeS';
 
 					child.go();
 				},
 				data => {
-					expect(data.length).toBe( 2 );
+					expect(data.length).to.equal( 2 );
 
 					done();
 				}
@@ -424,41 +427,41 @@ describe('bmoor-data.Collection', function(){
 
 			child.callStack([
 				data => {
-					expect( data.length ).toBe( 2 );
-					expect( child.nav.pos ).toBe(0);
-					expect( child.nav.start ).toBe(0);
-					expect( child.nav.stop ).toBe(2);
-					expect( child.nav.steps ).toBe(4);
-					expect( child.nav.count ).toBe(7);
-					expect( data[0].foo ).toBe( 'eins' );
+					expect( data.length ).to.equal( 2 );
+					expect( child.nav.pos ).to.equal(0);
+					expect( child.nav.start ).to.equal(0);
+					expect( child.nav.stop ).to.equal(2);
+					expect( child.nav.steps ).to.equal(4);
+					expect( child.nav.count ).to.equal(7);
+					expect( data[0].foo ).to.equal( 'eins' );
 
 					child.nav.next();
 				},
 				data => {
-					expect( data.length ).toBe( 2 );
-					expect( child.nav.pos ).toBe(1);
-					expect( child.nav.start ).toBe(2);
-					expect( child.nav.stop ).toBe(4);
-					expect( child.nav.steps ).toBe(4);
-					expect( child.nav.count ).toBe(7);
-					expect( data[0].foo ).toBe( 'bar' );
+					expect( data.length ).to.equal( 2 );
+					expect( child.nav.pos ).to.equal(1);
+					expect( child.nav.start ).to.equal(2);
+					expect( child.nav.stop ).to.equal(4);
+					expect( child.nav.steps ).to.equal(4);
+					expect( child.nav.count ).to.equal(7);
+					expect( data[0].foo ).to.equal( 'bar' );
 
 					child.nav.next();
 				},
 				data => {
-					expect( data.length ).toBe( 2 );
-					expect( data[0].foo ).toBe( 'funf' );
+					expect( data.length ).to.equal( 2 );
+					expect( data[0].foo ).to.equal( 'funf' );
 
 					child.nav.next();
 				},
 				data => {
-					expect( data.length ).toBe( 1 );
-					expect( child.nav.pos ).toBe(3);
-					expect( child.nav.start ).toBe(6);
-					expect( child.nav.stop ).toBe(7);
-					expect( child.nav.steps ).toBe(4);
-					expect( child.nav.count ).toBe(7);
-					expect( data[0].foo ).toBe( 'sieben' );
+					expect( data.length ).to.equal( 1 );
+					expect( child.nav.pos ).to.equal(3);
+					expect( child.nav.start ).to.equal(6);
+					expect( child.nav.stop ).to.equal(7);
+					expect( child.nav.steps ).to.equal(4);
+					expect( child.nav.count ).to.equal(7);
+					expect( data[0].foo ).to.equal( 'sieben' );
 
 					child.nav.prev();
 				},
@@ -468,13 +471,13 @@ describe('bmoor-data.Collection', function(){
 				},
 							
 				data => {
-					expect( data.length ).toBe( 2 );
-					expect( child.nav.pos ).toBe(1);
-					expect( child.nav.start ).toBe(2);
-					expect( child.nav.stop ).toBe(4);
-					expect( child.nav.steps ).toBe(4);
-					expect( child.nav.count ).toBe(7);
-					expect( data[0].foo ).toBe( 'bar' );
+					expect( data.length ).to.equal( 2 );
+					expect( child.nav.pos ).to.equal(1);
+					expect( child.nav.start ).to.equal(2);
+					expect( child.nav.stop ).to.equal(4);
+					expect( child.nav.steps ).to.equal(4);
+					expect( child.nav.count ).to.equal(7);
+					expect( data[0].foo ).to.equal( 'bar' );
 
 					done();
 				}
@@ -508,62 +511,62 @@ describe('bmoor-data.Collection', function(){
 						}
 					]);
 
-					expect( data.length ).toBe( 2 );
-					expect( child.nav.pos ).toBe(1);
-					expect( child.nav.start ).toBe(2);
-					expect( child.nav.stop ).toBe(4);
-					expect( child.nav.steps ).toBe(4);
-					expect( child.nav.count ).toBe(7);
-					expect( data[0].foo ).toBe( 'bar' );
+					expect( data.length ).to.equal( 2 );
+					expect( child.nav.pos ).to.equal(1);
+					expect( child.nav.start ).to.equal(2);
+					expect( child.nav.stop ).to.equal(4);
+					expect( child.nav.steps ).to.equal(4);
+					expect( child.nav.count ).to.equal(7);
+					expect( data[0].foo ).to.equal( 'bar' );
 
 					child.nav.goto(t[3]);
 
 					setTimeout(() => {
-						expect(fired).toBe(false);
+						expect(fired).to.equal(false);
 						junk.unsubscribe();
 
-						expect( data.length ).toBe( 2 );
-						expect( child.nav.pos ).toBe(1);
-						expect( child.nav.start ).toBe(2);
-						expect( child.nav.stop ).toBe(4);
-						expect( child.nav.steps ).toBe(4);
-						expect( child.nav.count ).toBe(7);
-						expect( data[0].foo ).toBe( 'bar' );
+						expect( data.length ).to.equal( 2 );
+						expect( child.nav.pos ).to.equal(1);
+						expect( child.nav.start ).to.equal(2);
+						expect( child.nav.stop ).to.equal(4);
+						expect( child.nav.steps ).to.equal(4);
+						expect( child.nav.count ).to.equal(7);
+						expect( data[0].foo ).to.equal( 'bar' );
 
 						child.nav.goto(t[5]);
 					}, 5);
 				},
 				data => {
-					expect( data.length ).toBe( 2 );
-					expect( child.nav.pos ).toBe(2);
-					expect( child.nav.start ).toBe(4);
-					expect( child.nav.stop ).toBe(6);
-					expect( child.nav.steps ).toBe(4);
-					expect( child.nav.count ).toBe(7);
-					expect( data[0].foo ).toBe( 'funf' );
+					expect( data.length ).to.equal( 2 );
+					expect( child.nav.pos ).to.equal(2);
+					expect( child.nav.start ).to.equal(4);
+					expect( child.nav.stop ).to.equal(6);
+					expect( child.nav.steps ).to.equal(4);
+					expect( child.nav.count ).to.equal(7);
+					expect( data[0].foo ).to.equal( 'funf' );
 
 					child.nav.goto(t[6]);
 				},
 				data => {
-					expect( data.length ).toBe( 1 );
-					expect( child.nav.pos ).toBe(3);
-					expect( child.nav.start ).toBe(6);
-					expect( child.nav.stop ).toBe(7);
-					expect( child.nav.steps ).toBe(4);
-					expect( child.nav.count ).toBe(7);
-					expect( data[0].foo ).toBe( 'sieben' );
+					expect( data.length ).to.equal( 1 );
+					expect( child.nav.pos ).to.equal(3);
+					expect( child.nav.start ).to.equal(6);
+					expect( child.nav.stop ).to.equal(7);
+					expect( child.nav.steps ).to.equal(4);
+					expect( child.nav.count ).to.equal(7);
+					expect( data[0].foo ).to.equal( 'sieben' );
 
 					// search for something out of the list
 					child.nav.goto({});
 				},			
 				data => {
-					expect( data.length ).toBe( 2 );
-					expect( child.nav.pos ).toBe(0);
-					expect( child.nav.start ).toBe(0);
-					expect( child.nav.stop ).toBe(2);
-					expect( child.nav.steps ).toBe(4);
-					expect( child.nav.count ).toBe(7);
-					expect( data[0].foo ).toBe( 'eins' );
+					expect( data.length ).to.equal( 2 );
+					expect( child.nav.pos ).to.equal(0);
+					expect( child.nav.start ).to.equal(0);
+					expect( child.nav.stop ).to.equal(2);
+					expect( child.nav.steps ).to.equal(4);
+					expect( child.nav.count ).to.equal(7);
+					expect( data[0].foo ).to.equal( 'eins' );
 
 					done();
 				}
@@ -610,37 +613,37 @@ describe('bmoor-data.Collection', function(){
 
 			child.callStack([
 				data => {
-					expect( data.length ).toBe( 2 );
-					expect( child.nav.pos ).toBe(0);
-					expect( child.nav.start ).toBe(0);
-					expect( child.nav.stop ).toBe(2);
-					expect( child.nav.steps ).toBe(4);
-					expect( child.nav.count ).toBe(7);
-					expect( data[0].foo ).toBe( 'eins' );
+					expect( data.length ).to.equal( 2 );
+					expect( child.nav.pos ).to.equal(0);
+					expect( child.nav.start ).to.equal(0);
+					expect( child.nav.stop ).to.equal(2);
+					expect( child.nav.steps ).to.equal(4);
+					expect( child.nav.count ).to.equal(7);
+					expect( data[0].foo ).to.equal( 'eins' );
 					
 					test.value = 'Yes';
 
 					search.go();
 				},
 				data => {
-					expect( data.length ).toBe( 2 );
-					expect( child.nav.pos ).toBe(0);
-					expect( child.nav.start ).toBe(0);
-					expect( child.nav.stop ).toBe(2);
-					expect( child.nav.steps ).toBe(2);
-					expect( child.nav.count ).toBe(3);
-					expect( data[0].foo ).toBe( 'eins' );
+					expect( data.length ).to.equal( 2 );
+					expect( child.nav.pos ).to.equal(0);
+					expect( child.nav.start ).to.equal(0);
+					expect( child.nav.stop ).to.equal(2);
+					expect( child.nav.steps ).to.equal(2);
+					expect( child.nav.count ).to.equal(3);
+					expect( data[0].foo ).to.equal( 'eins' );
 
 					child.nav.next();
 				},	
 				data => {
-					expect( data.length ).toBe( 1 );
-					expect( child.nav.pos ).toBe(1);
-					expect( child.nav.start ).toBe(2);
-					expect( child.nav.stop ).toBe(3);
-					expect( child.nav.steps ).toBe(2);
-					expect( child.nav.count ).toBe(3);
-					expect( data[0].foo ).toBe( 'funf' );
+					expect( data.length ).to.equal( 1 );
+					expect( child.nav.pos ).to.equal(1);
+					expect( child.nav.start ).to.equal(2);
+					expect( child.nav.stop ).to.equal(3);
+					expect( child.nav.steps ).to.equal(2);
+					expect( child.nav.count ).to.equal(3);
+					expect( data[0].foo ).to.equal( 'funf' );
 
 					done();
 				}
@@ -678,14 +681,14 @@ describe('bmoor-data.Collection', function(){
 					size: 2
 				});
 
-			child.on('next', function(){
-				expect( bool ).toBe( true );
-				done();
-			});
-
 			test.value = 'yes';
 
 			feed.add({id:2, foo:'other', value:'yes'});
+
+			child.on('next', function(){
+				expect( bool ).to.equal( true );
+				done();
+			});
 		});
 	});
 
@@ -709,22 +712,22 @@ describe('bmoor-data.Collection', function(){
 		it('should work correctly', function(done){
 			child.callStack([
 				dex => {
-					expect( dex.get(1) ).toBe( parent.data[0] );
-					expect( dex.get(2) ).toBe( parent.data[1] );
-					expect( dex.get(3) ).toBe( parent.data[2] );
-					expect( dex.get(4) ).toBeUndefined();
+					expect( dex.get(1) ).to.equal( parent.data[0] );
+					expect( dex.get(2) ).to.equal( parent.data[1] );
+					expect( dex.get(3) ).to.equal( parent.data[2] );
+					expect( dex.get(4) ).to.be.undefined;
 
 					parent.add({ 'type': 'dog', id:4 });
 				},
 
 				dex => {
-					expect(dex.get(4)).toBe( parent.data[3] );
+					expect(dex.get(4)).to.equal( parent.data[3] );
 
 					parent.remove(parent.data[1]);
 				},
 
 				dex => {
-					expect( dex.get(2) ).toBeUndefined();
+					expect( dex.get(2) ).to.be.undefined;
 
 					done();
 				}
@@ -749,8 +752,8 @@ describe('bmoor-data.Collection', function(){
 
 		it('should take all elements from the parent', function(done){
 			child.subscribe(dex => {
-				expect( dex.get('dog').data.length ).toBe( 2 );
-				expect( dex.get('cat').data.length ).toBe( 1 );
+				expect( dex.get('dog').data.length ).to.equal( 2 );
+				expect( dex.get('cat').data.length ).to.equal( 1 );
 
 				done();
 			});
@@ -758,7 +761,7 @@ describe('bmoor-data.Collection', function(){
 
 		it('should return back a collection even on a miss', function(done){
 			child.subscribe(dex => {
-				expect(dex.get('woot').data.length).toBe(0);
+				expect(dex.get('woot').data.length).to.equal(0);
 
 				done();
 			});
@@ -774,9 +777,9 @@ describe('bmoor-data.Collection', function(){
 					]);
 				},
 				dex => {
-					expect( dex.get('dog').data.length ).toBe( 3 );
-					expect( dex.get('cat').data.length ).toBe( 2 );
-					expect( dex.get('monkey').data.length ).toBe( 1 );
+					expect( dex.get('dog').data.length ).to.equal( 3 );
+					expect( dex.get('cat').data.length ).to.equal( 2 );
+					expect( dex.get('monkey').data.length ).to.equal( 1 );
 
 					done();
 				}
@@ -804,14 +807,14 @@ describe('bmoor-data.Collection', function(){
 					parent.publish();
 				},
 				dex => {
-					expect( dex.get('dog').data.length ).toBe( 1 );
-					expect( dex.get('dog').data[0].id ).toBe( 3 );
-					expect( dex.get('pig').data.length ).toBe( 1 );
-					expect( dex.get('pig').data[0].id ).toBe( 1 );
+					expect( dex.get('dog').data.length ).to.equal( 1 );
+					expect( dex.get('dog').data[0].id ).to.equal( 3 );
+					expect( dex.get('pig').data.length ).to.equal( 1 );
+					expect( dex.get('pig').data[0].id ).to.equal( 1 );
 
 					setTimeout(function(){
-						expect( dog ).toBe(3);
-						expect( pig ).toBe(2);
+						expect( dog ).to.equal(3);
+						expect( pig ).to.equal(2);
 
 						done();
 					}, 30);
@@ -837,8 +840,8 @@ describe('bmoor-data.Collection', function(){
 			});
 
 			setTimeout(function(){
-				expect(promised).toBe(false);
-				expect(subscribed).toBe(false);
+				expect(promised).to.equal(false);
+				expect(subscribed).to.equal(false);
 				
 				done();
 			}, 100);
@@ -862,8 +865,8 @@ describe('bmoor-data.Collection', function(){
 			});
 
 			setTimeout(function(){
-				expect(promised).toBe(true);
-				expect(subscribed).toBe(true);
+				expect(promised).to.equal(true);
+				expect(subscribed).to.equal(true);
 				
 				done();
 			}, 100);
@@ -889,8 +892,8 @@ describe('bmoor-data.Collection', function(){
 			});
 
 			setTimeout(function(){
-				expect(promised).toBe(true);
-				expect(subscribed).toBe(true);
+				expect(promised).to.equal(true);
+				expect(subscribed).to.equal(true);
 				
 				done();
 			}, 500);

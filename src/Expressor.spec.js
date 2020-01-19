@@ -1,9 +1,11 @@
 
+const {expect} = require('chai');
+
 describe('bmoor-data.Expressor', function(){
 	const {Expressor} = require('./Expressor.js');
 
 	it('should be defined', function(){
-		expect(Expressor).toBeDefined();
+		expect(Expressor).to.exist;
 	});
 
 	describe('::express =', function(){
@@ -18,28 +20,28 @@ describe('bmoor-data.Expressor', function(){
 				expect(expressor.express({
 					foo: 1,
 					bar: 2
-				})).toEqual(false);
+				})).to.deep.equal(false);
 			});
 
 			it('should succeed with equal int', function(){
 				expect(expressor.express({
 					foo: 1,
 					bar: 1
-				})).toEqual(true);
+				})).to.deep.equal(true);
 			});
 
 			it('should fail with mixed type', function(){
 				expect(expressor.express({
 					foo: 1,
 					bar: '1'
-				})).toEqual(false);
+				})).to.deep.equal(false);
 			});
 			
 			it('should succeed with strings', function(){
 				expect(expressor.express({
 					foo: '1',
 					bar: '1'
-				})).toEqual(true);
+				})).to.deep.equal(true);
 			});
 		});
 
@@ -53,7 +55,7 @@ describe('bmoor-data.Expressor', function(){
 
 				expect(expressor.express({
 					bar: 'foo2'
-				})).toEqual(false);
+				})).to.deep.equal(false);
 			});
 
 			it('should succeed with a string', function(){
@@ -63,7 +65,7 @@ describe('bmoor-data.Expressor', function(){
 
 				expect(expressor.express({
 					bar: 'foo'
-				})).toEqual(true);
+				})).to.deep.equal(true);
 			});
 
 			it('should fail with an int', function(){
@@ -73,7 +75,7 @@ describe('bmoor-data.Expressor', function(){
 
 				expect(expressor.express({
 					bar: 1234
-				})).toEqual(false);
+				})).to.deep.equal(false);
 			});
 
 			it('should succeed with an int', function(){
@@ -83,7 +85,7 @@ describe('bmoor-data.Expressor', function(){
 
 				expect(expressor.express({
 					bar: 123
-				})).toEqual(true);
+				})).to.deep.equal(true);
 			});
 
 			it('should fail with an int', function(){
@@ -93,7 +95,7 @@ describe('bmoor-data.Expressor', function(){
 
 				expect(expressor.express({
 					bar: 123.4
-				})).toEqual(false);
+				})).to.deep.equal(false);
 			});
 
 			it('should succeed with an int', function(){
@@ -103,7 +105,7 @@ describe('bmoor-data.Expressor', function(){
 
 				expect(expressor.express({
 					bar: 123.5
-				})).toEqual(true);
+				})).to.deep.equal(true);
 			});
 		});
 	});
@@ -119,21 +121,21 @@ describe('bmoor-data.Expressor', function(){
 			expect(expressor.express({
 				foo: 'foo',
 				bar: 'nope'
-			})).toEqual(false);
+			})).to.deep.equal(false);
 		});
 
 		it('should fail with right being false', function(){
 			expect(expressor.express({
 				foo: 'nope',
 				bar: 'bar'
-			})).toEqual(false);
+			})).to.deep.equal(false);
 		});
 
 		it('should succeed with both being true', function(){
 			expect(expressor.express({
 				foo: 'foo',
 				bar: 'bar'
-			})).toEqual(true);
+			})).to.deep.equal(true);
 		});
 
 		describe('chained', function(){
@@ -148,7 +150,93 @@ describe('bmoor-data.Expressor', function(){
 					drei: {
 						value: 3
 					}
-				})).toEqual(true);
+				})).to.deep.equal(true);
+			});
+		});
+	});
+
+	describe('::express ()', function(){
+		describe('natural order, no precedence', function(){
+			const expressor = new Expressor();
+
+			expressor.compile(
+				'$eins = 1 & $zwei = 2 | $drei = 3'
+			);
+
+			it('should succeed => true & false | true', function(){
+				expect(expressor.express({
+					eins: 1,
+					zwei: 2,
+					drei: 3
+				})).to.deep.equal(true);
+			});
+
+			it('should succeed => true & true | true', function(){
+				expect(expressor.express({
+					eins: 1,
+					zwei: 0,
+					drei: 3
+				})).to.deep.equal(true);
+			});
+
+			it('should fail => false & true | false', function(){
+				expect(expressor.express({
+					eins: 0,
+					zwei: 2,
+					drei: 0
+				})).to.deep.equal(false);
+			});
+		});
+
+		describe('defined precedence', function(){
+			const expressor = new Expressor();
+
+			it('should succeed => (true & false) | true', function(){
+				expressor.compile(
+					'($eins = 1 & $zwei = 2) | $drei = 3'
+				);
+
+				expect(expressor.express({
+					eins: 1,
+					zwei: 0,
+					drei: 3
+				})).to.deep.equal(true);
+			});
+
+			it('should succeed => (false & false) | true', function(){
+				expressor.compile(
+					'($eins = 1 & $zwei = 2) | $drei = 3'
+				);
+
+				expect(expressor.express({
+					eins: 0,
+					zwei: 0,
+					drei: 3
+				})).to.deep.equal(true);
+			});
+
+			it('should fail => false & (false | true)', function(){
+				expressor.compile(
+					'$eins = 1 & ($zwei = 2 | $drei = 3)'
+				);
+
+				expect(expressor.express({
+					eins: 0,
+					zwei: 0,
+					drei: 3
+				})).to.deep.equal(false);
+			});
+
+			it('should succeed => true & (false | true)', function(){
+				expressor.compile(
+					'$eins = 1 & ($zwei = 2 | $drei = 3)'
+				);
+
+				expect(expressor.express({
+					eins: 1,
+					zwei: 0,
+					drei: 3
+				})).to.deep.equal(true);
 			});
 		});
 	});

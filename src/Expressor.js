@@ -42,14 +42,51 @@ class Expressor {
 			return ops;
 		}, []);
 
+		const results = expression.reduce((agg, token) => {
+			if (token.type === 'groupClose'){
+				if (agg.count === 1){
+					agg.ops.push(this.build(agg.group));
+					agg.group = null;
+				} else {
+					agg.count--;
+					agg.group.push(token);
+				}
+			} else if (token.type === 'groupOpen'){
+				if (agg.group){
+					agg.group.push(token);
+					agg.count++;
+				} else {
+					agg.group = [];
+					agg.count = 1;
+				}
+			} else {
+				if (agg.group){
+					agg.group.push(token);
+				} else {
+					agg.ops.push(token);
+				}
+			}
+
+			return agg;
+		}, {
+			ops: [],
+			group: null
+		});
+
+		if (results.groups){
+			throw new Error('unclose group');
+		}
+
+		const operations = results.ops;
+
 		// do all boolean comparisons
 		let hop = 0;
-		const comps = expression.reduce((agg, token, pos) => {
+		const comps = operations.reduce((agg, token, pos) => {
 			if (hop){
 				hop--;
 			} else if (token.type === 'compare'){
 				const leftFn = agg.pop();
-				const rightFn = expression[pos+1];
+				const rightFn = operations[pos+1];
 
 				hop = 1;
 

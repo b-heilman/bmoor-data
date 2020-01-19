@@ -1,9 +1,10 @@
-const DataProxy = require('../object/Proxy.js'),
-	DataCollection = require('../Collection.js');
+
+const {Proxy: Prox} = require('../object/Proxy.js');
+const {Collection} = require('../Collection.js');
 
 const defaultSettings = {
 	proxyFactory: function( datum ){
-		return new DataProxy(datum);
+		return new Prox(datum);
 	}
 };
 
@@ -21,7 +22,7 @@ function configSettings( settings ){
 	return settings;
 }
 
-class Proxied extends DataCollection {
+class Proxied extends Collection {
 	constructor(src, settings){
 		super(src, settings);
 
@@ -38,7 +39,7 @@ class Proxied extends DataCollection {
 			start = 0;
 		}
 
-		if ( obj instanceof DataProxy ){
+		if (obj instanceof Prox){
 			return super.indexOf( obj, start );
 		}else{
 			let c = this.data.length; 
@@ -72,7 +73,7 @@ class Proxied extends DataCollection {
 	_wrap( datum ){
 		var proxy;
 
-		if ( datum instanceof DataProxy ){
+		if (datum instanceof Prox){
 			proxy = datum;
 		} else {
 			let factory = this.settings.proxyFactory || defaultSettings.proxyFactory;
@@ -126,4 +127,6 @@ class Proxied extends DataCollection {
 
 Proxied.settings = defaultSettings;
 
-module.exports = Proxied;
+module.exports = {
+	Proxied
+};

@@ -1,9 +1,13 @@
+
+const {expect} = require('chai');
+
 describe('bmoor-data.object.Proxy', function(){
-	var bmoorData = require('../../bmoor-data.js'),
-		Proxy = bmoorData.object.Proxy;
+	const bmoorData = require('../index.js');
+	const Proxy = bmoorData.object.Proxy;
+	const {isDirty, getChanges} = require('./Proxy.js'); // TODO : map, flatten, , makeMask
 
 	it('should be defined', function(){
-		expect( Proxy ).toBeDefined();
+		expect( Proxy ).to.exist;
 	});
 
 	describe('::follow', function(){
@@ -15,7 +19,7 @@ describe('bmoor-data.object.Proxy', function(){
 			});
 
 			proxy.follow(datum => {
-				expect(datum).toEqual({
+				expect(datum).to.deep.equal({
 					foo: 'bar',
 					hello: 'world'
 				});
@@ -25,11 +29,11 @@ describe('bmoor-data.object.Proxy', function(){
 
 			proxy.getMask().hello = 'world';
 
-			expect(called).toBe(false);
+			expect(called).to.equal(false);
 
 			proxy.merge();
 
-			expect(called).toBe(true);
+			expect(called).to.equal(true);
 
 			proxy.unfollow(123);
 
@@ -37,9 +41,9 @@ describe('bmoor-data.object.Proxy', function(){
 
 			proxy.merge({value: 1});
 
-			expect(called).toBe(false);
+			expect(called).to.equal(false);
 
-			expect(proxy.getDatum()).toEqual({
+			expect(proxy.getDatum()).to.deep.equal({
 				foo: 'bar',
 				hello: 'world',
 				value: 1
@@ -62,11 +66,11 @@ describe('bmoor-data.object.Proxy', function(){
 				proxy = new Proxy( target ),
 				mask = proxy.getMask();
 
-			expect( proxy.isDirty() ).toBe( false );
+			expect( proxy.isDirty() ).to.equal( false );
 
 			mask.foo = null;
 
-			expect( proxy.isDirty() ).toBe( true );
+			expect( proxy.isDirty() ).to.equal( true );
 		});
 
 		it('should work with string', function(){
@@ -83,12 +87,12 @@ describe('bmoor-data.object.Proxy', function(){
 				proxy = new Proxy( target ),
 				mask = proxy.getMask();
 
-			expect( proxy.isDirty() ).toBe( false );
+			expect( proxy.isDirty() ).to.equal( false );
 
 			mask.hello.cruel = 'world';
 			mask.hello.junk = 'it changed';
 
-			expect( proxy.isDirty() ).toBe( true );
+			expect( proxy.isDirty() ).to.equal( true );
 		});
 
 		it('should work with null, via static method', function(){
@@ -105,11 +109,11 @@ describe('bmoor-data.object.Proxy', function(){
 				proxy = new Proxy( target ),
 				mask = proxy.getMask();
 
-			expect( Proxy.isDirty(mask) ).toBe( false );
+			expect(isDirty(mask)).to.equal( false );
 
 			mask.foo = null;
 
-			expect( Proxy.isDirty(mask) ).toBe( true );
+			expect(isDirty(mask)).to.equal( true );
 		});
 	});
 
@@ -128,11 +132,11 @@ describe('bmoor-data.object.Proxy', function(){
 				proxy = new Proxy( target ),
 				mask = proxy.getMask();
 
-			expect( proxy.getChanges() ).toBeUndefined();
+			expect( proxy.getChanges() ).to.be.undefined;
 
 			mask.foo = null;
 
-			expect( proxy.getChanges() ).toEqual( {foo:null} );
+			expect( proxy.getChanges() ).to.deep.equal( {foo:null} );
 		});
 
 		it('should work if type changes to object', function(){
@@ -149,11 +153,11 @@ describe('bmoor-data.object.Proxy', function(){
 				proxy = new Proxy( target ),
 				mask = proxy.getMask();
 
-			expect( proxy.getChanges() ).toBeUndefined();
+			expect( proxy.getChanges() ).to.be.undefined;
 
 			mask.foo = { screw: 'trump' };
 
-			expect( proxy.getChanges() ).toEqual( {
+			expect( proxy.getChanges() ).to.deep.equal( {
 				foo:{ screw: 'trump' }
 			});
 		});
@@ -172,11 +176,11 @@ describe('bmoor-data.object.Proxy', function(){
 				proxy = new Proxy( target ),
 				mask = proxy.getMask();
 
-			expect( proxy.getChanges() ).toBeUndefined();
+			expect( proxy.getChanges() ).to.be.undefined;
 
 			mask.hello = 'world';
 
-			expect( proxy.getChanges() ).toEqual({
+			expect( proxy.getChanges() ).to.deep.equal({
 				hello: 'world'
 			});
 		});
@@ -192,14 +196,16 @@ describe('bmoor-data.object.Proxy', function(){
 						blah: 'blah'
 					}
 				},
-				proxy = new Proxy( target ),
+				proxy = new Proxy(target),
 				mask = proxy.getMask();
 
-			expect( proxy.getChanges() ).toBeUndefined();
+			expect( proxy.getChanges())
+			.to.be.undefined;
 
 			mask.foo = null;
 
-			expect( proxy.getChanges() ).toEqual( {foo:null} );
+			expect(proxy.getChanges())
+			.to.deep.equal( {foo:null} );
 		});
 
 		it('should work with null, via static method on mask', function(){
@@ -216,11 +222,13 @@ describe('bmoor-data.object.Proxy', function(){
 				proxy = new Proxy( target ),
 				mask = proxy.getMask();
 
-			expect( Proxy.getChanges(mask) ).toBeUndefined();
+			expect(getChanges(mask))
+			.to.be.undefined;
 
 			mask.foo = null;
 
-			expect( Proxy.getChanges(mask) ).toEqual( {foo:null} );
+			expect(getChanges(mask))
+			.to.deep.equal( {foo:null} );
 		});
 
 		it('should work with null, via static method on pojo', function(){
@@ -235,7 +243,8 @@ describe('bmoor-data.object.Proxy', function(){
 					}
 				};
 
-			expect( Proxy.getChanges(target) ).toEqual( target );
+			expect(getChanges(target))
+			.to.deep.equal( target );
 		});
 	});
 
@@ -249,8 +258,8 @@ describe('bmoor-data.object.Proxy', function(){
 
 			mask.second = 2;
 
-			expect( mask.first ).toBe( 1 );
-			expect( mask.second ).toBe( 2 );
+			expect( mask.first ).to.equal( 1 );
+			expect( mask.second ).to.equal( 2 );
 		});
 
 		it('should copy value over from a seed', function(){
@@ -268,12 +277,12 @@ describe('bmoor-data.object.Proxy', function(){
 				},
 				mask = proxy.getMask( seed );
 
-			expect( mask.first ).toBe( 1 );
-			expect( mask.foo ).toBe( 'bar' );
-			expect( mask.hello ).toBe( 'world2' );
-			expect( mask.blar ).toBe( null );
+			expect( mask.first ).to.equal( 1 );
+			expect( mask.foo ).to.equal( 'bar' );
+			expect( mask.hello ).to.equal( 'world2' );
+			expect( mask.blar ).to.equal( null );
 
-			expect( Object.keys(mask) ).toEqual( ['blar','foo','hello'] );
+			expect( Object.keys(mask) ).to.deep.equal( ['blar','foo','hello'] );
 		});
 	});
 
@@ -290,17 +299,17 @@ describe('bmoor-data.object.Proxy', function(){
 				mask = proxy.getMask();
 
 			expect( mask.hello.hasOwnProperty('cruel') )
-				.toBe( false );
-			expect( mask.hello.cruel ).toBeDefined();
+				.to.equal( false );
+			expect( mask.hello.cruel ).to.exist;
 
 			mask.hello.woot = 'ox';
 			mask.hello.cruel = 'hi';
 
-			expect( target.hello.cruel ).toBe( 'world' );
-			expect( mask.hello.cruel ).toBe( 'hi' );
+			expect( target.hello.cruel ).to.equal( 'world' );
+			expect( mask.hello.cruel ).to.equal( 'hi' );
 
-			expect( target.hello.woot ).toBeUndefined();
-			expect( mask.hello.woot ).toBe( 'ox' );
+			expect( target.hello.woot ).to.be.undefined;
+			expect( mask.hello.woot ).to.equal( 'ox' );
 		});
 
 		it('should detect changes', function(){
@@ -317,14 +326,14 @@ describe('bmoor-data.object.Proxy', function(){
 				proxy = new Proxy( target ),
 				mask = proxy.getMask();
 
-			expect( proxy.isDirty() ).toBe( false );
-			expect( proxy.getChanges() ).toBeUndefined();
+			expect( proxy.isDirty() ).to.equal( false );
+			expect( proxy.getChanges() ).to.be.undefined;
 
 			mask.hello.woot = 'ox';
 			mask.eins = 'hi';
 
-			expect( proxy.isDirty() ).toBe( true );
-			expect( proxy.getChanges() ).toEqual({
+			expect( proxy.isDirty() ).to.equal( true );
+			expect( proxy.getChanges() ).to.deep.equal({
 				hello: {
 					woot: 'ox'
 				},
@@ -352,13 +361,13 @@ describe('bmoor-data.object.Proxy', function(){
 				},
 				mask = proxy.map( seed );
 
-			expect( mask.first ).toBe( 1 );
-			expect( mask.second ).toBe( 2 );
-			expect( mask.hello ).toBe( 'world' );
-			expect( mask.blar ).toEqual( {} );
+			expect( mask.first ).to.equal( 1 );
+			expect( mask.second ).to.equal( 2 );
+			expect( mask.hello ).to.equal( 'world' );
+			expect( mask.blar ).to.deep.equal( {foo: 'blar'} );
 
-			expect( Object.keys(mask) ).toEqual( ['blar','second'] );
-			expect( proxy.getChanges() ).toEqual( {second:2} );
+			expect( Object.keys(mask) ).to.deep.equal( ['blar','second'] );
+			expect( proxy.getChanges() ).to.deep.equal( {second:2} );
 		});
 	});
 
@@ -377,11 +386,11 @@ describe('bmoor-data.object.Proxy', function(){
 
 			proxy.merge({foo:'bar'});
 
-			expect( called ).toBe( false );
+			expect( called ).to.equal( false );
 
 			proxy.merge({foo:'bared'});
 
-			expect( called ).toBe( true ); 
+			expect( called ).to.equal( true ); 
 		});
 
 		it('should not call update if no changes are merged', function(){
@@ -400,12 +409,12 @@ describe('bmoor-data.object.Proxy', function(){
 			mask.foo = 'bar';
 			proxy.merge();
 
-			expect( called ).toBe( false );
+			expect( called ).to.equal( false );
 
 			mask.foo = 'bared';
 			proxy.merge();
 
-			expect( called ).toBe( true ); 
+			expect( called ).to.equal( true ); 
 		});
 	});
 
@@ -430,12 +439,12 @@ describe('bmoor-data.object.Proxy', function(){
 
 			target.eins = 10;
 
-			expect( res.foo ).toBe( 'bar2' );
-			expect( res.obj.eins ).toBe( 1 );
-			expect( res.obj.zwei ).toBe( 2 );
-			expect( res.obj.drei ).toBe( 3 );
-			expect( res.hello ).toBe( 'world' );
-			expect( res.boop ).toBe( 'bop' );
+			expect( res.foo ).to.equal( 'bar2' );
+			expect( res.obj.eins ).to.equal( 1 );
+			expect( res.obj.zwei ).to.equal( 2 );
+			expect( res.obj.drei ).to.equal( 3 );
+			expect( res.hello ).to.equal( 'world' );
+			expect( res.boop ).to.equal( 'bop' );
 		});
 
 		it('should copy in objects', function(){
@@ -461,12 +470,12 @@ describe('bmoor-data.object.Proxy', function(){
 			
 			target.eins = 10;
 
-			expect( res.foo ).toBe( 'bar2' );
-			expect( res.obj.eins ).toBe( 1 );
-			expect( res.obj.zwei ).toBe( 2 );
-			expect( res.obj.drei ).toBe( 3 );
-			expect( res.hello ).toBe( 'world' );
-			expect( res.boop ).toBe( 'bop' );
+			expect( res.foo ).to.equal( 'bar2' );
+			expect( res.obj.eins ).to.equal( 1 );
+			expect( res.obj.zwei ).to.equal( 2 );
+			expect( res.obj.drei ).to.equal( 3 );
+			expect( res.hello ).to.equal( 'world' );
+			expect( res.boop ).to.equal( 'bop' );
 		});
 	});
 
@@ -481,7 +490,7 @@ describe('bmoor-data.object.Proxy', function(){
 				},
 				proxy = new Proxy( target );
 
-			expect( proxy.$('foo') ).toBe('bar');
+			expect( proxy.$('foo') ).to.equal('bar');
 		});
 
 		it('should work on a multi levels', function(){
@@ -494,7 +503,7 @@ describe('bmoor-data.object.Proxy', function(){
 				},
 				proxy = new Proxy( target );
 
-			expect( proxy.$('hello.cruel') ).toBe('world');
+			expect( proxy.$('hello.cruel') ).to.equal('world');
 		});
 	});
 
@@ -531,18 +540,18 @@ describe('bmoor-data.object.Proxy', function(){
 				},
 				proxy = new MyProxy( target );
 
-			expect( proxy.eins ).toBe('bar');
-			expect( proxy.zwei ).toBeUndefined();
+			expect( proxy.eins ).to.equal('bar');
+			expect( proxy.zwei ).to.be.undefined;
 
 			proxy.merge({ foo: 'bar2', bar: 'doo'});
 
-			expect( proxy.eins ).toBe('bar2');
-			expect( proxy.zwei ).toBe('doo');
+			expect( proxy.eins ).to.equal('bar2');
+			expect( proxy.zwei ).to.equal('doo');
 
 			proxy.merge({bar: 'doo2'});
 
-			expect( proxy.eins ).toBe('bar2');
-			expect( proxy.zwei ).toBe('doo2');
+			expect( proxy.eins ).to.equal('bar2');
+			expect( proxy.zwei ).to.equal('doo2');
 		});
 	});
 });

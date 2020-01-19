@@ -14,7 +14,7 @@ var bmoor = require('bmoor'),
 //   this is to support backwards compatibility, so I am creating it now, but 
 //   will depricate immediately in next version
 
-const Feed = require('./Feed.js');
+const {Feed} = require('./Feed.js');
 const {Subject} = require('./Subject.js');
 
 class Actionable extends Feed {
@@ -28,7 +28,7 @@ class Actionable extends Feed {
 			this.publish();
 		};
 
-		this.subscription = parent.subscribe(this.go);
+		this.setParent(parent.subscribe(this.go));
 	}
 
 	index( search, settings = {}){
@@ -42,14 +42,14 @@ class Actionable extends Feed {
 			(fn) => {
 				const rtn = new Subject();
 
-				const disconnect = this.subscribe(data => {
-					const dex = fn(data);
+				rtn.setParent(
+					this.subscribe(data => {
+						const dex = fn(data);
 
-					dex.disconnect = disconnect;
-					
-					rtn.data = dex;
-					rtn.publish();
-				});
+						rtn.data = dex;
+						rtn.publish();
+					})
+				);
 
 				return rtn;
 			},
@@ -70,18 +70,17 @@ class Actionable extends Feed {
 					return new Feed();
 				});
 			},
-			
 			(fn) => {
 				const rtn = new Subject();
 
-				const disconnect = this.subscribe(data => {
-					const dex = fn(data);
+				rtn.setParent(
+					this.subscribe(data => {
+						const dex = fn(data);
 
-					dex.disconnect = disconnect;
-					
-					rtn.data = dex;
-					rtn.publish();
-				});
+						rtn.data = dex;
+						rtn.publish();
+					})
+				);
 
 				return rtn;
 			},
@@ -269,10 +268,6 @@ class Actionable extends Feed {
 		return child;
 	}
 
-	disconnect(){
-		this.subscription.unsubscribe();
-	}
-
 	destroy(){
 		this.disconnect();
 
@@ -280,4 +275,6 @@ class Actionable extends Feed {
 	}
 }
 
-module.exports = Actionable;
+module.exports = {
+	Actionable
+};

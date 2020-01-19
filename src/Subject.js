@@ -47,29 +47,45 @@ class Subject extends ReplaySubject {
 			throw new Error('bmoor-data::Feed - once - only allows next');
 		}
 
-		const child = this.subscribe((data) =>{
-			setTimeout(() => {
-				if (child){
-					child.unsubscribe();
-				}
+		const child = this.subscribe(
+			(data) => {
+				setTimeout(() => {
+					if (child){
+						child.unsubscribe();
+					}
 
-				return fn(data);
-			}, 0);
-		}, errFn || function(err){
-			console.log('error', err);
-		});
+					return fn(data);
+				}, 0);
+			}, 
+			errFn || function(err){
+				console.log('error', err);
+			}
+		);
 
 		return child;
 	}
 
 	callStack(fns, errFn){
-		const child = this.subscribe((data) =>{
-			fns.shift()(data);
-		}, errFn || function(err){
-			console.log('error', err);
-		});
+		const child = this.subscribe(
+			(data) =>{
+				fns.shift()(data);
+			}, 
+			errFn || function(err){
+				console.log('error', err);
+			}
+		);
 
 		return child;
+	}
+
+	setParent(subscription){
+		this.parent = subscription;
+	}
+
+	disconnect(){
+		if (this.parent){
+			this.parent.unsubscribe();
+		}
 	}
 
 	promise(){
@@ -79,6 +95,8 @@ class Subject extends ReplaySubject {
 	}
 
 	destroy(){
+		this.disconnect();
+
 		this.data = null;
 
 		this.complete();

@@ -1,7 +1,8 @@
-const DataCollection = require('../Collection.js'),
-	ProxyCollection = require('./Proxied.js');
 
-class Tagged extends ProxyCollection {
+const {Collection} = require('../Collection.js');
+const {Proxied} = require('./Proxied.js');
+
+class Tagged extends Proxied {
 
 	add( datum, tags ){
 		var proxy = this._wrap( datum );
@@ -29,8 +30,10 @@ class Tagged extends ProxyCollection {
 			};
 		}
 
-		return DataCollection.prototype.select.call(this, settings);
+		return Collection.prototype.select.call(this, settings);
 	}
 }
 
-module.exports = Tagged;
+module.exports = {
+	Tagged
+};

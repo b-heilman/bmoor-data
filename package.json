@@ -1,6 +1,6 @@
 {
   "name": "bmoor-data",
-  "version": "0.6.2",
+  "version": "0.8.0",
   "author": "Brian Heilman <das.ist.junk@gmail.com>",
   "description": "Data structures for daily life",
   "license": "MIT",
@@ -8,40 +8,24 @@
     "type": "git",
     "url": "git://github.com/b-heilman/bmoor-data.git"
   },
-  "main": "bmoor-data.js",
+  "main": "src/index.js",
   "scripts": {
     "demo": "gulp serve",
     "build": "gulp build"
   },
   "dependencies": {
-    "babel-polyfill": "^6.26.0",
-    "bmoor": "~0.4.16",
-    "bmoor-schema": "^0.4.12",
-    "formdata-polyfill": "^3.0.17"
+    "bmoor": "~0.8.3",
+    "bmoor-schema": "~0.8.0",
+    "rxjs": "^6.5.2"
   },
   "devDependencies": {
-    "babel-core": "^6.26.0",
-    "babel-loader": "^7.1.5",
-    "babel-preset-env": "^1.7.0",
-    "gulp": "3.9.1",
+    "bmoor-gulp": "^0.1.0",
+    "chai": "^4.2.0",
+    "gulp": "^4.0.2",
     "gulp-jsdoc3": "0.3.0",
     "gulp-jshint": "^2.1.0",
-    "gulp-load-plugins": "^1.5.0",
-    "gulp-webserver": "0.9.1",
-    "jasmine": "^2.9.0",
-    "jshint": "^2.10.2",
-    "jshint-stylish": "2.1.0",
-    "karma": "^2.0.5",
-    "karma-chrome-launcher": "^2.2.0",
-    "karma-ie-launcher": "^1.0.0",
-    "karma-jasmine": "^1.1.1",
-    "karma-sourcemap-loader": "^0.3.7",
-    "karma-webpack": "^2.0.9",
-    "map-stream": "0.0.6",
-    "phantomjs-polyfill": "0.0.2",
-    "phantomjs-prebuilt": "^2.1.16",
-    "rxjs": "^6.5.2",
-    "webpack": "^3.10.0",
-    "webpack-stream": "^4.0.0"
+    "jsdoc": "^3.6.3",
+    "jshint": "^2.10.3",
+    "sinon": "^7.5.0"
   }
 }
