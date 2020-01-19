@@ -1,7 +1,4 @@
 
-const {Mapper} = require('./model/relationships.js');
-const {Config} = require('bmoor/src/lib/config.js');
-
 /**
 tableLink: {
 	name:
@@ -35,11 +32,6 @@ model: {
 	fields: <fields>
 }
 **/
-
-const config = new Config({
-	registry: new Config(),
-	relationships: new Mapper()
-});
 
 function actionExtend(op, property, old){
 	return function(datum, ctx){
@@ -226,6 +218,5 @@ class Model {
 }
 
 module.exports = {
-	config,
 	Model
 };

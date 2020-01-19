@@ -6,9 +6,9 @@ const {Model} = require('./Model.js');
 const {Service} = require('./Service.js');
 const {Config} = require('bmoor/src/lib/config.js');
 const {inflate} = require('./Synthetic.js');
-const {Mapper} = require('./model/relationships.js');
+const {Mapper} = require('../model/Mapper.js');
 
-describe('bmoor-data/Synthetic', function(){
+describe('bmoor-data::crud/Synthetic', function(){
 	let stubs = null;
 
 	beforeEach(function(){

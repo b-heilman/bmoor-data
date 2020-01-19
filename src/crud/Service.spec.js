@@ -5,7 +5,7 @@ const sinon = require('sinon');
 const {Model} = require('./Model.js');
 const {Service} = require('./Service.js');
 
-describe('bmoor-data/Service', function(){
+describe('bmoor-data::crud/Service', function(){
 	let stubs = null;
 
 	beforeEach(function(){

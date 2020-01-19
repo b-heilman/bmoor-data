@@ -1,10 +1,4 @@
 
-const {Config} = require('bmoor/src/lib/config.js');
-
-const config = new Config({
-	registry: new Config()
-});
-
 class Service {
 	constructor(model, connector){
 		this.model = model;
@@ -149,6 +143,5 @@ class Service {
 }
 
 module.exports = {
-	config,
 	Service
 };

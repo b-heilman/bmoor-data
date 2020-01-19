@@ -1,7 +1,7 @@
 
 const {expect} = require('chai');
 
-describe('bmoor-data.model', function(){
+describe('bmoor-data::crud/Model', function(){
 	
 	const {Model} = require('./model.js');
 

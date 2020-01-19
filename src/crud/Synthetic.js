@@ -1,5 +1,5 @@
 
-const {Network} = require('./model/relationships.js');
+const {Network} = require('../model/Network.js');
 
 async function getDatum(service, key, otherwise){
 	return(
