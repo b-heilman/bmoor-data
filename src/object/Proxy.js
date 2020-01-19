@@ -268,9 +268,11 @@ class Proxy extends Subject {
 	}
 }
 
-Proxy.map = map;
-Proxy.isDirty = isDirty;
-Proxy.flatten = flatten;
-Proxy.getChanges = getChanges;
-
-module.exports = Proxy;
+module.exports = {
+	Proxy,
+	map,
+	isDirty,
+	flatten,
+	getChanges,
+	makeMask
+};

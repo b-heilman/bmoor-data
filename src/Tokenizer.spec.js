@@ -1,9 +1,11 @@
 
+const {expect} = require('chai');
+
 describe('bmoor-data.Tokenizer', function(){
 	const {Tokenizer} = require('./Tokenizer.js');
 
 	it('should be defined', function(){
-		expect(Tokenizer).toBeDefined();
+		expect(Tokenizer).to.exist;
 	});
 
 	it('should copy values correctly', function(){
@@ -14,7 +16,8 @@ describe('bmoor-data.Tokenizer', function(){
 		);
 
 		expect(JSON.parse(JSON.stringify(tokens)))
-		.toEqual([{
+		.to.deep.equal(
+			[{
 				'type': 'string',
 				'value': 'foo'
 			},{
@@ -74,6 +77,7 @@ describe('bmoor-data.Tokenizer', function(){
 			},{
 				'type': 'string',
 				'value': '123.5'
-			}]);
+			}]
+		);
 	});
 });

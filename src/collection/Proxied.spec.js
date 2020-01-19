@@ -1,9 +1,12 @@
+
+const {expect} = require('chai');
+
 describe('bmoor-data.collection.Proxied', function(){
-	var Proxied = require('./Proxied.js'),
-		DataProxy = require('../object/Proxy.js');
+	const {Proxied} = require('./Proxied.js');
+	const {Proxy: DataProxy} = require('../object/Proxy.js');
 
 	it('should be defined', function(){
-		expect( Proxied ).toBeDefined();
+		expect( Proxied ).to.exist;
 	});
 
 	it('should wrap data in a proxy', function(){
@@ -11,7 +14,7 @@ describe('bmoor-data.collection.Proxied', function(){
 
 		feed.add({id:1, foo:'eins'});
 		
-		expect( feed.data[0] instanceof DataProxy ).toBe( true );
+		expect( feed.data[0] instanceof DataProxy ).to.equal( true );
 	});
 
 	describe('proxy methods', function(){
@@ -24,7 +27,7 @@ describe('bmoor-data.collection.Proxied', function(){
 
 				feed.data[1].getMask().foo = 'bar';
 
-				expect(feed.mergeChanges()).toEqual([
+				expect(feed.mergeChanges()).to.deep.equal([
 					{id: 1, foo:'eins'},
 					{id: 2, foo:'bar'}
 				]);
@@ -40,7 +43,7 @@ describe('bmoor-data.collection.Proxied', function(){
 
 				feed.data[1].getMask().foo = 'bar';
 
-				expect( feed.flattenAll() ).toEqual([
+				expect( feed.flattenAll() ).to.deep.equal([
 					{id: 1, foo:'eins'},
 					{id: 2, foo:'bar'}
 				]);
@@ -65,27 +68,27 @@ describe('bmoor-data.collection.Proxied', function(){
 
 			child.callStack([
 				function(){
-					expect( child.data.length ).toBe( 1 );
+					expect( child.data.length ).to.equal( 1 );
 
 					feed.add({foo:'zoo'});
 				},
 				function(){
-					expect( child.data.length ).toBe( 1 );
-					expect( feed.data.length ).toBe( 4 );
+					expect( child.data.length ).to.equal( 1 );
+					expect( feed.data.length ).to.equal( 4 );
 
 					feed.add({foo:'ever'});
 				},
 				function(){
-					expect( child.data.length ).toBe( 2 );
-					expect( feed.data.length ).toBe( 5 );
-					expect( child.data[0].$('foo') ).toBe('eins');
+					expect( child.data.length ).to.equal( 2 );
+					expect( feed.data.length ).to.equal( 5 );
+					expect( child.data[0].$('foo') ).to.equal('eins');
 
 					feed.remove( feed.data[0].getDatum() );
 				},
 				function(){
-					expect( child.data.length ).toBe( 1 );
-					expect( feed.data.length ).toBe( 4 );
-					expect( child.data[0].$('foo') ).toBe('ever');
+					expect( child.data.length ).to.equal( 1 );
+					expect( feed.data.length ).to.equal( 4 );
+					expect( child.data[0].$('foo') ).to.equal('ever');
 
 					done();
 				}
@@ -107,15 +110,15 @@ describe('bmoor-data.collection.Proxied', function(){
 
 			collection.publish();
 
-			expect(truthy.data.length).toBe(3);
-			expect(falsey.data.length).toBe(2);
+			expect(truthy.data.length).to.equal(3);
+			expect(falsey.data.length).to.equal(2);
 
 			proxy.merge({v:false});
 
 			collection.publish();
 
-			expect(truthy.data.length).toBe(2);
-			expect(falsey.data.length).toBe(3);
+			expect(truthy.data.length).to.equal(2);
+			expect(falsey.data.length).to.equal(3);
 
 			done();
 		});
@@ -138,10 +141,10 @@ describe('bmoor-data.collection.Proxied', function(){
 
 		it('should work corectly with proxies', function(){
 			child.subscribe(dex => {
-				expect( dex.get(1) ).toBe( parent.data[0] );
-				expect( dex.get(2) ).toBe( parent.data[1] );
-				expect( dex.get(3) ).toBe( parent.data[2] );
-				expect( dex.get(4) ).toBeUndefined();
+				expect( dex.get(1) ).to.equal( parent.data[0] );
+				expect( dex.get(2) ).to.equal( parent.data[1] );
+				expect( dex.get(3) ).to.equal( parent.data[2] );
+				expect( dex.get(4) ).to.be.undefined;
 			});
 		});
 	});
@@ -163,8 +166,8 @@ describe('bmoor-data.collection.Proxied', function(){
 		});
 
 		it('should work with proxies correctly', function(){
-			expect( child.get('dog').data.length ).toBe( 2 );
-			expect( child.get('cat').data.length ).toBe( 1 );
+			expect( child.get('dog').data.length ).to.equal( 2 );
+			expect( child.get('cat').data.length ).to.equal( 1 );
 		});
 	});
 	*/
@@ -205,14 +208,14 @@ describe('bmoor-data.collection.Proxied', function(){
 
 			child.callStack([
 				data => {
-					expect(data.length).toBe(4);
+					expect(data.length).to.equal(4);
 			
 					test.value = 'YeS';
 
 					child.go();
 				},
 				data => {
-					expect(data.length).toBe(2);
+					expect(data.length).to.equal(2);
 
 					done();
 				}
@@ -251,14 +254,14 @@ describe('bmoor-data.collection.Proxied', function(){
 
 			child.callStack([
 				data => {
-					expect(data.length).toBe(4);
+					expect(data.length).to.equal(4);
 			
 					test.value = 'YeS';
 
 					child.go();
 				},
 				data => {
-					expect(data.length).toBe(2);
+					expect(data.length).to.equal(2);
 
 					done();
 				}
@@ -282,21 +285,21 @@ describe('bmoor-data.collection.Proxied', function(){
 			});
 
 			sorted.subscribe(data => {
-				expect(data.length).toBe(6);
-				expect(data[0].$('dex')).toBe(1);
-				expect(data[5].$('dex')).toBe(6);
+				expect(data.length).to.equal(6);
+				expect(data[0].$('dex')).to.equal(1);
+				expect(data[5].$('dex')).to.equal(6);
 			});
 
 			sorted.filter(p => p.dex%2 === 0)
 			.subscribe(data => {
-				expect(data.length).toBe(3);
-				expect(data[0].$('dex')).toBe(2);
+				expect(data.length).to.equal(3);
+				expect(data[0].$('dex')).to.equal(2);
 			});
 
 			sorted.filter({val: 1})
 			.subscribe(data => {
-				expect(data.length).toBe(2);
-				expect(data[0].$('dex')).toBe(2);
+				expect(data.length).to.equal(2);
+				expect(data[0].$('dex')).to.equal(2);
 			});
 		});
 	});

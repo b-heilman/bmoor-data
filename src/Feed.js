@@ -3,7 +3,7 @@ var bmoor = require('bmoor'),
 	setUid = bmoor.data.setUid,
 	oldPush = Array.prototype.push;
 
-const DataSubject = require('./Subject').Subject;
+const {Subject: DataSubject} = require('./Subject');
 
 // designed for one way data flows.
 // src -> feed -> target
@@ -68,4 +68,6 @@ class Feed extends DataSubject {
 	}
 }
 
-module.exports = Feed;
+module.exports = {
+	Feed
+};

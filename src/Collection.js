@@ -1,7 +1,7 @@
 
-const Feed = require('./Feed.js');
-const Actionable = require('./Actionable.js');
-const ObjProxy = require('./object/Proxy.js');
+const {Feed} = require('./Feed.js');
+const {Actionable} = require('./Actionable.js');
+const {Proxy: ObjProxy} = require('./object/Proxy.js');
 
 class Collection extends Feed {
 
@@ -99,4 +99,6 @@ class Collection extends Feed {
 	}
 }
 
-module.exports = Collection;
+module.exports = {
+	Collection
+};
