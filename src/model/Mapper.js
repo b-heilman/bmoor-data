@@ -17,8 +17,6 @@ class Mapper {
 			let field = fields[property];
 
 			if (field.link){
-				model.hasRelationship = true;
-				
 				this.addLink(model.name, property, field.link.name, field.link.field);
 			}
 		}

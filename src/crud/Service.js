@@ -10,84 +10,93 @@ class Service {
 		Object.assign(this, decoration);
 	}
 
-	async create(datum){
+	async create(datum, ctx){
 		if (this.hooks.beforeCreate){
-			await this.hooks.beforeCreate(datum);
+			await this.hooks.beforeCreate(datum, ctx);
 		}
 
 		const prepared = await this.connector.prepare({
 			method: 'create',
 			model: this.model,
 			delta: this.model.properties.onCreate(
-				this.model.cleanDelta(datum, 'create')
+				this.model.cleanDelta(datum, 'create', ctx),
+				ctx
 			)
-		});
+		}, ctx);
 
 		const rtn = await this.model.properties.onRead(
-			(await this.connector.execute(prepared))[0]
+			(await this.connector.execute(prepared))[0],
+			ctx
 		);
 
 		if (this.hooks.afterCreate){
-			await this.hooks.afterCreate(rtn);
+			await this.hooks.afterCreate(rtn, ctx);
 		}
 
 		return rtn;
 	}
 
-	async read(id){
+	async read(id, ctx){
 		const prepared = await this.connector.prepare({
 			method: 'read',
 			model: this.model,
 			context: {
 				[this.model.properties.key]: id
 			}
-		});
+		}, ctx);
 
 		return this.model.properties.onRead(
-			(await this.connector.execute(prepared))[0]
+			(await this.connector.execute(prepared))[0],
+			ctx
 		);
 	}
 
-	async readAll(){
+	async readAll(ctx){
 		const prepared = await this.connector.prepare({
 			method: 'read',
 			model: this.model,
 			context: null
-		});
+		}, ctx);
 
 		const results = await this.connector.execute(prepared);
 
-		return Promise.all(results.map(this.model.properties.onRead));
+		return Promise.all(results.map(
+			datum => this.model.properties.onRead(datum, ctx)
+		));
 	}
 
-	async readMany(ids){
+	async readMany(ids, ctx){
 		const prepared = await this.connector.prepare({
 			method: 'read',
 			model: this.model,
 			context: {
 				[this.model.properties.key]: ids
 			}
-		});
+		}, ctx);
 
 		const results = await this.connector.execute(prepared);
 
-		return Promise.all(results.map(this.model.properties.onRead));
+		return Promise.all(results.map(
+			datum => this.model.properties.onRead(datum, ctx)
+		));
 	}
 
-	async query(datum){
+	async query(datum, ctx){
 		const prepared = await this.connector.prepare({
 			method: 'read',
 			model: this.model,
 			context: this.model.getIndex(datum),
-		});
+		}, ctx);
 
-		const results = await this.connector.execute(prepared);
+		const results = await this.connector.execute(prepared, ctx);
 
-		return Promise.all(results.map(this.model.properties.onRead));
+		return Promise.all(results.map(
+			datum => this.model.properties.onRead(datum, ctx)
+		));
 	}
 
-	async update(id, delta){
-		const datum = await this.read(id);
+	async update(id, delta, ctx){
+		const datum = await this.read(id, ctx);
 
 		if (this.hooks.beforeUpdate){
 			await this.hooks.beforeUpdate(delta, datum);
@@ -100,27 +109,32 @@ class Service {
 				[this.model.properties.key]: id
 			},
 			delta: this.model.properties.onUpdate(
-				this.model.cleanDelta(delta, 'update'), datum
+				this.model.cleanDelta(delta, 'update'),
+				datum,
+				ctx
 			)
 		});
 
 		const rtn = await this.model.properties.onRead(
-			(await this.connector.execute(prepared))[0]
+			(await this.connector.execute(prepared))[0],
+			ctx
 		);
 
 		if (this.hooks.afterUpdate){
-			await this.hooks.afterUpdate(rtn, datum);
+			await this.hooks.afterUpdate(rtn, datum, ctx);
 		}
 
 		return rtn;
 	}
 
-	async delete(id){
-		const datum = await this.read(id);
+	async delete(id, ctx){
+		const datum = await this.read(id, ctx);
 
 		if (this.hooks.beforeDelete){
-			await this.hooks.beforeDelete(datum);
+			await this.hooks.beforeDelete(datum, ctx);
 		}
+
+		await this.model.properties.onDelete(datum, ctx);
 
 		const prepared = await this.connector.prepare({
 			method: 'delete',
@@ -128,14 +142,12 @@ class Service {
 			context: {
 				[this.model.properties.key]: id
 			}
-		});
+		}, ctx);
 
-		await this.model.properties.onDelete(
-			(await this.connector.execute(prepared))[0]
-		);
+		await this.connector.execute(prepared); // don't care about response if success
 
 		if (this.hooks.afterDelete){
-			await this.hooks.afterDelete(datum);
+			await this.hooks.afterDelete(datum, ctx);
 		}
 
 		return datum;

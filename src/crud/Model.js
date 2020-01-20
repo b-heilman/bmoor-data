@@ -153,8 +153,6 @@ class Model {
 
 		// define structure
 		this.properties = compileProperties(settings.fields);
-
-		this.hasRelationship = false;
 	}
 
 	getKey(delta){

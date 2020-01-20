@@ -1,10 +1,10 @@
 
 const {Network} = require('../model/Network.js');
 
-async function getDatum(service, key, otherwise){
+async function getDatum(service, key, otherwise, ctx){
 	return(
 		(key && typeof(key) !== 'object') ?
-		await service.read(key) : (await service.query(otherwise))[0]
+		await service.read(key, ctx) : (await service.query(otherwise, ctx))[0]
 	);
 }
 /**
@@ -17,23 +17,23 @@ async function getDatum(service, key, otherwise){
 	}]
 }
 **/
-async function install(action, service, master, mapper){
+async function install(action, service, master, mapper, ctx){
 	let ref = action.$ref;
 	let datum = null;
 
 	if (action.$type === 'read'){
 		// either search by key, or the whop thing sent in
-		datum = await getDatum(service, action[service.model.properties.key], action);
+		datum = await getDatum(service, service.model.getKey(action), action, ctx);
 	} else if (action.$type === 'update'){
-		const key = action[service.model.properties.key];
+		const key = service.model.getKey(action);
 
 		// allows you to do something like update by name, but also change the name by overloading
 		// the key
-		const current = await getDatum(service, key, key);
+		const current = await getDatum(service, key, key, ctx);
 
-		datum = await service.update(current[service.model.properties.key], action);
+		datum = await service.update(service.model.getKey(current), action, ctx);
 	} else {
-		datum = await service.create(action);
+		datum = await service.create(action, ctx);
 	}
 
 	mapper.getByDirection(service.model.name, 'incoming')
@@ -56,7 +56,7 @@ async function install(action, service, master, mapper){
 
 // take a master datum, and a mapper reference to all classes, and convert that
 // into a series of service calls
-function inflate(master, mapper, registry){
+function inflate(master, mapper, registry, ctx){
 	const references = Object.keys(master);
 	const network = new Network(mapper);
 
@@ -77,7 +77,8 @@ function inflate(master, mapper, registry){
 						datum,
 						service,
 						master,
-						mapper
+						mapper,
+						ctx
 					)
 				), prom
 			);
