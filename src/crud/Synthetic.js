@@ -7,16 +7,7 @@ async function getDatum(service, key, otherwise, ctx){
 		await service.read(key, ctx) : (await service.query(otherwise, ctx))[0]
 	);
 }
-/**
-{
-	[service-name]: [{
-		$ref: <reference>,
-		$type: [create, read, update],
-		[model.key]: <value>,
-		... rest of datum
-	}]
-}
-**/
+
 async function install(action, service, master, mapper, ctx){
 	let ref = action.$ref;
 	let datum = null;
@@ -56,7 +47,18 @@ async function install(action, service, master, mapper, ctx){
 
 // take a master datum, and a mapper reference to all classes, and convert that
 // into a series of service calls
-function inflate(master, mapper, registry, ctx){
+
+/**
+{
+	[service-name]: [{
+		$ref: <reference>,
+		$type: [create, read, update],
+		[model.key]: <value>,
+		... rest of datum
+	}]
+}
+**/
+async function inflate(master, mapper, registry, ctx){
 	const references = Object.keys(master);
 	const network = new Network(mapper);
 
@@ -85,6 +87,41 @@ function inflate(master, mapper, registry, ctx){
 		}, Promise.resolve(true)
 	);
 }
+
+/*
+function deflate(master, mapper, registry, ctx){
+	const references = Object.keys(master);
+	const network = new Network(mapper);
+
+	const order = network.search(references, 1)
+		.map(link => link.name);
+
+	const toProcess = [];
+
+	if (order.length !== references.length){
+		throw new Error('magical pivot tables are not yet supported');
+	}
+
+	const agg = {};
+	return order.reduce(
+		(prom, serviceName) => {
+			const service = registry.get(serviceName);
+
+			return master[serviceName].reduce(
+				(agg, target) => agg.then(
+					() => retrieve(
+						datum,
+						service,
+						master,
+						mapper,
+						ctx
+					)
+				), prom
+			);
+		}, Promise.resolve(true)
+	);
+}
+*/
 
 module.exports = {
 	inflate
