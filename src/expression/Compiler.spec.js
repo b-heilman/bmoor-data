@@ -204,4 +204,42 @@ describe('bmoor-data.Compiler', function(){
 			})
 		).to.equal(false);
 	});
+
+	it('should inflate a singular block correctly', function(){
+		const eb = new ExpressionBlock();
+
+		eb.fromSchema({
+			blocks: [{
+				expressions: [{
+					type: 'string',
+					path: 'foo',
+					operator: 'equals',
+					value: 'bar'
+				}],
+				joinType: 'and'
+			}],
+			joinType: 'and'
+		});
+
+		expect(eb.toJSON())
+		.to.deep.equal([
+			[
+				{ type: 'access', method: '' },
+				{ type: 'access', method: 'stringValue' },
+				{ type: 'pair', method: 'equals' }
+			]
+		]);
+
+		expect(
+			eb.eval({
+				foo: 'bar'
+			})
+		).to.equal(true);
+
+		expect(
+			eb.eval({
+				foo: 'bar2'
+			})
+		).to.equal(false);
+	});
 });

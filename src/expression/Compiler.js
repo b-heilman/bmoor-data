@@ -12,6 +12,12 @@ class Expression{
 		return this.method(...args);
 	}
 
+	prepare(){
+		return (...args) => {
+			return this.method(...args);
+		};
+	}
+
 	toJSON(){
 		return {type: this.type, method: this.method.name};
 	}
@@ -32,12 +38,12 @@ class ExpressionBlock{
 			if (exp.type === 'access'){
 				// doing it like this allows it to be 'lazy', if an and statement, 
 				// the right won't be run if the left is false for example
-				stack.push(exp.eval.bind(exp));
+				stack.push(exp.prepare());
 			} else {
 				const left = stack.pop();
 				const right = stack.pop();
 
-				stack.push(function(){
+				stack.push(function evalBlock(){
 					return exp.eval(left, right, obj)
 				});
 			}
@@ -45,18 +51,18 @@ class ExpressionBlock{
 			return stack;
 		}, [])[0];
 
-		return express();
+		return express(obj);
 	}
 
 	prepare(){
 		return this.block.reduce((stack, exp) => {
 			if (exp.type === 'access'){
-				stack.push(exp.eval.bind(exp));
+				stack.push(exp.prepare());
 			} else {
 				const right = stack.pop();
 				const left = stack.pop();
 
-				stack.push(function(obj){
+				stack.push(function preparedBlock(obj){
 					return exp.eval(left, right, obj);
 				});
 			}
@@ -104,9 +110,13 @@ class ExpressionBlock{
 
 		if (schema.blocks){
 			schema.blocks.reduce((agg, block) => {
-				agg.push(inflate(block));
+				const child = new ExpressionBlock();
 
-				if (agg.length > 3){
+				child.fromSchema(block);
+
+				agg.push(child);
+
+				if (agg.length > 1){
 					agg.push(joinType);
 				}
 			}, block);
