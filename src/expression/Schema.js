@@ -4,34 +4,29 @@ const {Block} = require('./Block.js');
 const {config} = require('./Statement.js');
 
 function makeBlock(schema){
-	const block = [];
-	const joinType = config.get('join')({type: schema.joinType});
+	const block = new Block();
 
 	if (schema.expressions){
-		schema.expressions.reduce((agg, expression) => {
-			agg.push(config.get('accessor')(expression)); // accessor
-			agg.push(config.get('constant')(expression)); // value
-			agg.push(config.get('operation')(expression)); // 
-
-			if (agg.length > 3){
-				agg.push(joinType);
-			}
-
-			return agg;
-		}, block);
+		schema.expressions.forEach(expression =>
+			block.addExpression(
+				config.get('accessor')(expression),
+				config.get('operation')(expression),
+				config.get('constant')(expression),
+				schema.joinType
+			)
+		);
 	}
 
 	if (schema.blocks){
-		schema.blocks.reduce((agg, block) => {
-			agg.push(makeBlock(block));
-
-			if (agg.length > 1){
-				agg.push(joinType);
-			}
-		}, block);
+		schema.blocks.forEach(child => 
+			block.addBlock(
+				makeBlock(child), 
+				schema.joinType
+			)
+		);
 	}
 
-	return new Block(block);
+	return block;
 }
 
 /** Expression Schema 

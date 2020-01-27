@@ -113,6 +113,22 @@ const config = new Config({
 		}
 	},
 
+	operation: {
+		begin: function(ch){
+			return isOperator.test(ch);
+		},
+		end: function(ch){
+			return !isOperator.test(ch);
+		},
+		finish: function(buffer, forced){
+			if (forced){
+				return buffer;
+			} else {
+				return buffer.substring(0, buffer.length-1);
+			}
+		}
+	},
+
 	method: {
 		begin: function(ch){
 			return isCharacter.test(ch);
@@ -150,22 +166,6 @@ const config = new Config({
 		finish: function(buffer, forced){
 			if (forced){
 				return buffer.substring(0, buffer.length);
-			} else {
-				return buffer.substring(0, buffer.length-1);
-			}
-		}
-	},
-
-	operation: {
-		begin: function(ch){
-			return isOperator.test(ch);
-		},
-		end: function(ch){
-			return !isOperator.test(ch);
-		},
-		finish: function(buffer, forced){
-			if (forced){
-				return buffer;
 			} else {
 				return buffer.substring(0, buffer.length-1);
 			}
@@ -297,10 +297,9 @@ class Tokenizer {
 			}
 		}
 
-		return {
-			tokens,
-			misses
-		};
+		this.tokens = tokens;
+
+		return misses;
 	}
 }
 

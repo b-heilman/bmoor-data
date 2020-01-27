@@ -12,9 +12,9 @@ describe('bmoor-data.Tokenizer', function(){
 		const tokenizer = new Tokenizer();
 
 		it('should work for blocks', function(){
-			const results = tokenizer.tokenize('(like, this)');
+			tokenizer.tokenize('(like, this)');
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'block',
 				'value': 'like, this'
@@ -22,9 +22,9 @@ describe('bmoor-data.Tokenizer', function(){
 		});
 
 		it('should work for operations', function(){
-			const results = tokenizer.tokenize('&&');
+			tokenizer.tokenize('&&');
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'operation',
 				'value': '&&'
@@ -32,9 +32,9 @@ describe('bmoor-data.Tokenizer', function(){
 		});
 
 		it('should work for methods', function(){
-			const results = tokenizer.tokenize('method(of, some, kind)');
+			tokenizer.tokenize('method(of, some, kind)');
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'method',
 				'value': 'method(of, some, kind)'
@@ -42,9 +42,9 @@ describe('bmoor-data.Tokenizer', function(){
 		});
 
 		it('should work for number (int)', function(){
-			const results = tokenizer.tokenize('123');
+			tokenizer.tokenize('123');
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'number',
 				'value': 123
@@ -52,9 +52,9 @@ describe('bmoor-data.Tokenizer', function(){
 		});
 
 		it('should work for number (float)', function(){
-			const results = tokenizer.tokenize('123.23');
+			tokenizer.tokenize('123.23');
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'number',
 				'value': 123.23
@@ -62,9 +62,9 @@ describe('bmoor-data.Tokenizer', function(){
 		});
 
 		it('should work for string (")', function(){
-			const results = tokenizer.tokenize('"foo-bar it\'s"');
+			tokenizer.tokenize('"foo-bar it\'s"');
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'string',
 				'value': 'foo-bar it\'s'
@@ -72,9 +72,9 @@ describe('bmoor-data.Tokenizer', function(){
 		});
 
 		it('should work for string (\')', function(){
-			const results = tokenizer.tokenize(`'foo-bar it\\'s that\\'s'`);
+			tokenizer.tokenize(`'foo-bar it\\'s that\\'s'`);
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'string',
 				'value': 'foo-bar it\'s that\'s'
@@ -82,9 +82,9 @@ describe('bmoor-data.Tokenizer', function(){
 		});
 
 		it('should work for string (`)', function(){
-			const results = tokenizer.tokenize('`foo-bar it\'s`');
+			tokenizer.tokenize('`foo-bar it\'s`');
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'string',
 				'value': 'foo-bar it\'s'
@@ -96,11 +96,11 @@ describe('bmoor-data.Tokenizer', function(){
 		const tokenizer = new Tokenizer();
 
 		it('should work without operators', function(){
-			const results = tokenizer.tokenize(
+			tokenizer.tokenize(
 				'(like, this) boo (hello & world) "bar" 123  23.45'
 			);
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'block',
 				'value': 'like, this'
@@ -123,11 +123,11 @@ describe('bmoor-data.Tokenizer', function(){
 		});
 
 		it('should parse a method', function(){
-			const results = tokenizer.tokenize(
+			tokenizer.tokenize(
 				'drump(like, 123)boo blah(hello & world)'
 			);
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'method',
 				'value': 'drump(like, 123)'
@@ -141,11 +141,11 @@ describe('bmoor-data.Tokenizer', function(){
 		});
 
 		it('should parse operations with this', function(){
-			const results = tokenizer.tokenize(
+			tokenizer.tokenize(
 				'$foo.bar && $hello.world || 123 > $eins'
 			);
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'accessor',
 				'value': 'foo.bar'
@@ -171,11 +171,11 @@ describe('bmoor-data.Tokenizer', function(){
 		});
 
 		it('should work without spaces', function(){
-			const results = tokenizer.tokenize(
+			tokenizer.tokenize(
 				'$foo.bar&&$hello.world||123>$eins'
 			);
 
-			expect(JSON.parse(JSON.stringify(results.tokens)))
+			expect(JSON.parse(JSON.stringify(tokenizer.tokens)))
 			.to.deep.equal([{
 				'type': 'accessor',
 				'value': 'foo.bar'

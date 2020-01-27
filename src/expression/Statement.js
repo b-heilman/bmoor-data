@@ -47,11 +47,6 @@ const config = new Config({
 		return new Statement('access', fn(token));
 	},
 
-	method: function(token){
-		// TODO : yeah
-		console.log('what do I do with this', token);
-	},
-
 	operation: function(token){
 		const loading = `operations.${token.type.toLowerCase()}.${token.operator.toLowerCase()}`;
 		const fn = opsConfig.get(loading);

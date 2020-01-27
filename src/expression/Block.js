@@ -2,18 +2,39 @@
 const {config} = require('./Statement.js');
 
 class Block{
-	constructor(block = []){
+	constructor(token){
 		this.type = 'access';
-		this.block = block;
+
+		// parse the token
+		this.token = token;
+		this.block = [];
+	}
+
+	addStatement(statement){
+		this.block.push(statement);
+	}
+
+	addJoin(join){
+		this.block.push(
+			config.get('join')({type: join})
+		);
+	}
+
+	addExpression(left, operator, right, join){
+		this.addStatement(left);
+		this.addStatement(right);
+		this.addStatement(operator);
+
+		if (join && this.block.length > 3){
+			this.addJoin(join);
+		}
 	}
 
 	addBlock(block, join){
 		this.block.push(block);
 
 		if (this.block.length > 1){
-			this.block.push(
-				config.get('join')({type: join})
-			);
+			this.addJoin(join);
 		}
 	}
 
