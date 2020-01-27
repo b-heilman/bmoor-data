@@ -1,5 +1,6 @@
 
 const bmoor = require('bmoor');
+
 const {Tokenizer} = require('./Tokenizer.js');
 
 class Expressor {

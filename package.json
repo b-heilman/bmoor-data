@@ -14,9 +14,9 @@
     "build": "gulp build"
   },
   "dependencies": {
-    "bmoor": "~0.8.3",
+    "bmoor": "~0.8.5",
     "bmoor-schema": "~0.8.0",
-    "rxjs": "^6.5.2"
+    "rxjs": "^6.5.4"
   },
   "devDependencies": {
     "bmoor-gulp": "^0.1.0",
@@ -25,7 +25,7 @@
     "gulp-jsdoc3": "0.3.0",
     "gulp-jshint": "^2.1.0",
     "jsdoc": "^3.6.3",
-    "jshint": "^2.10.3",
+    "jshint": "^2.11.0",
     "sinon": "^7.5.0"
   }
 }

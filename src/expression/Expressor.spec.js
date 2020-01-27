@@ -1,4 +1,4 @@
-
+/*
 const {expect} = require('chai');
 
 describe('bmoor-data.Expressor', function(){
@@ -241,3 +241,4 @@ describe('bmoor-data.Expressor', function(){
 		});
 	});
 });
+*/

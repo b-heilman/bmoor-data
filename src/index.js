@@ -7,8 +7,6 @@ module.exports = {
 	object: require('./object/index.js'),
 	Actionable: require('./Actionable.js').Actionable,
 	Collection: require('./Collection.js').Collection,
-	Expressor: require('./Expressor.js').Expressor,
 	Feed: require('./Feed.js').Feed,
-	Subject: require('./Subject.js').Subject,
-	Tokenizer: require('./Tokenizer.js').Tokenizer
+	Subject: require('./Subject.js').Subject
 };

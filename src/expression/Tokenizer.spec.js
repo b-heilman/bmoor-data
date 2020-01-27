@@ -8,76 +8,196 @@ describe('bmoor-data.Tokenizer', function(){
 		expect(Tokenizer).to.exist;
 	});
 
-	it('should copy values correctly', function(){
+	describe('single parsing', function(){
 		const tokenizer = new Tokenizer();
 
-		const tokens = tokenizer.tokenize(
-			'foo + bar & something(like, this) | (hello & world) & $someVar 123 123.5'
-		);
+		it('should work for blocks', function(){
+			const results = tokenizer.tokenize('(like, this)');
 
-		expect(JSON.parse(JSON.stringify(tokens)))
-		.to.deep.equal(
-			[{
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'block',
+				'value': 'like, this'
+			}]);
+		});
+
+		it('should work for operations', function(){
+			const results = tokenizer.tokenize('&&');
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'operation',
+				'value': '&&'
+			}]);
+		});
+
+		it('should work for methods', function(){
+			const results = tokenizer.tokenize('method(of, some, kind)');
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'method',
+				'value': 'method(of, some, kind)'
+			}]);
+		});
+
+		it('should work for number (int)', function(){
+			const results = tokenizer.tokenize('123');
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'number',
+				'value': 123
+			}]);
+		});
+
+		it('should work for number (float)', function(){
+			const results = tokenizer.tokenize('123.23');
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'number',
+				'value': 123.23
+			}]);
+		});
+
+		it('should work for string (")', function(){
+			const results = tokenizer.tokenize('"foo-bar it\'s"');
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
 				'type': 'string',
-				'value': 'foo'
+				'value': 'foo-bar it\'s'
+			}]);
+		});
+
+		it('should work for string (\')', function(){
+			const results = tokenizer.tokenize(`'foo-bar it\\'s that\\'s'`);
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'string',
+				'value': 'foo-bar it\'s that\'s'
+			}]);
+		});
+
+		it('should work for string (`)', function(){
+			const results = tokenizer.tokenize('`foo-bar it\'s`');
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'string',
+				'value': 'foo-bar it\'s'
+			}]);
+		});
+	});
+
+	describe('mixed parsing', function(){
+		const tokenizer = new Tokenizer();
+
+		it('should work without operators', function(){
+			const results = tokenizer.tokenize(
+				'(like, this) boo (hello & world) "bar" 123  23.45'
+			);
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'block',
+				'value': 'like, this'
 			},{
-				'type': 'operator',
-				'value': '+'
+				'type': 'method',
+				'value': 'boo'
+			},{
+				'type': 'block',
+				'value': 'hello & world'
 			},{
 				'type': 'string',
 				'value': 'bar'
 			},{
-				'type': 'operator',
-				'value': '&'
+				'type': 'number',
+				'value': 123
 			},{
-				'type': 'string',
-				'value': 'something'
+				'type': 'number',
+				'value': 23.45
+			}]);
+		});
+
+		it('should parse a method', function(){
+			const results = tokenizer.tokenize(
+				'drump(like, 123)boo blah(hello & world)'
+			);
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'method',
+				'value': 'drump(like, 123)'
 			},{
-				'type': 'groupOpen',
-				'value': '('
+				'type': 'method',
+				'value': 'boo'
 			},{
-				'type': 'string',
-				'value': 'like'
+				'type': 'method',
+				'value': 'blah(hello & world)'
+			}]);
+		});
+
+		it('should parse operations with this', function(){
+			const results = tokenizer.tokenize(
+				'$foo.bar && $hello.world || 123 > $eins'
+			);
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'accessor',
+				'value': 'foo.bar'
 			},{
-				'type': 'comma',
-				'value': ','
+				'type': 'operation',
+				'value': '&&'
 			},{
-				'type': 'string',
-				'value': 'this'
+				'type': 'accessor',
+				'value': 'hello.world'
 			},{
-				'type': 'groupClose',
-				'value': ')'
+				'type': 'operation',
+				'value': '||'
 			},{
-				'type': 'operator',
-				'value': '|'
+				'type': 'number',
+				'value': 123
 			},{
-				'type': 'groupOpen',
-				'value': '('
+				'type': 'operation',
+				'value': '>'
 			},{
-				'type': 'string',
-				'value': 'hello'
+				'type': 'accessor',
+				'value': 'eins'
+			}]);
+		});
+
+		it('should work without spaces', function(){
+			const results = tokenizer.tokenize(
+				'$foo.bar&&$hello.world||123>$eins'
+			);
+
+			expect(JSON.parse(JSON.stringify(results.tokens)))
+			.to.deep.equal([{
+				'type': 'accessor',
+				'value': 'foo.bar'
 			},{
-				'type': 'operator',
-				'value': '&'
+				'type': 'operation',
+				'value': '&&'
 			},{
-				'type': 'string',
-				'value': 'world'
+				'type': 'accessor',
+				'value': 'hello.world'
 			},{
-				'type': 'groupClose',
-				'value': ')'
+				'type': 'operation',
+				'value': '||'
 			},{
-				'type': 'operator',
-				'value': '&'
+				'type': 'number',
+				'value': 123
 			},{
-				'type': 'variable',
-				'value': '$someVar'
+				'type': 'operation',
+				'value': '>'
 			},{
-				'type': 'string',
-				'value': '123'
-			},{
-				'type': 'string',
-				'value': '123.5'
-			}]
-		);
+				'type': 'accessor',
+				'value': 'eins'
+			}]);
+		});
 	});
 });

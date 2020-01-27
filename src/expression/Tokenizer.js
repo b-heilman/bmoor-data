@@ -1,112 +1,307 @@
 
 const {Config} = require('bmoor/src/lib/config.js');
 
-const isCharacter = /[\w\.]/;
+const isPath = /[\w\.]/;
+const isDigit = /\d/;
+const isCharacter = /[\w]/;
+const isQuote = /"|'|`/;
+const isOperator = /\+|-|\*|\/|\^|\||\&|=|~|<|>|\!/;
+
+const escapeChar = '\\';
 
 const config = new Config({
-	tokens: {
-		'accessor': function(ch){
-			return ch === '$';
+	// state = {last}
+	accessor: {
+		begin: function(ch, state){
+			return state.last !== escapeChar && ch === '$';
 		},
-		'string': function(ch){
-			return isCharacter.test(ch);
+
+		end : function(ch, state){
+			if (isPath.test(ch)){
+				return false;
+			}
+
+			if (ch==='['){
+				state.bracketOpen = true;
+
+				return false;
+			} else if (state.bracketOpen && isQuote.test(ch)){
+				state.bracketOpen = false;
+				state.inQuote = ch;
+
+				return false;
+			} else if (
+				state.inQuote && ch === state.inQuote && 
+				state.last !== escapeChar
+			){
+				state.inQuote = false;
+				state.doneQuote = true;
+
+				return false;
+			} else if (
+				ch===']' && 
+				(state.doneQuote || state.bracketOpen)
+			){
+				return false;
+			}
+
+			return true;
 		},
-		'comma': function(ch){
-			return ch === ',';
-		},
-		'escape': function(ch){
-			return ch === '\\';
-		},
-		'operations': function(ch){
-			return /\+|-|\*|\/|\^|\||\&|=|~|<|>|\!/.test(ch);
-		},
-		'groupOpen': function(ch){
-			return (ch === '(');
-		},
-		'groupClose': function(ch){
-			return (ch === ')');
+		finish: function(buffer, forced){
+			if (forced){
+				return buffer.substring(1);
+			} else {
+				return buffer.substring(1, buffer.length - 1);
+			}
 		}
 	},
-	combinations: {
-		method: ['string', 'groupOpen', '*', 'groupClose'],
-		group: ['groupOpen', '*', 'groupClose'],
-		variable: ['accessor', 'string']
+
+	string: {
+		begin: function(ch, state){
+			if (state.last !== escapeChar && isQuote.test(ch)){
+				state.quote = ch;
+
+				return true;
+			} else {
+				return false;
+			}
+		},
+		end: function(ch, state){
+			if (state.close){
+				return true;
+			}else if (ch === state.quote && state.last !== escapeChar){
+				state.close = true;
+			}
+
+			return false;
+		},
+		finish: function(buffer, forced, state){
+			const escape = escapeChar === '\\' ? '\\\\'+state.quote : escapeChar+state.quote;
+			
+			buffer = buffer.replace(new RegExp(escape,'g'), state.quote);
+			
+			if (forced){
+				return buffer.substring(1, buffer.length-1);
+			} else {
+				return buffer.substring(1, buffer.length-2);
+			}
+		}
 	},
-	reductions: {
-		operations: {
-			relational: ['==','>=', '<=', '>', '<', '!='],
-			logical: ['&&', '||'],
-			arithmetic: ['+', '-', '/', '*']
+
+	number: {
+		begin: function(ch){
+			return isDigit.test(ch);
+		},
+		end: function(ch, state){
+			if (isDigit.test(ch)){
+				return false;
+			}
+
+			if (ch === '.'){
+				state.isFloat = true;
+				return false;
+			}
+
+			return true;
+		},
+		finish: function(buffer, forced, state){
+			if (state.isFloat){
+				return parseFloat(buffer);
+			} else {
+				return parseInt(buffer);
+			}
+		}
+	},
+
+	method: {
+		begin: function(ch){
+			return isCharacter.test(ch);
+		},
+		end: function(ch, state){
+			if (state.close){
+				return true;
+			}
+
+			if (isCharacter.test(ch)){
+				return false;
+			}
+
+			if (!state.open && ch === '('){
+				state.open = true;
+				state.count = 1;
+
+				return false;
+			} else if (state.open){
+				if (ch === '('){
+					state.count = state.count + 1;
+				} else if (ch === ')'){
+					state.count = state.count - 1;
+
+					if (state.count === 0){
+						state.close = true;
+					}
+				}
+
+				return false;
+			}
+
+			return true;
+		},
+		finish: function(buffer, forced){
+			if (forced){
+				return buffer.substring(0, buffer.length);
+			} else {
+				return buffer.substring(0, buffer.length-1);
+			}
+		}
+	},
+
+	operation: {
+		begin: function(ch){
+			return isOperator.test(ch);
+		},
+		end: function(ch){
+			return !isOperator.test(ch);
+		},
+		finish: function(buffer, forced){
+			if (forced){
+				return buffer;
+			} else {
+				return buffer.substring(0, buffer.length-1);
+			}
+		}
+	},
+
+	block: {
+		begin: function(ch, state){
+			if (ch === '('){
+				state.count = 1;
+				state.open = ch;
+				state.close = ')';
+
+				return true;
+			} else {
+				return false;
+			}
+		},
+		end: function(ch, state){
+			if (ch === state.open){
+				state.count = state.count + 1;
+			} else if (ch === state.close){
+				state.count = state.count - 1;
+
+				if (state.count === 0){
+					return true;
+				}
+			}
+
+			return false;
+		},
+		finish: function(buffer){
+			return buffer.substring(1, buffer.length-1);
 		}
 	}
 });
 
 class Token {
-	constructor(type, value){
+	constructor(type, char, rule){
 		this.type = type;
-		this.value = value;
+		this.rule = rule;
+		this.state = {};
+		this.buffer = char;
 	}
 
-	append(value){
-		this.value += value;
+	setState(state){
+		this.state = state;
 	}
 
-	toJson(){
-		return `{"type":"${this.type}", "value":"${this.value}"}`;
+	check(char){
+		let rtn = true;
+
+		this.buffer += char;
+
+		if (this.rule.end(char, this.state)){
+			this.lock();
+
+			rtn = false;
+		}
+
+		this.state.last = char;
+
+		return rtn;
+	}
+
+	lock(forced){
+		this.value = this.rule.finish(this.buffer, forced, this.state);
+		this.buffer = null;
+	}
+
+	toJSON(){
+		return {
+			type:this.type,
+			value:this.value
+		};
 	}
 }
 
+function getToken(char, state){
+	const keys = config.keys();
+
+	for (let i = 0, c = keys.length; i < c; i++){
+		const key = keys[i];
+		const rule = config.get(key);
+
+		if (rule.begin(char, state)){
+			return new Token(key, char, rule);
+		}
+	}
+
+	return null;
+}
+
 class Tokenizer {
-	constructor(ops = {}){
-		this.tokens = ops.tokens || config.get('tokens');
+	constructor(){
 	}
 
 	tokenize(str){
-		const tokens = this.tokens;
-		const keys = Object.keys(tokens);
+		const tokens = [];
+		
+		let misses = [];
+		let state = {};
 
-		const rtn = str.split('')
-		.reduce((agg, char) => {
-			let tokenType = null;
+		for (let pos = 0, c = str.length; pos < c; pos++){
+			const char = str[pos];
+			const current = getToken(char, state);
 
-			for(let i = 0, c = keys.length; i < c && tokenType === null; i++){
-				let type = keys[i];
+			if (current){
+				current.setState(state);
 
-				if (tokens[type](char, agg.last)){
-					tokenType = type;
+				tokens.push(current);
+
+				do {
+					pos++;
+				} while(pos < c && current.check(str[pos]));
+
+				if (current.value === undefined){
+					current.lock(true);
 				}
-			}
 
-			if (/\s/.test(char)){
-				if (agg.last){
-					agg.tokens.push(agg.last);
-				}
-				
-				agg.last = null;
-			} else if (agg.last){
-				if (agg.last.type === tokenType){
-					agg.last.append(char);
-				} else {
-					agg.tokens.push(agg.last);
-					agg.last = new Token(tokenType, char);
-				}
+				pos--;
+				state = {
+					last: str[pos]
+				};
 			} else {
-				agg.last = new Token(tokenType, char);
+				misses.push(char);
+
+				state.last = char;
 			}
-
-			return agg;
-		}, {last:null, tokens:[]});
-
-		if (rtn.last){
-			rtn.tokens.push(rtn.last);
 		}
 
-		return rtn.tokens;
+		return {
+			tokens,
+			misses
+		};
 	}
-
-	/*reduce(tokens){
-
-	}*/
 }
 
 module.exports = {
