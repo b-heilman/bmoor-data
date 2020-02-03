@@ -9,6 +9,8 @@ const isOperator = /\+|-|\*|\/|\^|\||\&|=|~|<|>|\!/;
 
 const escapeChar = '\\';
 
+const {Token} = require('./Token.js'); 
+
 const config = new Config({
 	// state = {last}
 	accessor: {
@@ -47,12 +49,11 @@ const config = new Config({
 
 			return true;
 		},
-		finish: function(buffer, forced){
-			if (forced){
-				return buffer.substring(1);
-			} else {
-				return buffer.substring(1, buffer.length - 1);
-			}
+		toToken: function(buffer, forced){
+			const content = forced ? 
+				buffer.substring(1) : buffer.substring(1, buffer.length - 1);
+
+			return new Token('accessor', content);
 		}
 	},
 
@@ -75,16 +76,15 @@ const config = new Config({
 
 			return false;
 		},
-		finish: function(buffer, forced, state){
+		toToken: function(buffer, forced, state){
 			const escape = escapeChar === '\\' ? '\\\\'+state.quote : escapeChar+state.quote;
 			
 			buffer = buffer.replace(new RegExp(escape,'g'), state.quote);
 			
-			if (forced){
-				return buffer.substring(1, buffer.length-1);
-			} else {
-				return buffer.substring(1, buffer.length-2);
-			}
+			const content = forced ? 
+				buffer.substring(1, buffer.length-1) : buffer.substring(1, buffer.length-2);
+
+			return new Token('constant', content, {subtype: 'string'});
 		}
 	},
 
@@ -104,12 +104,11 @@ const config = new Config({
 
 			return true;
 		},
-		finish: function(buffer, forced, state){
-			if (state.isFloat){
-				return parseFloat(buffer);
-			} else {
-				return parseInt(buffer);
-			}
+		toToken: function(buffer, forced, state){
+			const content = state.isFloat ?
+				parseFloat(buffer) : parseInt(buffer);
+
+			return new Token('constant', content, {subtype: 'number'});
 		}
 	},
 
@@ -120,12 +119,10 @@ const config = new Config({
 		end: function(ch){
 			return !isOperator.test(ch);
 		},
-		finish: function(buffer, forced){
-			if (forced){
-				return buffer;
-			} else {
-				return buffer.substring(0, buffer.length-1);
-			}
+		toToken: function(buffer, forced){
+			const content = forced ? buffer : buffer.substring(0, buffer.length-1);
+
+			return new Token('operation', content);
 		}
 	},
 
@@ -163,12 +160,11 @@ const config = new Config({
 
 			return true;
 		},
-		finish: function(buffer, forced){
-			if (forced){
-				return buffer.substring(0, buffer.length);
-			} else {
-				return buffer.substring(0, buffer.length-1);
-			}
+		toToken: function(buffer, forced){
+			const content = forced ?
+					buffer.substring(0, buffer.length) : buffer.substring(0, buffer.length-1);
+			
+			return new Token('method', content);
 		}
 	},
 
@@ -197,13 +193,13 @@ const config = new Config({
 
 			return false;
 		},
-		finish: function(buffer){
-			return buffer.substring(1, buffer.length-1);
+		toToken: function(buffer){
+			return new Token('block', buffer.substring(1, buffer.length-1));
 		}
 	}
 });
 
-class Token {
+class Protoken {
 	constructor(type, char, rule){
 		this.type = type;
 		this.rule = rule;
@@ -232,78 +228,19 @@ class Token {
 	}
 
 	lock(forced){
-		this.value = this.rule.finish(this.buffer, forced, this.state);
+		this.token = this.rule.toToken(this.buffer, forced, this.state);
 		this.buffer = null;
 	}
 
 	toJSON(){
 		return {
-			type:this.type,
-			value:this.value
+			type: this.type,
+			token: this.token ? this.token.toJSON() : null
 		};
 	}
 }
 
-function getToken(char, state){
-	const keys = config.keys();
-
-	for (let i = 0, c = keys.length; i < c; i++){
-		const key = keys[i];
-		const rule = config.get(key);
-
-		if (rule.begin(char, state)){
-			return new Token(key, char, rule);
-		}
-	}
-
-	return null;
-}
-
-class Tokenizer {
-	constructor(){
-	}
-
-	tokenize(str){
-		const tokens = [];
-		
-		let misses = [];
-		let state = {};
-
-		for (let pos = 0, c = str.length; pos < c; pos++){
-			const char = str[pos];
-			const current = getToken(char, state);
-
-			if (current){
-				current.setState(state);
-
-				tokens.push(current);
-
-				do {
-					pos++;
-				} while(pos < c && current.check(str[pos]));
-
-				if (current.value === undefined){
-					current.lock(true);
-				}
-
-				pos--;
-				state = {
-					last: str[pos]
-				};
-			} else {
-				misses.push(char);
-
-				state.last = char;
-			}
-		}
-
-		this.tokens = tokens;
-
-		return misses;
-	}
-}
-
 module.exports = {
-	Token,
-	Tokenizer
+	config,
+	Protoken
 };

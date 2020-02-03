@@ -1,13 +1,10 @@
 
-const {config} = require('./Statement.js');
-
 class Block{
-	constructor(token){
-		this.type = 'access';
+	constructor(tokens = []){
+		this.type = 'value';
 
 		// parse the token
-		this.token = token;
-		this.block = [];
+		this.block = tokens;
 	}
 
 	addStatement(statement){
@@ -15,11 +12,10 @@ class Block{
 	}
 
 	addJoin(join){
-		this.block.push(
-			config.get('join')({type: join})
-		);
+		this.block.push(join);
 	}
 
+	// TODO : make this addStatement, and expression is the one line
 	addExpression(left, operator, right, join){
 		this.addStatement(left);
 		this.addStatement(right);
@@ -40,7 +36,7 @@ class Block{
 
 	eval(obj){
 		const express = this.block.reduce((stack, exp) => {
-			if (exp.type === 'access'){
+			if (exp.type === 'value'){
 				// doing it like this allows it to be 'lazy', if an and statement, 
 				// the right won't be run if the left is false for example
 				stack.push(exp.prepare());
@@ -49,7 +45,9 @@ class Block{
 				const right = stack.pop();
 
 				stack.push(function evalBlock(){
-					return exp.eval(left, right, obj);
+					const rtn = exp.eval(left, right, obj);
+
+					return rtn;
 				});
 			}
 
@@ -61,7 +59,7 @@ class Block{
 
 	prepare(){
 		return this.block.reduce((stack, exp) => {
-			if (exp.type === 'access'){
+			if (exp.type === 'value'){
 				stack.push(exp.prepare());
 			} else {
 				const right = stack.pop();

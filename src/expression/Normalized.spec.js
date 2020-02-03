@@ -1,27 +1,27 @@
 
 const {expect} = require('chai');
 
-describe('bmoor-data.Block', function(){
-	const {Schema} = require('./Schema.js');
-
+describe('bmoor-data.Normalized', function(){
+	const {Normalized} = require('./Normalized.js');
+	
 	it('should inflate a singular expression correctly', function(){
-		const schema = new Schema({
+		const schema = new Normalized({
 			expressions: [{
 				type: 'string',
 				path: 'foo',
-				operator: 'equals',
+				operator: '==',
 				value: 'bar',
 			}],
 			joinType: 'and'
 		});
 
-		const eb = schema.toBlock();
+		const eb = schema.buildBlock();
 
 		expect(eb.toJSON())
 		.to.deep.equal([
-			{ type: 'access', method: '' },
-			{ type: 'access', method: 'stringValue' },
-			{ type: 'pair', method: 'equals' }
+			{ type: 'value', method: '' },
+			{ type: 'value', method: 'stringValue' },
+			{ type: 'operation', method: 'equals' }
 		]);
 
 		expect(
@@ -38,32 +38,32 @@ describe('bmoor-data.Block', function(){
 	});
 
 	it('should inflate a multiple expressions correctly', function(){
-		const schema = new Schema({
+		const schema = new Normalized({
 			expressions: [{
 				type: 'string',
 				path: 'foo',
-				operator: 'equals',
+				operator: '==',
 				value: 'bar',
 			}, {
 				type: 'string',
 				path: 'hello',
-				operator: 'equals',
+				operator: '==',
 				value: 'world',
 			}],
 			joinType: 'and'
 		});
 
-		const eb = schema.toBlock();
+		const eb = schema.buildBlock();
 
 		expect(eb.toJSON())
 		.to.deep.equal([
-			{ type: 'access', method: '' },
-			{ type: 'access', method: 'stringValue' },
-			{ type: 'pair', method: 'equals' },
-			{ type: 'access', method: '' },
-			{ type: 'access', method: 'stringValue' },
-			{ type: 'pair', method: 'equals' },
-			{ type: 'pair', method: 'and' }
+			{ type: 'value', method: '' },
+			{ type: 'value', method: 'stringValue' },
+			{ type: 'operation', method: 'equals' },
+			{ type: 'value', method: '' },
+			{ type: 'value', method: 'stringValue' },
+			{ type: 'operation', method: 'equals' },
+			{ type: 'operation', method: 'and' }
 		]);
 
 		expect(
@@ -88,32 +88,32 @@ describe('bmoor-data.Block', function(){
 	});
 
 	it('should allow prepare', function(){
-		const schema = new Schema({
+		const schema = new Normalized({
 			expressions: [{
 				type: 'string',
 				path: 'foo',
-				operator: 'equals',
+				operator: '==',
 				value: 'bar',
 			}, {
 				type: 'string',
 				path: 'hello',
-				operator: 'equals',
+				operator: '==',
 				value: 'world',
 			}],
 			joinType: 'and'
 		});
 
-		const eb = schema.toBlock();
+		const eb = schema.buildBlock();
 
 		expect(eb.toJSON())
 		.to.deep.equal([
-			{ type: 'access', method: '' },
-			{ type: 'access', method: 'stringValue' },
-			{ type: 'pair', method: 'equals' },
-			{ type: 'access', method: '' },
-			{ type: 'access', method: 'stringValue' },
-			{ type: 'pair', method: 'equals' },
-			{ type: 'pair', method: 'and' }
+			{ type: 'value', method: '' },
+			{ type: 'value', method: 'stringValue' },
+			{ type: 'operation', method: 'equals' },
+			{ type: 'value', method: '' },
+			{ type: 'value', method: 'stringValue' },
+			{ type: 'operation', method: 'equals' },
+			{ type: 'operation', method: 'and' }
 		]);
 
 		const fn = eb.prepare();
@@ -137,46 +137,41 @@ describe('bmoor-data.Block', function(){
 			})
 		).to.equal(false);
 	});
-
+	
 	it('should allow multiple fromSchema statements', function(){
-		const schema = new Schema({
+		const schema = new Normalized({
 			expressions: [{
 				type: 'string',
 				path: 'foo',
-				operator: 'equals',
+				operator: '==',
 				value: 'bar',
 			}],
 			joinType: 'and'
 		});
 
-		const eb = schema.toBlock();
+		const eb = schema.buildBlock();
 
-		eb.addBlock(
-			(
-				new Schema({
-					expressions: [{
-						type: 'string',
-						path: 'hello',
-						operator: 'equals',
-						value: 'world',
-					}],
-					joinType: 'and'
-				})
-			).toBlock(),
-			'or'
-		);
+		schema.joinSchema({
+			expressions: [{
+				type: 'string',
+				path: 'hello',
+				operator: '==',
+				value: 'world',
+			}],
+			joinType: 'and'
+		}, 'or');
 
 		expect(eb.toJSON())
 		.to.deep.equal([
-			{ type: 'access', method: '' },
-			{ type: 'access', method: 'stringValue' },
-			{ type: 'pair', method: 'equals' },
+			{ type: 'value', method: '' },
+			{ type: 'value', method: 'stringValue' },
+			{ type: 'operation', method: 'equals' },
 			[
-				{ type: 'access', method: '' },
-				{ type: 'access', method: 'stringValue' },
-				{ type: 'pair', method: 'equals' }
+				{ type: 'value', method: '' },
+				{ type: 'value', method: 'stringValue' },
+				{ type: 'operation', method: 'equals' }
 			],
-			{ type: 'pair', method: 'or' }
+			{ type: 'operation', method: 'or' }
 		]);
 
 		const fn = eb.prepare();
@@ -209,12 +204,12 @@ describe('bmoor-data.Block', function(){
 	});
 
 	it('should inflate a singular block correctly', function(){
-		const schema = new Schema({
+		const schema = new Normalized({
 			blocks: [{
 				expressions: [{
 					type: 'string',
 					path: 'foo',
-					operator: 'equals',
+					operator: '==',
 					value: 'bar'
 				}],
 				joinType: 'and'
@@ -222,14 +217,14 @@ describe('bmoor-data.Block', function(){
 			joinType: 'and'
 		});
 
-		const eb = schema.toBlock();
+		const eb = schema.buildBlock();
 
 		expect(eb.toJSON())
 		.to.deep.equal([
 			[
-				{ type: 'access', method: '' },
-				{ type: 'access', method: 'stringValue' },
-				{ type: 'pair', method: 'equals' }
+				{ type: 'value', method: '' },
+				{ type: 'value', method: 'stringValue' },
+				{ type: 'operation', method: 'equals' }
 			]
 		]);
 
