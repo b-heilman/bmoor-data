@@ -15,6 +15,10 @@ class Service {
 			await this.hooks.beforeCreate(datum, ctx);
 		}
 
+		if (!this.connector){
+			throw new Error(`missing create connector for ${this.model.name}`);
+		}
+
 		const prepared = await this.connector.prepare({
 			method: 'create',
 			model: this.model,
@@ -37,6 +41,10 @@ class Service {
 	}
 
 	async read(id, ctx){
+		if (!this.connector){
+			throw new Error(`missing read connector for ${this.model.name}`);
+		}
+
 		const prepared = await this.connector.prepare({
 			method: 'read',
 			model: this.model,
@@ -52,6 +60,10 @@ class Service {
 	}
 
 	async readAll(ctx){
+		if (!this.connector){
+			throw new Error(`missing readAll connector for ${this.model.name}`);
+		}
+
 		const prepared = await this.connector.prepare({
 			method: 'read',
 			model: this.model,
@@ -66,6 +78,10 @@ class Service {
 	}
 
 	async readMany(ids, ctx){
+		if (!this.connector){
+			throw new Error(`missing readMany connector for ${this.model.name}`);
+		}
+
 		const prepared = await this.connector.prepare({
 			method: 'read',
 			model: this.model,
@@ -82,6 +98,10 @@ class Service {
 	}
 
 	async query(datum, ctx){
+		if (!this.connector){
+			throw new Error(`missing query connector for ${this.model.name}`);
+		}
+
 		const prepared = await this.connector.prepare({
 			method: 'read',
 			model: this.model,
@@ -96,6 +116,10 @@ class Service {
 	}
 
 	async update(id, delta, ctx){
+		if (!this.connector){
+			throw new Error(`missing update connector for ${this.model.name}`);
+		}
+
 		const datum = await this.read(id, ctx);
 
 		if (this.hooks.beforeUpdate){
@@ -128,6 +152,10 @@ class Service {
 	}
 
 	async delete(id, ctx){
+		if (!this.connector){
+			throw new Error(`missing delete connector for ${this.model.name}`);
+		}
+
 		const datum = await this.read(id, ctx);
 
 		if (this.hooks.beforeDelete){

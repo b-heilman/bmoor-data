@@ -5,7 +5,7 @@ const sinon = require('sinon');
 const {Model} = require('./Model.js');
 const {Service} = require('./Service.js');
 const {Config} = require('bmoor/src/lib/config.js');
-const {inflate} = require('./Synthetic.js');
+const {deflate, inflate} = require('./Synthetic.js');
 const {Mapper} = require('../model/Mapper.js');
 
 describe('bmoor-data::crud/Synthetic', function(){
@@ -20,7 +20,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 		.forEach(stub => stub.restore());
 	});
 
-	describe('::inflate', function(){
+	describe('::deflate', function(){
 		let mapper = null;
 		let serviceRegistry = null;
 
@@ -34,7 +34,9 @@ describe('bmoor-data::crud/Synthetic', function(){
 				fields: {
 					'id': {
 						key: true,
-
+					},
+					info: {
+						index: true
 					}
 				}
 			});
@@ -60,7 +62,6 @@ describe('bmoor-data::crud/Synthetic', function(){
 
 			const model3 = new Model('class-3', {
 				fields: {
-
 					id: {
 						key: true,
 					},
@@ -119,7 +120,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 			stubs.class4 = sinon.stub(class4, 'create')
 			.resolves({id:0});
 
-			inflate({
+			deflate({
 				'class-1': [{
 					$ref: 'foo-1'
 				}],
@@ -165,7 +166,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 			stubs.class4 = sinon.stub(class4, 'create')
 			.resolves({id:0});
 
-			inflate({
+			deflate({
 				'class-1': [{
 					$type: 'read',
 					$ref: 'foo-1',
@@ -211,11 +212,12 @@ describe('bmoor-data::crud/Synthetic', function(){
 			stubs.class4 = sinon.stub(class4, 'create')
 			.resolves({id:0});
 
-			inflate({
+			deflate({
 				'class-1': [{
 					$type: 'read',
 					$ref: 'foo-1',
-					blah: 'one'
+					blah: 'one',
+					info: 'eins'
 				}],
 				'class-2': [{
 					$ref: 'bar-2',
@@ -228,9 +230,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 			.then(() => {
 				expect(stubs.class1.getCall(0).args[0])
 				.to.deep.equal({
-					$type: 'read',
-					$ref: 'foo-1',
-					blah: 'one'
+					info: 'eins'
 				});
 
 				expect(stubs.class2.getCall(0).args[0])
@@ -264,7 +264,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 			stubs.class4 = sinon.stub(class4, 'create')
 			.resolves({id:0});
 
-			inflate({
+			deflate({
 				'class-1': [{
 					$type: 'update',
 					$ref: 'foo-1',
@@ -323,12 +323,12 @@ describe('bmoor-data::crud/Synthetic', function(){
 			stubs.class4 = sinon.stub(class4, 'create')
 			.resolves({id:0});
 
-			inflate({
+			deflate({
 				'class-1': [{
 					$type: 'update',
 					$ref: 'foo-1',
 					id: {
-						id: 'one'
+						info: 'one'
 					}
 				}],
 				'class-2': [{
@@ -341,7 +341,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 			}, mapper, serviceRegistry)
 			.then(() => {
 				expect(stubs.class1Read.getCall(0).args[0])
-				.to.deep.equal({id:'one'});
+				.to.deep.equal({info:'one'});
 
 				expect(stubs.class1Update.getCall(0).args[0])
 				.to.equal(123);
@@ -351,7 +351,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 					$type: 'update',
 					$ref: 'foo-1',
 					id: {
-						id: 'one'
+						info: 'one'
 					}
 				});
 
@@ -368,6 +368,403 @@ describe('bmoor-data::crud/Synthetic', function(){
 
 				done();
 			}).catch(done);
+		});
+	});
+
+	describe('::export', function(){
+		let mapper = null;
+		let serviceRegistry = null;
+
+		let class1 = null;
+		let class2 = null;
+		let class3 = null;
+		let class4 = null;
+
+		beforeEach(function(){
+			const model1 = new Model('class-1', {
+				fields: {
+					'id': {
+						key: true,
+					},
+					info: {
+						index: true
+					}
+				}
+			});
+
+			class1 = new Service(model1);
+
+			const model2 = new Model('class-2', {
+				fields: {
+					id: {
+						key: true,
+					},
+					class1Id: {
+						link: {
+							name: 'class-1',
+							field: 'id'
+						}
+					}
+				}
+			});
+
+			class2 = new Service(model2);
+
+			const model3 = new Model('class-3', {
+				fields: {
+					id: {
+						key: true,
+					},
+					class2Id: {
+						link: {
+							name: 'class-2',
+							field: 'id'
+						}
+					}
+				}
+			});
+
+			class3 = new Service(model3);
+
+			const model4 = new Model('class-4', {
+				fields: {
+					id: {
+						key: true,
+					},
+					class1Id: {
+						link: {
+							name: 'class-1',
+							field: 'id'
+						}
+					}
+				}
+			});
+
+			class4 = new Service(model4);
+
+			mapper = new Mapper();
+			mapper.addModel(model3);
+			mapper.addModel(model1);
+			mapper.addModel(model2);
+			mapper.addModel(model4);
+
+			serviceRegistry = new Config();
+			serviceRegistry.set(model1.name, class1);
+			serviceRegistry.set(model2.name, class2);
+			serviceRegistry.set(model3.name, class3);
+			serviceRegistry.set(model4.name, class4);
+		});
+
+		describe('class1', function(){
+			it('should properly with a single key', function(done){
+				stubs.class1 = sinon.stub(class1, 'read')
+				.resolves({
+					id:123,
+					hello: 'world'
+				});
+
+				inflate('class-1', ['key-1'], mapper, serviceRegistry, {})
+				.then(instructions => {
+					expect(stubs.class1.getCall(0).args[0])
+					.to.equal('key-1');
+
+					expect(instructions)
+					.to.deep.equal({
+						'class-1': [{
+							$type: 'create-or-update',
+							hello: 'world'
+						}]
+					});
+
+					done();
+				}).catch(done);
+			});
+
+			it('should properly with multiple keys', function(done){
+				stubs.class1 = sinon.stub(class1, 'read');
+				stubs.class1.onCall(0).resolves({
+					id: 123,
+					foo: 'bar'
+				});
+				stubs.class1.onCall(1).resolves({
+					id: 456,
+					foo: 'bar2'
+				});
+				/*
+				stubs.class2 = sinon.stub(class2, 'create')
+				.resolves({id:456});
+
+				stubs.class3 = sinon.stub(class3, 'create')
+				.resolves({id:789});
+
+				stubs.class4 = sinon.stub(class4, 'create')
+				.resolves({id:0});
+				*/
+				inflate('class-1', ['key-1', 'key-2'], mapper, serviceRegistry, {})
+				.then(instructions => {
+					expect(stubs.class1.getCall(0).args[0])
+					.to.equal('key-1');
+
+					expect(stubs.class1.getCall(1).args[0])
+					.to.equal('key-2');
+
+					expect(instructions)
+					.to.deep.equal({
+						'class-1': [{
+							$type: 'create-or-update',
+							foo: 'bar'
+						},{
+							$type: 'create-or-update',
+							foo: 'bar2'
+						}]
+					});
+
+					done();
+				}).catch(done);
+			});
+		});
+
+		describe('class3', function(){
+			it('should properly with a single key', function(done){
+				stubs.class1 = sinon.stub(class1, 'read')
+				.resolves({
+					n: 1,
+					id:123
+				});
+
+				stubs.class2 = sinon.stub(class2, 'read')
+				.resolves({
+					n: 2,
+					id:123,
+					class1Id: 'key-1-1'
+				});
+
+				stubs.class3 = sinon.stub(class3, 'read')
+				.resolves({
+					n: 3,
+					id:123,
+					class2Id: 'key-2-1'
+				});
+
+				inflate('class-3', ['key-1'], mapper, serviceRegistry, {})
+				.then(instructions => {
+					expect(stubs.class1.getCall(0).args[0])
+					.to.equal('key-1-1');
+
+					expect(stubs.class2.getCall(0).args[0])
+					.to.equal('key-2-1');
+
+					expect(stubs.class3.getCall(0).args[0])
+					.to.equal('key-1');
+
+					expect(instructions)
+					.to.deep.equal({
+						'class-1': [{
+							$ref: 'ref-1',
+							$type: 'create-or-update',
+							n: 1
+						}],
+						'class-2': [{
+							$ref: 'ref-0',
+							$type: 'create-or-update',
+							n: 2,
+							class1Id: 'ref-1'
+						}],
+						'class-3': [{
+							$type: 'create-or-update',
+							n: 3,
+							class2Id: 'ref-0'
+						}]
+					});
+
+					done();
+				}).catch(done);
+			});
+
+			it('should properly with multiple keys', function(done){
+				stubs.class1 = sinon.stub(class1, 'read');
+				stubs.class1.onCall(0).resolves({
+					n: 1,
+					id:123
+				});
+
+				stubs.class2 = sinon.stub(class2, 'read');
+				stubs.class2.onCall(0).resolves({
+					n: 2,
+					id:123,
+					class1Id: 'key-1-1'
+				});
+				stubs.class2.onCall(1).resolves({
+					n: 3,
+					id:234,
+					class1Id: 'key-1-1'
+				});
+
+				stubs.class3 = sinon.stub(class3, 'read');
+				stubs.class3.onCall(0).resolves({
+					n: 4,
+					id:456,
+					class2Id: 'key-2-1'
+				});
+				stubs.class3.onCall(1).resolves({
+					n: 5,
+					id:567,
+					class2Id: null
+				});
+				stubs.class3.onCall(2).resolves({
+					n: 6,
+					id:678,
+					class2Id: 'key-2-2'
+				});
+
+				inflate('class-3', ['key-1', 'key-2', 'key-3'], mapper, serviceRegistry, {})
+				.then(instructions => {
+					expect(stubs.class1.getCall(0).args[0])
+					.to.equal('key-1-1');
+
+					expect(stubs.class2.getCall(0).args[0])
+					.to.equal('key-2-1');
+
+					expect(stubs.class2.getCall(1).args[0])
+					.to.equal('key-2-2');
+
+					expect(stubs.class3.getCall(0).args[0])
+					.to.equal('key-1');
+
+					expect(stubs.class3.getCall(1).args[0])
+					.to.equal('key-2');
+
+					expect(stubs.class3.getCall(2).args[0])
+					.to.equal('key-3');
+
+					expect(instructions)
+					.to.deep.equal({
+						'class-1': [{
+							$ref: 'ref-2',
+							$type: 'create-or-update',
+							n: 1
+						}],
+						'class-2': [{
+							$ref: 'ref-0',
+							$type: 'create-or-update',
+							n: 2,
+							class1Id: 'ref-2'
+						}, {
+							$ref: 'ref-1',
+							$type: 'create-or-update',
+							n: 3,
+							class1Id: 'ref-2'
+						}],
+						'class-3': [{
+							$type: 'create-or-update',
+							n: 4,
+							class2Id: 'ref-0'
+						},{
+							$type: 'create-or-update',
+							n: 5,
+							class2Id: null
+						},{
+							$type: 'create-or-update',
+							n: 6,
+							class2Id: 'ref-1'
+						}]
+					});
+
+					done();
+				}).catch(done);
+			});
+		});
+
+		describe('class4', function(){
+			it('should properly with a single key', function(done){
+				stubs.class1 = sinon.stub(class1, 'read')
+				.resolves({
+					n: 1,
+					id:123
+				});
+
+				stubs.class4 = sinon.stub(class4, 'read')
+				.resolves({
+					n: 2,
+					id:123,
+					class1Id: 'key-1-1'
+				});
+
+				inflate('class-4', ['key-1'], mapper, serviceRegistry, {})
+				.then(instructions => {
+					expect(stubs.class1.getCall(0).args[0])
+					.to.equal('key-1-1');
+
+					expect(stubs.class4.getCall(0).args[0])
+					.to.equal('key-1');
+
+					expect(instructions)
+					.to.deep.equal({
+						'class-1': [{
+							$ref: 'ref-0',
+							$type: 'create-or-update',
+							n: 1
+						}],
+						'class-4': [{
+							$type: 'create-or-update',
+							n: 2,
+							class1Id: 'ref-0'
+						}]
+					});
+
+					done();
+				}).catch(done);
+			});
+
+			it('should properly with a dual key', function(done){
+				stubs.class1 = sinon.stub(class1, 'read');
+				stubs.class1.onCall(0).resolves({
+					n: 1,
+					id:123
+				});
+
+				stubs.class4 = sinon.stub(class4, 'read');
+				stubs.class4.onCall(0).resolves({
+					n: 2,
+					id:123,
+					class1Id: 'key-1-1'
+				});
+
+				stubs.class4.onCall(1).resolves({
+					n: 3,
+					id:234,
+					class1Id: 'key-1-1'
+				});
+
+				inflate('class-4', ['key-1', 'key-2'], mapper, serviceRegistry, {})
+				.then(instructions => {
+					expect(stubs.class1.getCall(0).args[0])
+					.to.equal('key-1-1');
+
+					expect(stubs.class4.getCall(0).args[0])
+					.to.equal('key-1');
+
+					expect(instructions)
+					.to.deep.equal({
+						'class-1': [{
+							$ref: 'ref-0',
+							$type: 'create-or-update',
+							n: 1
+						}],
+						'class-4': [{
+							$type: 'create-or-update',
+							n: 2,
+							class1Id: 'ref-0'
+						}, {
+							$type: 'create-or-update',
+							n: 3,
+							class1Id: 'ref-0'
+						}]
+					});
+
+					done();
+				}).catch(done);
+			});
 		});
 	});
 });

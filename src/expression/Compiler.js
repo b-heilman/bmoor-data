@@ -1,197 +1,43 @@
 
-const {Config} = require('bmoor/src/lib/config.js');
-const {makeGetter} = require('bmoor/src/core.js');
+const {Block} = require('./Block.js'); 
+const {Protoken} = require('./Protoken.js'); 
 
-const {Block} = require('./Block.js');
-const {Expressable} = require('./Expressable.js');
-const {Protoken, config: parsingConfig} = require('./Protoken.js'); 
+function getProtoken(master, pos, state, patterns){
+	const char = master[pos];
+	const keys = patterns.keys();
 
-const config = new Config({});
-
-const constants = config.sub('constants', {
-	string: function(value){
-		value = value+'';
-
-		return function stringValue(){
-			return value; // it will already be a string
-		};
-	},
-	number: function(value){
-		value = value * 1;
-
-		return function numberValue(){
-			return value;
-		};
-	},
-	boolean: function(value){
-		value = (value === 'true' || (value * 1));
-
-		return function booleanValue(){
-			return value;
-		};
-	}
-});
-
-const operations = config.sub('operations', {
-	'~': {
-		fn: function contains(left, right, obj){
-			return left(obj).indexOf(right(obj)) !== -1;
-		},
-		rank: 1
-	},
-	'*': {
-		fn: function mult(left, right, obj){
-			return left(obj) - right(obj);
-		},
-		rank: 3
-	},
-	'/': {
-		fn: function div(left, right, obj){
-			return left(obj) / right(obj); 
-		},
-		rank: 3
-	},
-	'+': {
-		fn: function add(left, right, obj){
-			return left(obj) + right(obj);
-		},
-		rank: 4
-	},
-	'-': {
-		fn: function sub(left, right, obj){
-			return left(obj) - left(obj);
-		},
-		rank: 4
-	},
-	'<': {
-		fn: function sub(left, right, obj){
-			return left(obj) < left(obj);
-		},
-		rank: 6
-	},
-	'<=': {
-		fn: function sub(left, right, obj){
-			return left(obj) <= left(obj);
-		},
-		rank: 6
-	},
-	'>': {
-		fn: function sub(left, right, obj){
-			return left(obj) > left(obj);
-		},
-		rank: 6
-	},
-	'>=': {
-		fn: function sub(left, right, obj){
-			return left(obj) >= left(obj);
-		},
-		rank: 6
-	},
-	'==': {
-		fn: function equals(left, right, obj){
-			return left(obj) == right(obj); // jshint ignore:line
-		},
-		rank: 7
-	},
-	'!=': {
-		fn: function equals(left, right, obj){
-			return left(obj) != right(obj); // jshint ignore:line
-		},
-		rank: 7
-	},
-	'&&': {
-		fn: function and(left, right, obj){
-			return left(obj) && right(obj);
-		},
-		rank: 11
-	},
-	'and': {
-		fn: function and(left, right, obj){
-			return left(obj) && right(obj);
-		},
-		rank: 11
-	},
-	'||': {
-		fn: function or(left, right, obj){
-			return left(obj) || right(obj);
-		},
-		rank: 12
-	},
-	'or': {
-		fn: function or(left, right, obj){
-			return left(obj) || right(obj);
-		},
-		rank: 12
-	}
-});
-
-const expressions = config.sub('expressions', {
-	accessor: function(token){
-		const getter = makeGetter(token.value);
-
-		return new Expressable('value', getter);
-	},
-
-	constant: function(token){
-		const loading = token.metadata.subtype.toLowerCase();
-		const fn = constants.get(loading);
-
-		if (!fn){
-			throw new Error('Unable to load constant: '+loading);
-		}
-
-		return new Expressable('value', fn(token.value));
-	},
-
-	operation: function(token){
-		const loading = token.value.toLowerCase();
-
-		try{
-			const {fn, rank} = operations.get(loading);
-
-			return new Expressable('operation', fn, rank);
-		} catch(ex){
-			throw new Error('Unable to load operation: '+loading);
-		}
-	},
-	/*
-	method: function(token){
-
-	},
-	*/
-});
-
-function getProtoken(char, state){
-	const keys = parsingConfig.keys();
+	state.last = pos !== 0 ? master[pos-1] : null;
 
 	for (let i = 0, c = keys.length; i < c; i++){
 		const key = keys[i];
-		const rule = parsingConfig.get(key);
+		const rule = patterns.get(key);
 
 		if (rule.begin(char, state)){
-			return new Protoken(key, char, rule);
+			return new Protoken(key, char, rule, master);
 		}
 	}
 
 	return null;
 }
 
-function tokenize(str){
+function tokenize(str, patterns){
 	const tokens = [];
 	
 	let misses = [];
-	let state = {};
+	let state = {
+		previous: null
+	};
 
 	for (let pos = 0, c = str.length; pos < c; pos++){
-		const char = str[pos];
-		const current = getProtoken(char, state);
+		const current = getProtoken(str, pos, state, patterns);
 
 		if (current){
+			state.pos = pos;
 			current.setState(state);
 
 			do {
 				pos++;
-			} while(pos < c && current.check(str[pos]));
+			} while(pos < c && current.check(pos));
 
 			if (current.token === undefined){
 				current.lock(true);
@@ -201,12 +47,10 @@ function tokenize(str){
 
 			pos--;
 			state = {
-				last: str[pos]
+				previous: current
 			};
 		} else {
-			misses.push(char);
-
-			state.last = char;
+			misses.push(str[pos]);
 		}
 	}
 
@@ -216,7 +60,7 @@ function tokenize(str){
 	};
 }
 
-function convertToken(token){
+function convertToken(token, expressions){
 	// TODO : proper error management
 	try {
 		return expressions.get(token.type)(token);
@@ -229,8 +73,10 @@ function convertToken(token){
 }
 
 // infix to postfix transformation
-function compile(tokens){
-	const infix = tokens.map(convertToken);
+function compile(tokens, expressions){
+	const infix = [].concat(...tokens.map(
+		token => convertToken(token, expressions)
+	));
 
 	const processed = infix.reduce((state, exp) => {
 		if (exp.type === 'operation'){
@@ -258,23 +104,43 @@ function compile(tokens){
 	};
 }
 
-function makeBlock(tokens){
-	return new Block(compile(tokens).postfix);
-}
+class Compiler {
+	constructor(parsingConfig, expressionConfig){
+		this.parsingConfig = parsingConfig;
+		this.expressionConfig = expressionConfig;
+	}
 
-expressions.set('block', function(token){
-	return makeBlock(tokenize(token.value).tokens);
-});
+	// take a string, convert it into a set of tokens in infix order
+	tokenize(str){
+		return tokenize(str, this.parsingConfig);
+	}
 
-function prepare(str){
-	return makeBlock(tokenize(str).tokens).prepare();
+	// take a token, convert it into an expression that can be evaluated
+	getExpression(token){
+		return convertToken(token, this.expressionConfig);
+	}
+
+	// take a set of tokens, assumed to be infix, and convert into infix / postfix order
+	compile(tokens){
+		return compile(tokens, this.expressionConfig);
+	}
+
+	// take a set of tokens, convert them into a postfix block
+	buildBlock(tokens){
+		return new Block(this.compile(tokens).postfix);
+	}
+
+	// take a set of tokens, covert them into a function that can be expressed
+	buildExpressor(tokens){
+		return this.buildBlock(tokens).prepare();
+	}
+
+	// take a string, convert it into a function that can be expressed
+	prepare(str){
+		return this.buildExpressor(this.tokenize(str).tokens);
+	}
 }
 
 module.exports = {
-	config,
-	tokenize,
-	compile,
-	convertToken,
-	makeBlock,
-	prepare
+	Compiler
 };

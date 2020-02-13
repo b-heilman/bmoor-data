@@ -2,8 +2,6 @@
 const {Block} = require('./Block.js');
 const {Token} = require('./Token.js');
 
-const {convertToken} = require('./Compiler.js');
-
 /** Expression Schema 
  * #expression { // relational and access (path [operator] (value||test))
  *   info: {} // generic json to be used by expressor
@@ -23,16 +21,24 @@ const {convertToken} = require('./Compiler.js');
  *   joinType: ''
  * }
  **/
-function makeBlock(schema){
+function makeBlock(compiler, schema){
 	const block = new Block();
 
 	if (schema.expressions){
 		schema.expressions.forEach(expression =>
 			block.addExpression(
-				convertToken(new Token('accessor', expression.path)),
-				convertToken(new Token('operation', expression.operator)),
-				convertToken(new Token('constant', expression.value, {subtype: expression.type})),
-				convertToken(new Token('operation', schema.joinType))
+				compiler.getExpression(
+					new Token('accessor', expression.path)
+				)[0],
+				compiler.getExpression(
+					new Token('operation', expression.operator)
+				)[0],
+				compiler.getExpression(
+					new Token('constant', expression.value, {subtype: expression.type})
+				)[0],
+				compiler.getExpression(
+					new Token('operation', schema.joinType)
+				)[0]
 			)
 		);
 	}
@@ -40,8 +46,10 @@ function makeBlock(schema){
 	if (schema.blocks){
 		schema.blocks.forEach(child => 
 			block.addBlock(
-				makeBlock(child), 
-				convertToken(new Token('operation', schema.joinType))
+				makeBlock(compiler, child), 
+				compiler.getExpression(
+					new Token('operation', schema.joinType)
+				)[0]
 			)
 		);
 	}
@@ -50,13 +58,14 @@ function makeBlock(schema){
 }
 
 class Normalized {
-	constructor(schema = {}){
+	constructor(compiler, schema = {}){
 		this.schema = schema;
+		this.compiler = compiler;
 	}
 
 	buildBlock(){
 		if (!this.block){
-			this.block = makeBlock(this.schema);
+			this.block = makeBlock(this.compiler, this.schema);
 		}
 
 		return this.block;
@@ -64,8 +73,8 @@ class Normalized {
 
 	joinSchema(schema, joinType){
 		this.block.addBlock(
-			(new Normalized(schema)).buildBlock(),
-			convertToken(new Token('operation', joinType))
+			(new Normalized(this.compiler, schema)).buildBlock(),
+			this.compiler.getExpression(new Token('operation', joinType))[0]
 		);
 	}
 }

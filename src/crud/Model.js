@@ -17,7 +17,8 @@ fieldDef: {
 
 	-- 
 	key: // is a primary key
-	index: // can be used as a search index
+	index: // can be used as a unique index
+	query: // fields allowed to be queries on
 
 	-- structure
 	link: <tableLink> // if a foreign key
@@ -97,6 +98,10 @@ function buildProperties(properties, property, field){
 		properties.index.push(property);
 	}
 
+	if (field.query){
+		properties.query.push(property);
+	}
+
 	if (field.key){
 		if (properties.key){
 			throw new Error(`bmoor-data.Model does not support compound keys: (${properties.key}, ${property})`);
@@ -134,7 +139,8 @@ function compileProperties(fields){
 		delete: [],
 		onDelete,
 		key: null,
-		index: []
+		index: [],
+		query: []
 	};
 
 	for (let property in fields){
@@ -159,11 +165,25 @@ class Model {
 		return delta[this.properties.key];
 	}
 
-	getIndex(delta){
+	getIndex(query){
 		return this.properties.index
 		.reduce(
 			(agg, field) => {
-				agg[field] = delta[field];
+				agg[field] = query[field];
+
+				return agg;
+			},
+			{}
+		);
+	}
+
+	getQuery(query){
+		return this.properties.query
+		.reduce(
+			(agg, field) => {
+				if (field in query){
+					agg[field] = query[field];
+				}
 
 				return agg;
 			},
