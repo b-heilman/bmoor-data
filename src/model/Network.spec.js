@@ -4,7 +4,8 @@ const expect = require('chai').expect;
 const {Mapper} = require('./Mapper.js');
 const {Network} = require('./Network.js');
 
-	describe('bmoor-data::/mode/Network', function(){
+describe('bmoor-data::/mode/Network', function(){
+	describe('::search', function(){
 		it('should pick the shortest route', function(){
 			const mapper = new Mapper();
 
@@ -52,3 +53,45 @@ const {Network} = require('./Network.js');
 			).to.deep.equal(['table-1', 'table-2', 'table-3', 'table-4']);
 		});
 	});
+
+	describe('::requirements', function(){
+		it('should order them correctly - order 1', function(){
+			const mapper = new Mapper();
+
+			mapper.addLink('table-1', 'id', 'table-2', 'table1Id');
+			mapper.addLink('table-1', 'id', 'table-3', 'table1Id');
+			mapper.addLink('table-3', 'id', 'table-4', 'table3Id');
+			mapper.addLink('table-3', 'id', 'table-5', 'table3Id');
+			mapper.addLink('table-5', 'id', 'table-6', 'table6Id');
+			mapper.addLink('table-6', 'id', 'table-7', 'table7Id');
+
+			const network = new Network(mapper);
+
+			expect(
+				network.requirements(['table-6','table-3','table-4'], 3)
+				.map(t => t.name)
+			).to.deep.equal(['table-6', 'table-5', 'table-4', 'table-3']);
+
+			expect(
+				network.requirements(['table-3','table-4','table-6'], 3)
+				.map(t => t.name)
+			).to.deep.equal(['table-4', 'table-6', 'table-5', 'table-3']);
+
+			expect(
+				network.requirements(['table-6','table-4','table-3'], 3)
+				.map(t => t.name)
+			).to.deep.equal(['table-6', 'table-5', 'table-4', 'table-3']);
+
+			const master = ['table-1','table-7','table-2','table-3','table-4','table-6','table-5'];
+			expect(
+				network.requirements(master, 3)
+				.map(t => t.name)
+			).to.deep.equal(['table-2','table-4','table-7','table-6','table-5','table-3','table-1']);
+
+			expect(
+				network.requirements(master.reverse(), 3)
+				.map(t => t.name)
+			).to.deep.equal(['table-7','table-6','table-5','table-4','table-3','table-2','table-1']);
+		});
+	});
+});

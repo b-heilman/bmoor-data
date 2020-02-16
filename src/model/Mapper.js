@@ -53,24 +53,19 @@ class Mapper {
 		}
 	}
 
-	getRelationship(model, name, field){
+	getRelationship(model, name){
 		const link = this.getLink(model.name);
 
+		console.log(link, model.name, '=>', name);
 		if (link){
-			const connections = link.hash[name];
+			const connection = link.hash[name];
 
-			if (connections){
-				if (field){
-					return connections.reduce(
-						(agg, d) => agg || (d.local === field ? d : null)
-					);
-				} else {
-					return connections[0];
-				}
-			} else {
-				return [];
+			if (connection){
+				return connection;
 			}
 		}
+
+		return null;
 	}
 }
 

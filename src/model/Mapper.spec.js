@@ -9,7 +9,6 @@ describe('bmoor-data::/model/Mapper', function(){
 		const mapper = new Mapper();
 
 		mapper.addLink('table-1', 'id', 'table-2', 'eins');
-		mapper.addLink('table-1', 'other', 'table-2', 'eins');
 		mapper.addLink('table-2', 'id', 'table-3', 'zwei');
 		mapper.addLink('table-3', 'id', 'table-4', 'drei');
 		mapper.addLink('table-4', 'eins', 'table-1', 'id');
@@ -26,11 +25,6 @@ describe('bmoor-data::/model/Mapper', function(){
 					direction: 'outgoing'
 				}
 			},
-			{'name':'table-2','local':'other','remote':'eins', 
-				metadata: {
-					direction: 'outgoing'
-				}
-			},
 			{'name':'table-4','local':'id','remote':'eins', 
 				metadata: {
 					direction: 'incoming'
@@ -40,35 +34,21 @@ describe('bmoor-data::/model/Mapper', function(){
 
 		expect(table1.hash)
 		.to.deep.equal({
-			'table-2':[
-				{'name':'table-2','local':'id','remote':'eins', 
-					metadata: {
-						direction: 'outgoing'
-					}
-				},
-				{'name':'table-2','local':'other','remote':'eins', 
-					metadata: {
-						direction: 'outgoing'
-					}
+			'table-2': {'name':'table-2','local':'id','remote':'eins', 
+				metadata: {
+					direction: 'outgoing'
 				}
-			],
-			'table-4':[
-				{'name':'table-4','local':'id','remote':'eins', 
-					metadata: {
-						direction: 'incoming'
-					}
+			},
+			'table-4': {'name':'table-4','local':'id','remote':'eins', 
+				metadata: {
+					direction: 'incoming'
 				}
-			]
+			}
 		});
 
 		expect(table2.joins)
 		.to.deep.equal([
 			{'name':'table-1','local':'eins','remote':'id', 
-				metadata: {
-					direction: 'incoming'
-				}
-			},
-			{'name':'table-1','local':'eins','remote':'other', 
 				metadata: {
 					direction: 'incoming'
 				}
@@ -82,25 +62,16 @@ describe('bmoor-data::/model/Mapper', function(){
 
 		expect(table2.hash)
 		.to.deep.equal({
-			'table-1':[
-				{'name':'table-1','local':'eins','remote':'id', 
-					metadata: {
-						direction: 'incoming'
-					}
-				},
-				{'name':'table-1','local':'eins','remote':'other', 
-					metadata: {
-						direction: 'incoming'
-					}
+			'table-1': {'name':'table-1','local':'eins','remote':'id', 
+				metadata: {
+					direction: 'incoming'
 				}
-			],
-			'table-3':[
-				{'name':'table-3','local':'id','remote':'zwei', 
-					metadata: {
-						direction: 'outgoing'
-					}
+			},
+			'table-3': {'name':'table-3','local':'id','remote':'zwei', 
+				metadata: {
+					direction: 'outgoing'
 				}
-			]
+			}
 		});
 
 		expect(table3.joins)
@@ -119,20 +90,16 @@ describe('bmoor-data::/model/Mapper', function(){
 
 		expect(table3.hash)
 		.to.deep.equal({
-			'table-2':[
-				{'name':'table-2','local':'zwei','remote':'id', 
-					metadata: {
-						direction: 'incoming'
-					}
+			'table-2': {'name':'table-2','local':'zwei','remote':'id', 
+				metadata: {
+					direction: 'incoming'
 				}
-			],
-			'table-4':[
-				{'name':'table-4','local':'id','remote':'drei', 
-					metadata: {
-						direction: 'outgoing'
-					}
+			},
+			'table-4': {'name':'table-4','local':'id','remote':'drei', 
+				metadata: {
+					direction: 'outgoing'
 				}
-			]
+			}
 		});
 
 		expect(table4.joins)
@@ -151,20 +118,16 @@ describe('bmoor-data::/model/Mapper', function(){
 
 		expect(table4.hash)
 		.to.deep.equal({
-			'table-3':[
-				{'name':'table-3','local':'drei','remote':'id', 
-					metadata: {
-						direction: 'incoming'
-					}
+			'table-3': {'name':'table-3','local':'drei','remote':'id', 
+				metadata: {
+					direction: 'incoming'
 				}
-			],
-			'table-1':[
-				{'name':'table-1','local':'eins','remote':'id', 
-					metadata: {
-						direction: 'outgoing'
-					}
+			},
+			'table-1': {'name':'table-1','local':'eins','remote':'id', 
+				metadata: {
+					direction: 'outgoing'
 				}
-			]
+			}
 		});
 	});
 
@@ -283,13 +246,16 @@ describe('bmoor-data::/model/Mapper', function(){
 			mapper.addModel(model1);
 			mapper.addModel(model2);
 
-			expect(mapper.getRelationship(model1, 'test-2', 'zwei'))
+			expect(mapper.getRelationship(model1, 'test-2'))
 			.to.deep.equal({
 				name: 'test-2',
 				local: 'zwei',
 				remote: 'id',
 				metadata: {direction: 'outgoing'}
 			});
+
+			expect(mapper.getRelationship(model1, 'test-3'))
+			.to.equal(null);
 		});
 	});
 

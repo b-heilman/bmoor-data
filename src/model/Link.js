@@ -7,7 +7,9 @@ class Link {
 	}
 
 	addLink(local, name, remote, metadata={}){
-		const existing = this.hash[name];
+		if (this.hash[name]){
+			throw new Error('compound keys is not supported');
+		}
 
 		const join = {
 			name,
@@ -16,11 +18,7 @@ class Link {
 			metadata
 		};
 
-		if (existing){
-			existing.push(join);
-		} else {
-			this.hash[name] = [join];
-		}
+		this.hash[name] = join;
 		
 		this.joins.push(join);
 	}

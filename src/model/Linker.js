@@ -8,11 +8,13 @@ class Linker {
 
 	// search for tables within x jumps
 	search(toName, count = 999){
-		let rtn = this.link.connectsTo(toName);
+		let connection = this.link.connectsTo(toName);
 
-		if (rtn){
+		if (connection){
 			return [this.link, this.mapper.getLink(toName)];
 		}
+
+		let rtn = null;
 
 		const toCheck = [];
 		const traversed = {};

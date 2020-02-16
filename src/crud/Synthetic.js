@@ -77,7 +77,7 @@ async function deflate(master, mapper, registry, ctx){
 	const references = Object.keys(master);
 	const network = new Network(mapper);
 
-	const order = network.search(references, 1)
+	const order = network.requirements(references, 1)
 		.map(link => link.name);
 
 	if (order.length !== references.length){
@@ -331,7 +331,8 @@ async function clear(master, mapper, registry, ctx){
 	const references = Object.keys(master);
 	const network = new Network(mapper);
 
-	let order = network.search(references, 1)
+	let order = network.requirements(references, 1)
+		.reverse() // you don't want to lead with a leaf, so switch
 		.map(link => link.name);
 
 	if (order.length !== references.length){
