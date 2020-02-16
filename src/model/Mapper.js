@@ -53,16 +53,11 @@ class Mapper {
 		}
 	}
 
-	getRelationship(model, name){
+	getRelationship(model, name, field=null){
 		const link = this.getLink(model.name);
 
-		console.log(link, model.name, '=>', name);
 		if (link){
-			const connection = link.hash[name];
-
-			if (connection){
-				return connection;
-			}
+			return link.connectsTo(name, field);
 		}
 
 		return null;

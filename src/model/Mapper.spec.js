@@ -231,6 +231,27 @@ describe('bmoor-data::/model/Mapper', function(){
 							name: 'test-2',
 							field: 'id'
 						}
+					},
+					drei: {
+						update: true,
+						link: {
+							name: 'test-3',
+							field: 'id'
+						}
+					},
+					fier: {
+						update: true,
+						link: {
+							name: 'test-3',
+							field: 'id'
+						}
+					},
+					parentId: {
+						create: true,
+						link: {
+							name: 'test-1',
+							field: 'id'
+						}
 					}
 				}
 			});
@@ -243,8 +264,17 @@ describe('bmoor-data::/model/Mapper', function(){
 				}
 			});
 
+			const model3 = new Model('test-3', {
+				fields: {
+					id: {
+						update: false
+					}
+				}
+			});
+
 			mapper.addModel(model1);
 			mapper.addModel(model2);
+			mapper.addModel(model3);
 
 			expect(mapper.getRelationship(model1, 'test-2'))
 			.to.deep.equal({
@@ -255,6 +285,30 @@ describe('bmoor-data::/model/Mapper', function(){
 			});
 
 			expect(mapper.getRelationship(model1, 'test-3'))
+			.to.deep.equal({
+				name: 'test-3',
+				local: 'fier',
+				remote: 'id',
+				metadata: {direction: 'outgoing'}
+			});
+
+			expect(mapper.getRelationship(model1, 'test-3', 'drei'))
+			.to.deep.equal({
+				name: 'test-3',
+				local: 'drei',
+				remote: 'id',
+				metadata: {direction: 'outgoing'}
+			});
+
+			expect(mapper.getRelationship(model1, 'test-3', 'fier'))
+			.to.deep.equal({
+				name: 'test-3',
+				local: 'fier',
+				remote: 'id',
+				metadata: {direction: 'outgoing'}
+			});
+
+			expect(mapper.getRelationship(model1, 'test-4'))
 			.to.equal(null);
 		});
 	});

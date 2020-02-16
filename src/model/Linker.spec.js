@@ -68,7 +68,6 @@ describe('bmoor-data::model/Linker', function(){
 
 		const linker = new Linker(mapper, 'table-1');
 
-		console.log('=>', linker.search('table-4', 3));
 		expect(linker.search('table-4', 3).map(t => t.name))
 		.to.deep.equal(['table-1', 'table-2', 'table-4']);
 	});
