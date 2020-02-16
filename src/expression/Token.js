@@ -6,6 +6,10 @@ class Token {
 		this.metadata = metadata;
 	}
 
+	setState(state){
+		this.state = state;
+	}
+	
 	assign(properties){
 		return Object.assign(this.metadata, properties);
 	}

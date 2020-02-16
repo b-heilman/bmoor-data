@@ -2,8 +2,7 @@
 const {Block} = require('./Block.js'); 
 const {Protoken} = require('./Protoken.js'); 
 
-function getProtoken(master, pos, state, patterns){
-	const char = master[pos];
+function nextProtoken(master, pos, state, patterns){
 	const keys = patterns.keys();
 
 	state.last = pos !== 0 ? master[pos-1] : null;
@@ -12,8 +11,10 @@ function getProtoken(master, pos, state, patterns){
 		const key = keys[i];
 		const rule = patterns.get(key);
 
-		if (rule.begin(char, state)){
-			return new Protoken(key, char, rule, master);
+		const open = rule.open(master, pos, state);
+
+		if (open){
+			return new Protoken(key, rule, master, open, state);
 		}
 	}
 
@@ -24,31 +25,21 @@ function tokenize(str, patterns){
 	const tokens = [];
 	
 	let misses = [];
-	let state = {
-		previous: null
-	};
+	let state = null;
 
+	let previous = null;
 	for (let pos = 0, c = str.length; pos < c; pos++){
-		const current = getProtoken(str, pos, state, patterns);
+		state = {
+			previous
+		};
+
+		const current = nextProtoken(str, pos, state, patterns);
 
 		if (current){
-			state.pos = pos;
-			current.setState(state);
-
-			do {
-				pos++;
-			} while(pos < c && current.check(pos));
-
-			if (current.token === undefined){
-				current.lock(true);
-			}
+			previous = current;
+			pos = current.close-1;
 
 			tokens.push(current.token);
-
-			pos--;
-			state = {
-				previous: current
-			};
 		} else {
 			misses.push(str[pos]);
 		}

@@ -21,7 +21,7 @@ class Expressable {
 	}
 
 	toString(){
-		return `{"type":"${this.type}", "method":"${this.method.toString()}"}`;
+		return `{"type":"${this.type}", "method":"${this.method.name}"}`;
 	}
 }
 

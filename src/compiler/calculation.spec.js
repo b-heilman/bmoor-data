@@ -97,7 +97,7 @@ describe('bmoor-data.compiler.calculation', function(){
 					}]);
 				});
 			});
-
+			
 			describe('mixed parsing', function(){
 				it('should work without operators', function(){
 					expect(JSON.parse(JSON.stringify(
@@ -190,6 +190,7 @@ describe('bmoor-data.compiler.calculation', function(){
 				});
 
 				it('should work without spaces', function(){
+					console.log('------------------');
 					expect(JSON.parse(JSON.stringify(
 						compiler.tokenize('$foo.bar&&$hello.world||123>$eins').tokens
 					))).to.deep.equal([{
@@ -232,13 +233,13 @@ describe('bmoor-data.compiler.calculation', function(){
 				expect(JSON.parse(JSON.stringify(
 					compiler.compile(compiler.tokenize('$a+$b*$c-$d/$e').tokens).postfix
 				))).to.deep.equal([
-					{ type: 'value', method: '' },
-					{ type: 'value', method: '' },
-					{ type: 'value', method: '' },
+					{ type: 'value', method: 'getter' },
+					{ type: 'value', method: 'getter' },
+					{ type: 'value', method: 'getter' },
 					{ type: 'operation', method: 'mult' },
 					{ type: 'operation', method: 'add' },
-					{ type: 'value', method: '' },
-					{ type: 'value', method: '' },
+					{ type: 'value', method: 'getter' },
+					{ type: 'value', method: 'getter' },
 					{ type: 'operation', method: 'div' },
 					{ type: 'operation', method: 'sub' }
 				]);
@@ -248,11 +249,11 @@ describe('bmoor-data.compiler.calculation', function(){
 				expect(JSON.parse(JSON.stringify(
 					compiler.compile(compiler.tokenize('$a*$b+$c*$d').tokens).postfix
 				))).to.deep.equal([
-					{ type: 'value', method: '' },
-					{ type: 'value', method: '' },
+					{ type: 'value', method: 'getter' },
+					{ type: 'value', method: 'getter' },
 					{ type: 'operation', method: 'mult' },
-					{ type: 'value', method: '' },
-					{ type: 'value', method: '' },
+					{ type: 'value', method: 'getter' },
+					{ type: 'value', method: 'getter' },
 					{ type: 'operation', method: 'mult' },
 					{ type: 'operation', method: 'add' }
 				]);
@@ -260,28 +261,53 @@ describe('bmoor-data.compiler.calculation', function(){
 		});
 
 		describe('::prepare', function(){
-			const prepared = compiler.prepare('$a+4 == $b || $c + 3 > $d - 5');
+			const exp = '$a+4 == $b || $c + 3 > $d - 5';
 
-			expect(prepared({
-				a: 1,
-				b: 5,
-				c: 2,
-				d: 20
-			})).to.equal(true);
+			it('should tokenize', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.compile(compiler.tokenize(exp).tokens).postfix
+				))).to.deep.equal([
+					{ type: 'value', method: 'getter' },
+					{ type: 'value', method: 'numberValue' },
+					{ type: 'operation', method: 'add' },
+					{ type: 'value', method: 'getter' },
+					{ type: 'operation', method: 'equals' },
+					
+					{ type: 'value', method: 'getter' },
+					{ type: 'value', method: 'numberValue' },
+					{ type: 'operation', method: 'add' },
+					{ type: 'value', method: 'getter' },
+					{ type: 'value', method: 'numberValue' },
+					{ type: 'operation', method: 'sub' },
+					{ type: 'operation', method: 'gt' },
+					{ type: 'operation', method: 'or' },
+				]);
+			});
 
-			expect(prepared({
-				a: 10,
-				b: 5,
-				c: 2,
-				d: 20
-			})).to.equal(false);
+			it('should properly express', function(){
+				const prepared = compiler.prepare(exp);
 
-			expect(prepared({
-				a: 10,
-				b: 5,
-				c: 10,
-				d: 15
-			})).to.equal(false);
+				expect(prepared({
+					a: 1,
+					b: 5,
+					c: 2,
+					d: 20
+				})).to.equal(true);
+
+				expect(prepared({
+					a: 10,
+					b: 5,
+					c: 2,
+					d: 20
+				})).to.equal(false);
+
+				expect(prepared({
+					a: 10,
+					b: 5,
+					c: 10,
+					d: 15
+				})).to.equal(false);
+			});
 		});
 	});
 
@@ -304,7 +330,7 @@ describe('bmoor-data.compiler.calculation', function(){
 
 			expect(eb.toJSON())
 			.to.deep.equal([
-				{ type: 'value', method: '' },
+				{ type: 'value', method: 'getter' },
 				{ type: 'value', method: 'stringValue' },
 				{ type: 'operation', method: 'equals' }
 			]);
@@ -342,10 +368,10 @@ describe('bmoor-data.compiler.calculation', function(){
 
 			expect(eb.toJSON())
 			.to.deep.equal([
-				{ type: 'value', method: '' },
+				{ type: 'value', method: 'getter' },
 				{ type: 'value', method: 'stringValue' },
 				{ type: 'operation', method: 'equals' },
-				{ type: 'value', method: '' },
+				{ type: 'value', method: 'getter' },
 				{ type: 'value', method: 'stringValue' },
 				{ type: 'operation', method: 'equals' },
 				{ type: 'operation', method: 'and' }
@@ -392,10 +418,10 @@ describe('bmoor-data.compiler.calculation', function(){
 
 			expect(eb.toJSON())
 			.to.deep.equal([
-				{ type: 'value', method: '' },
+				{ type: 'value', method: 'getter' },
 				{ type: 'value', method: 'stringValue' },
 				{ type: 'operation', method: 'equals' },
-				{ type: 'value', method: '' },
+				{ type: 'value', method: 'getter' },
 				{ type: 'value', method: 'stringValue' },
 				{ type: 'operation', method: 'equals' },
 				{ type: 'operation', method: 'and' }
@@ -448,11 +474,11 @@ describe('bmoor-data.compiler.calculation', function(){
 
 			expect(eb.toJSON())
 			.to.deep.equal([
-				{ type: 'value', method: '' },
+				{ type: 'value', method: 'getter' },
 				{ type: 'value', method: 'stringValue' },
 				{ type: 'operation', method: 'equals' },
 				[
-					{ type: 'value', method: '' },
+					{ type: 'value', method: 'getter' },
 					{ type: 'value', method: 'stringValue' },
 					{ type: 'operation', method: 'equals' }
 				],
@@ -507,7 +533,7 @@ describe('bmoor-data.compiler.calculation', function(){
 			expect(eb.toJSON())
 			.to.deep.equal([
 				[
-					{ type: 'value', method: '' },
+					{ type: 'value', method: 'getter' },
 					{ type: 'value', method: 'stringValue' },
 					{ type: 'operation', method: 'equals' }
 				]

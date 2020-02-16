@@ -103,35 +103,28 @@ async function deflate(master, mapper, registry, ctx){
 	);
 }
 
-async function inflate(service, keys, mapper, registry, ctx){
+async function getDatums(service, query, ctx){
+	return typeof(query) === 'object' ? 
+		await service.query(query, ctx) :
+		await Promise.all([service.read(query, ctx)]);
+}
+
+async function inflate(service, query, mapper, registry, ctx){
 	const known = {};
 	const looking = {};
-	const toProcess = keys.map(
+	const toProcess = query.keys.map(
 		key => ({
 			ref: null,
-			key,
+			query: key,
 			service
 		})
 	);
+	const lookAside = (query.join||[]).reduce((agg, table) => {
+		agg[table] = true;
+
+		return agg;
+	}, {});
 	
-	function addDatum(service, datum){
-		let s = known[service.model.name];
-
-		if (!s){
-			s = {};
-
-			known[service.model.name] = s;
-		}
-
-		const field = service.model.properties.key;
-		const key = datum[field];
-
-		delete datum[field];
-		datum.$type = 'create-or-update';
-
-		s[key] = datum;
-	}
-
 	let c = 0;
 	function getLooking(serviceName, key){
 		const service = registry.get(serviceName);
@@ -159,34 +152,98 @@ async function inflate(service, keys, mapper, registry, ctx){
 		};
 	}
 
+	function addDatum(service, datum){
+		let s = known[service.model.name];
+
+		if (!s){
+			s = {};
+
+			known[service.model.name] = s;
+		}
+
+		const field = service.model.properties.key;
+		const key = datum[field];
+
+		delete datum[field];
+		datum.$type = 'create-or-update';
+
+		let rtn = s[key];
+		// TODO : if I do this, I should check the ref and replace that?
+		if (rtn){
+			return {
+				current: rtn,
+				isNew: false
+			};
+		} else {
+			rtn = datum;
+			s[key] = rtn;
+
+			getLooking(service.model.name, key);
+
+			return {
+				current: rtn,
+				isNew: true
+			};
+		}
+	}
+
 	do{
 		const loading = toProcess.shift();
 		const service = registry.get(loading.service);
 
-		const datum = await service.read(loading.key, ctx);
+		const datums = await getDatums(service, loading.query, ctx);
 
-		if (loading.ref){
-			datum.$ref = loading.ref;
-		}
+		datums.forEach(datum => { // jshint ignore:line
+			const key = service.model.getKey(datum);
+			const {current, isNew} = addDatum(service, datum);
 
-		addDatum(service, datum);
+			if (!isNew){
+				return true;
+			}
 
-		mapper.getByDirection(service.model.name, 'outgoing')
-		.forEach(link => { // jshint ignore:line
-			const fk = datum[link.local];
+			//------- process outgoing links
+			mapper.getByDirection(service.model.name, 'outgoing')
+			.forEach(link => { // jshint ignore:line
+				const fk = current[link.local];
 
-			if (fk !== null){
-				const {ref, newish} = getLooking(link.name, fk); // jshint ignore:line
+				if (fk !== null){
+					const {ref, newish} = getLooking(link.name, fk); // jshint ignore:line
+					
+					if (newish){
+						toProcess.push({
+							ref: ref,
+							service: link.name,
+							query: fk
+						});
+					}
 
-				if (newish){
+					current[link.local] = ref;
+				}
+			});
+
+			//------- process incoming links
+			const {ref} = getLooking(service.model.name, key);
+			current.$ref = ref;
+
+			mapper.getByDirection(service.model.name, 'incoming')
+			.forEach(link => {
+				if (lookAside[link.name]){
 					toProcess.push({
 						ref: ref,
+						back: link.remote,
 						service: link.name,
-						key: fk
+						query: {
+							[link.remote]: key
+						}
 					});
 				}
+			});
 
-				datum[link.local] = ref;
+			//------- now that we've processed, we can change data, otherwise things get mixed up up above
+			if (loading.back){
+				current[loading.back] = loading.ref;
+			} else if (loading.ref){
+				current.$ref = loading.ref;
 			}
 		});
 	}while(toProcess.length);
@@ -230,7 +287,7 @@ async function diagram(service, keys, mapper, registry, ctx){
 		}
 	}
 
-	do{
+	do {
 		const loading = toProcess.shift();
 		const service = registry.get(loading.service);
 
@@ -261,7 +318,7 @@ async function diagram(service, keys, mapper, registry, ctx){
 				});
 			}
 		});
-	}while(toProcess.length);
+	} while(toProcess.length);
 
 	Object.keys(known).forEach(key => {
 		known[key] = Object.values(known[key]);

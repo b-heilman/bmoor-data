@@ -1,39 +1,32 @@
 
 class Protoken {
-	constructor(type, char, rule, master){
+	constructor(type, rule, master, open, state){
 		this.type = type;
-		this.rule = rule;
-		this.state = {};
-		this.master = master;
-		this.buffer = char;
-	}
 
-	setState(state){
-		this.state = state;
-	}
+		this.open = open.pos;
+		this.begin = open.begin;
 
-	check(pos){
-		const char = this.master[pos];
+		for(let p = this.open, l = master.length; p < l; p++){
+			const char = master[p];
 
-		let rtn = true;
+			let close = rule.close(master, p, state);
+			if (close){
+				this.close = close.pos;
+				this.end = close.end;
 
-		this.state.pos = pos;
-		this.buffer += char;
+				p = l;
+			}
 
-		if (this.rule.end(char, this.state, this.master)){
-			this.lock();
-
-			rtn = false;
+			state.last = char;
 		}
 
-		this.state.last = char;
+		if (!this.end){
+			this.close = master.length;
+			this.end = master.length - 1;
+		}
 
-		return rtn;
-	}
-
-	lock(forced){
-		this.token = this.rule.toToken(this.buffer, forced, this.state);
-		this.buffer = null;
+		this.token = rule.toToken(master.substring(this.begin, this.end+1), state);
+		this.token.setState(state);
 	}
 
 	toJSON(){

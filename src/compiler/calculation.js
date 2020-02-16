@@ -18,17 +18,27 @@ const config = new Config({});
 
 const parsings = config.sub('parsings', {
 	accessor: {
-		begin: function(ch, state){
-			return state.last !== escapeChar && ch === '$';
-		},
+		open: function(master, pos, state){
+			const ch = master[pos];
 
-		end : function(ch, state){
+			if (state.last !== escapeChar && ch === '$'){
+				return {
+					pos: pos+2,
+					begin: pos+1
+				};
+			}
+		},
+		close: function(master, pos){
+			const ch = master[pos];
+
 			if (isPath.test(ch)){
-				return false;
+				return null;
 			}
 
-			if (ch==='['){
+			/* ignoring bracket notation for now
+			if (ch==='[' && isQuote.test(master[pos+1])){
 				state.bracketOpen = true;
+				state.inQuote = 
 
 				return false;
 			} else if (state.bracketOpen && isQuote.test(ch)){
@@ -50,95 +60,129 @@ const parsings = config.sub('parsings', {
 			){
 				return false;
 			}
+			*/
 
-			return true;
+			return {
+				pos: pos,
+				end: pos - 1
+			};
 		},
-		toToken: function(buffer, forced){
-			const content = forced ? 
-				buffer.substring(1) : buffer.substring(1, buffer.length - 1);
-
+		toToken: function(content){
 			return new Token('accessor', content);
 		}
 	},
 
 	string: {
-		begin: function(ch, state){
+		open: function(master, pos, state){
+			const ch = master[pos];
+
 			if (state.last !== escapeChar && isQuote.test(ch)){
 				state.quote = ch;
 
-				return true;
-			} else {
-				return false;
+				return {
+					pos: pos+2,
+					begin: pos+1
+				};
 			}
 		},
-		end: function(ch, state){
-			if (state.close){
-				return true;
-			}else if (ch === state.quote && state.last !== escapeChar){
-				state.close = true;
+		close: function(master, pos, state){
+			const ch = master[pos];
+
+			if (ch === state.quote && state.last !== escapeChar){
+				return {
+					pos: pos+1,
+					end: pos-1
+				};
 			}
 
-			return false;
+			return null;
 		},
-		toToken: function(buffer, forced, state){
+		toToken: function(content, state){
 			const escape = escapeChar === '\\' ? '\\\\'+state.quote : escapeChar+state.quote;
 			
-			buffer = buffer.replace(new RegExp(escape,'g'), state.quote);
-			
-			const content = forced ? 
-				buffer.substring(1, buffer.length-1) : buffer.substring(1, buffer.length-2);
+			content = content.replace(new RegExp(escape,'g'), state.quote);
 
 			return new Token('constant', content, {subtype: 'string'});
 		}
 	},
 
 	number: {
-		begin: function(ch){
-			return isDigit.test(ch);
-		},
-		end: function(ch, state){
+		open: function(master, pos){
+			const ch = master[pos];
+
 			if (isDigit.test(ch)){
-				return false;
+				return {
+					pos: pos+1,
+					begin: pos
+				};
+			}
+		},
+		close: function(master, pos, state){
+			const ch = master[pos];
+			
+			if (isDigit.test(ch)){
+				return null;
 			}
 
 			if (ch === '.'){
 				state.isFloat = true;
-				return false;
+				return null;
 			}
 
-			return true;
+			return {
+				pos: pos,
+				end: pos-1
+			};
 		},
-		toToken: function(buffer, forced, state){
-			const content = state.isFloat ?
-				parseFloat(buffer) : parseInt(buffer);
+		toToken: function(content, state){
+			content = state.isFloat ? parseFloat(content) : parseInt(content);
 
 			return new Token('constant', content, {subtype: 'number'});
 		}
 	},
 
 	operation: {
-		begin: function(ch){
-			return isOperator.test(ch);
+		// +
+		open: function(master, pos){
+			const ch = master[pos];
+			
+			if (isOperator.test(ch)){
+				return {
+					pos: pos+1,
+					begin: pos
+				};
+			}
 		},
-		end: function(ch){
-			return !isOperator.test(ch);
+		close: function(master, pos){
+			const ch = master[pos];
+			
+			if (!isOperator.test(ch)){
+				return {
+					pos: pos,
+					end: pos-1
+				};
+			}
 		},
-		toToken: function(buffer, forced){
-			const content = forced ? buffer : buffer.substring(0, buffer.length-1);
-
+		toToken: function(content){
 			return new Token('operation', content);
 		}
 	},
 
 	method: {
-		begin: function(ch){
-			return isCharacter.test(ch);
-		},
-		end: function(ch, state){
-			if (state.close){
-				return true;
+		// method(some, vars)
+		open: function(master, pos){
+			const ch = master[pos];
+			
+			if (isCharacter.test(ch)){
+				return {
+					pos: pos+1,
+					begin: pos
+				};
 			}
-
+		},
+		close: function(master, pos, state){
+			const ch = master[pos];
+			
 			if (isCharacter.test(ch)){
 				return false;
 			}
@@ -155,50 +199,60 @@ const parsings = config.sub('parsings', {
 					state.count = state.count - 1;
 
 					if (state.count === 0){
-						state.close = true;
+						return {
+							pos: pos+1,
+							end: pos
+						};
 					}
 				}
 
 				return false;
 			}
 
-			return true;
+			return {
+				pos: pos+1,
+				end: pos-1
+			};
 		},
-		toToken: function(buffer, forced){
-			const content = forced ?
-					buffer.substring(0, buffer.length) : buffer.substring(0, buffer.length-1);
-			
+		toToken: function(content){
 			return new Token('method', content);
 		}
 	},
 
+	// (foo, bar)
 	block: {
-		begin: function(ch, state){
+		open: function(master, pos, state){
+			const ch = master[pos];
+			
 			if (ch === '('){
 				state.count = 1;
 				state.open = ch;
 				state.close = ')';
 
-				return true;
-			} else {
-				return false;
+				return {
+					pos: pos+1,
+					begin: pos+1
+				};
 			}
 		},
-		end: function(ch, state){
+		close: function(master, pos, state){
+			const ch = master[pos];
+			
 			if (ch === state.open){
 				state.count = state.count + 1;
 			} else if (ch === state.close){
 				state.count = state.count - 1;
 
 				if (state.count === 0){
-					return true;
+					return {
+						pos: pos+1,
+						end: pos-1
+					};
 				}
 			}
-
-			return false;
 		},
-		toToken: function(buffer){
-			return new Token('block', buffer.substring(1, buffer.length-1));
+		toToken: function(content){
+			return new Token('block', content);
 		}
 	}
 });
@@ -259,25 +313,25 @@ const operations = config.sub('operations', {
 		rank: 4
 	},
 	'<': {
-		fn: function sub(left, right, obj){
+		fn: function lt(left, right, obj){
 			return left(obj) < left(obj);
 		},
 		rank: 6
 	},
 	'<=': {
-		fn: function sub(left, right, obj){
+		fn: function lte(left, right, obj){
 			return left(obj) <= left(obj);
 		},
 		rank: 6
 	},
 	'>': {
-		fn: function sub(left, right, obj){
+		fn: function gt(left, right, obj){
 			return left(obj) > left(obj);
 		},
 		rank: 6
 	},
 	'>=': {
-		fn: function sub(left, right, obj){
+		fn: function gte(left, right, obj){
 			return left(obj) >= left(obj);
 		},
 		rank: 6
@@ -323,6 +377,8 @@ const operations = config.sub('operations', {
 const expressions = config.sub('expressions', {
 	accessor: function(token){
 		const getter = makeGetter(token.value);
+
+		getter.name = 'getter:'+token.value;
 
 		return [new Expressable('value', getter)];
 	},
