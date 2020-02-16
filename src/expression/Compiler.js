@@ -56,7 +56,6 @@ function convertToken(token, expressions){
 	try {
 		return expressions.get(token.type)(token);
 	} catch(ex){
-		console.log('::convertToken', token);
 		console.log(ex);
 
 		throw ex;

@@ -34,14 +34,12 @@ const parsings = config.sub('parsings', {
 	},
 	constant: {
 		open: function(master, pos){
-			console.log('+', pos, master[pos]);
 			return {
 				pos: pos,
 				begin: pos
 			};
 		},
 		close: function(master, pos, state){
-			console.log('=>', pos, master[pos]);
 			if (state.last !== escapeChar && master[pos] === '$' && master[pos+1] === '{'){
 				return {
 					pos: pos,

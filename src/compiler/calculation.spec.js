@@ -190,7 +190,6 @@ describe('bmoor-data.compiler.calculation', function(){
 				});
 
 				it('should work without spaces', function(){
-					console.log('------------------');
 					expect(JSON.parse(JSON.stringify(
 						compiler.tokenize('$foo.bar&&$hello.world||123>$eins').tokens
 					))).to.deep.equal([{

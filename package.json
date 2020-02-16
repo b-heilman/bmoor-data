@@ -1,6 +1,6 @@
 {
   "name": "bmoor-data",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "author": "Brian Heilman <das.ist.junk@gmail.com>",
   "description": "Data structures for daily life",
   "license": "MIT",
@@ -14,7 +14,7 @@
     "build": "gulp build"
   },
   "dependencies": {
-    "bmoor": "~0.8.5",
+    "bmoor": "~0.8.7",
     "bmoor-schema": "~0.8.0",
     "rxjs": "^6.5.4"
   },
