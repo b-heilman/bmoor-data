@@ -70,28 +70,105 @@ describe('bmoor-data::/mode/Network', function(){
 			expect(
 				network.requirements(['table-6','table-3','table-4'], 3)
 				.map(t => t.name)
-			).to.deep.equal(['table-6', 'table-5', 'table-4', 'table-3']);
+			).to.deep.equal(['table-4', 'table-6', 'table-5', 'table-3']);
 
 			expect(
 				network.requirements(['table-3','table-4','table-6'], 3)
 				.map(t => t.name)
-			).to.deep.equal(['table-4', 'table-6', 'table-5', 'table-3']);
+			).to.deep.equal(['table-6', 'table-5', 'table-4', 'table-3']);
 
 			expect(
 				network.requirements(['table-6','table-4','table-3'], 3)
 				.map(t => t.name)
-			).to.deep.equal(['table-6', 'table-5', 'table-4', 'table-3']);
+			).to.deep.equal(['table-4', 'table-6', 'table-5', 'table-3']);
 
-			const master = ['table-1','table-7','table-2','table-3','table-4','table-6','table-5'];
+			let master = ['table-1','table-7','table-2','table-3','table-4','table-6','table-5'];
 			expect(
 				network.requirements(master, 3)
 				.map(t => t.name)
-			).to.deep.equal(['table-2','table-4','table-7','table-6','table-5','table-3','table-1']);
+			).to.deep.equal(['table-7','table-6','table-5','table-4','table-3','table-2','table-1']);
 
 			expect(
 				network.requirements(master.reverse(), 3)
 				.map(t => t.name)
-			).to.deep.equal(['table-7','table-6','table-5','table-4','table-3','table-2','table-1']);
+			).to.deep.equal(['table-7','table-2','table-4','table-6','table-5','table-3','table-1']);
+		});
+
+		it('should order them correctly - order 2', function(){
+			const mapper = new Mapper();
+
+			mapper.addLink('table-1', 'table2Id', 'table-2', 'id');
+			mapper.addLink('table-2', 'table3Id', 'table-3', 'id');
+			mapper.addLink('table-2', 'table4Id', 'table-4', 'id');
+			mapper.addLink('table-5', 'table3Id', 'table-3', 'id');
+			mapper.addLink('table-6', 'table4Id', 'table-4', 'id');
+			mapper.addLink('table-7', 'table5Id', 'table-5', 'id');
+			mapper.addLink('table-7', 'table6Id', 'table-6', 'id');
+
+			const network = new Network(mapper);
+
+			let results = network.requirements([
+				'table-7',
+				'table-6',
+				'table-5',
+				'table-4',
+				'table-3',
+				'table-2',
+				'table-1'
+			], 1).map(t => t.name);
+
+			expect(results)
+			.to.deep.equal([
+				'table-3',
+				'table-4',
+				'table-2',
+				'table-1',
+				'table-5',
+				'table-6',
+				'table-7'
+			]);
+
+			results = network.requirements([
+				'table-1',
+				'table-2',
+				'table-3',
+				'table-4',
+				'table-5',
+				'table-6',
+				'table-7'
+			], 1).map(t => t.name);
+
+			expect(results)
+			.to.deep.equal([
+				'table-4',
+				'table-6',
+				'table-3',
+				'table-5',
+				'table-7',
+				'table-2',
+				'table-1'
+			]);
+
+			results = network.requirements([
+				'table-1',
+				'table-7',
+				'table-3',
+				'table-4',
+				'table-2',
+				'table-6',
+				'table-5'
+			], 1).map(t => t.name);
+
+			expect(results)
+			.to.deep.equal([
+				'table-4',
+				'table-6',
+				'table-3',
+				'table-5',
+				'table-7',
+				'table-2',
+				'table-1'
+			]);
 		});
 	});
 });

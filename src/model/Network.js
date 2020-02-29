@@ -46,31 +46,39 @@ class Network {
 
 	requirements(names, count = 3){
 		const links = this.search(names, count);
-		
-		return links.reduce((agg, link) => {
-			let found = false;
-			for(let i = agg.length - 1; i > -1; i--){
-				const against = agg[i].name;
-				const connection = link.connectsTo(against);
 
-				if (connection){
-					if (connection.metadata.direction === 'incoming'){
-						agg.splice(i, 0, link);
-					} else {
-						agg.splice(i+1, 0, link);
-					}
-
-					found = true;
-					i = 0;
-				}
-			}
-
-			if (!found){
-				agg.unshift(link);
-			}
+		const looking = links.reduce((agg, link) => {
+			agg[link.name] = link;
 
 			return agg;
-		}, []);
+		}, {});
+
+		function getOrder(link){
+			looking[link.name] = false;
+
+			return link.search('direction', 'incoming')
+			.reduce((agg, name) => {
+				const child = looking[name];
+
+				if (child){
+					return agg.concat(getOrder(child));
+				}
+
+				return agg;
+			}, [link]);
+		}
+
+		let order = [];
+
+		for(let i = 0, c = links.length; i < c; i++){
+			const next = links[i];
+
+			if (looking[next.name]){
+				order = getOrder(next).concat(order);
+			}
+		}
+		
+		return order;
 	}
 }
 

@@ -1,4 +1,6 @@
 
+const {makeGetter} = require('bmoor/src/core.js');
+
 class Link {
 	constructor(name){
 		this.name = name;
@@ -22,6 +24,13 @@ class Link {
 		}
 		
 		this.joins.push(join);
+	}
+
+	search(path, value){
+		const getter = makeGetter(path);
+
+		return this.joins.filter(join => getter(join.metadata) === value)
+		.map(join => join.name);
 	}
 
 	connectsTo(name, viaField=null){
