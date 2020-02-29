@@ -46,50 +46,31 @@ class Network {
 
 	requirements(names, count = 3){
 		const links = this.search(names, count);
+		const context = {
+			scope: links,
+			found: []
+		};
 
-		const looking = links.reduce((agg, link) => {
-			agg[link.name] = link;
+		// keep rotating through the network, pulling off the edges
+		while(context.scope.length){
+			const origLength = context.scope.length;
+			const names = context.scope.map(link => link.name);
 
-			return agg;
-		}, {});
-
-		function getOrder(link){
-			looking[link.name] = false;
-
-			const outgoing = link.search('direction', 'outgoing')
-			.reduce((agg, name) => {
-				const child = looking[name];
-
-				if (child){
-					return getOrder(child).concat(agg);
+			context.scope = context.scope.filter(link => {
+				if (link.search('direction', 'outgoing', names).length === 0){
+					context.found.push(link);
+					return false;
+				} else {
+					return true;
 				}
+			});
 
-				return agg;
-			}, [link]);
-
-			return link.search('direction', 'incoming')
-			.reduce((agg, name) => {
-				const child = looking[name];
-
-				if (child){
-					return agg.concat(getOrder(child));
-				}
-
-				return agg;
-			}, outgoing);
-		}
-
-		let order = [];
-
-		for(let i = 0, c = links.length; i < c; i++){
-			const next = links[i];
-
-			if (looking[next.name]){
-				order = getOrder(next).concat(order);
+			if (context.scope.length === origLength){
+				throw new Error('no edges found');
 			}
 		}
 		
-		return order;
+		return context.found;
 	}
 }
 

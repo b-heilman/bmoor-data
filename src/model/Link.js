@@ -26,11 +26,23 @@ class Link {
 		this.joins.push(join);
 	}
 
-	search(path, value){
+	search(path, value, subset){
 		const getter = makeGetter(path);
 
-		return this.joins.filter(join => getter(join.metadata) === value)
-		.map(join => join.name);
+		if (subset){
+			return subset.reduce((agg, name) => {
+				const join = this.hash[name];
+
+				if (join && getter(join.metadata) === value){
+					agg.push(join);
+				}
+
+				return agg;
+			}, []);
+		} else {
+			return this.joins.filter(join => getter(join.metadata) === value)
+			.map(join => join.name);
+		}
 	}
 
 	connectsTo(name, viaField=null){
