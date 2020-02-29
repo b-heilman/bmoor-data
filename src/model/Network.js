@@ -56,6 +56,17 @@ class Network {
 		function getOrder(link){
 			looking[link.name] = false;
 
+			const outgoing = link.search('direction', 'outgoing')
+			.reduce((agg, name) => {
+				const child = looking[name];
+
+				if (child){
+					return getOrder(child).concat(agg);
+				}
+
+				return agg;
+			}, [link]);
+
 			return link.search('direction', 'incoming')
 			.reduce((agg, name) => {
 				const child = looking[name];
@@ -65,7 +76,7 @@ class Network {
 				}
 
 				return agg;
-			}, [link]);
+			}, outgoing);
 		}
 
 		let order = [];
