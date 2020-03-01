@@ -12,9 +12,16 @@ async function getDatum(service, query, ctx){
 		key = service.model.getKey(query);
 	}
 
-	return(key ? // if you make key === 0, you're a horrible person
-		await service.read(key, ctx) : (await service.query(service.model.getIndex(query), ctx))[0]
-	);
+	if (key){
+		// if you make key === 0, you're a horrible person
+		return await service.read(key, ctx);
+	} else {
+		if (service.model.hasIndex()){
+			return (await service.query(service.model.getIndex(query), ctx))[0];
+		} else {
+			return null;
+		}
+	}
 }
 
 async function install(action, service, master, mapper, ctx){

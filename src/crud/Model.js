@@ -165,6 +165,10 @@ class Model {
 		return delta[this.properties.key];
 	}
 
+	hasIndex(){
+		return this.properties.index.length !== 0;
+	}
+
 	getIndex(query){
 		return this.properties.index
 		.reduce(
