@@ -1,0 +1,53 @@
+
+- model: give a representation of an object in the system
+	- shape of data
+	- where to access
+	- internal / external view of the data
+	- types
+	- links
+- service: a way to access models inside the system
+	- create
+	- read
+	- update
+	- delete
+	- all
+	- query
+	- path: extrnal view, allow internal view if we want to change
+-decorator
+	- add extra methods to the service
+- hook: controls overwhat can be updated and how
+	- create: wraps the standard create method
+	- read: wraps the standard read method
+	- update: wraps the standards update method
+	- delete: wraps the standard delete method
+	- filter: called after all and query
+- effect
+	- call this service after other models are changed
+		- create
+		- update
+		- delete
+- guard: exposes a crud-service
+	- common way to blend with different web servers
+	- security
+	- permissions for fields
+	- permissions for actions allowed
+	- expose actions - a route for a particular datum
+	- expose utiliities - a route for the model as a whole
+	- tunnel - that model isn't found here, it's actually over there
+	- pivots - I want all data of a model that joins from another
+- synthetic
+	- combine models into one larger model
+- nexus
+	- common place to define all content
+	- common way to load all content
+	- common way to instantiate different instances of the stack
+- context
+	- common way to normalize the contexts from different servers.
+	- guard can create and pass down
+ 
+- support
+	- express
+	- swagger
+	- graphql
+	- db abstraction
+	- expose service as lambda

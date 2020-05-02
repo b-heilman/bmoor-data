@@ -1,1 +1,1 @@
-Add a compare class, something to allow short hand comparisons
+- the crud plan
