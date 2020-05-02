@@ -1,4 +1,8 @@
 
+const {Config} = require('bmoor/src/lib/config.js');
+
+const types = new Config();
+
 /**
 tableLink: {
 	name:
@@ -8,12 +12,8 @@ tableLink: {
 fieldDef: {
 	-- crud operations
 	create
-	onCreate
 	read
-	onRead
 	update
-	onUpdate
-	delete
 
 	-- 
 	key: // is a primary key
@@ -22,14 +22,16 @@ fieldDef: {
 
 	-- structure
 	link: <tableLink> // if a foreign key
+	internal: ''  TODO : internal structure
 }
 
 fields: {
-	[fieldName]: <fieldDef>
+	[externalPath]: <fieldDef>
 }
 
 model: {
-	name: ''
+	name: '',
+	type: '',
 	fields: <fields>
 }
 **/
@@ -46,16 +48,19 @@ function buildProperties(properties, property, field){
 		field = {
 			create: true,
 			read: true,
-			update: true,
-			delete: false
+			update: true
 		};
 	} else if (field === false){
 		field = {
 			create: false,
 			read: true,
-			update: false,
-			delete: false
+			update: false
 		};
+	}
+
+	if (field.type){
+		// this allows types to define onCreate, onRead, onUpdate, onDelete
+		Object.assign(field, types.get(field.type)||{});
 	}
 
 	if (field.create){
@@ -84,14 +89,6 @@ function buildProperties(properties, property, field){
 
 	if (field.onUpdate){
 		properties.onUpdate = actionExtend(field.onUpdate, property, properties.onUpdate);
-	}
-
-	if (field.delete){
-		properties.delete.push(property);
-	}
-
-	if (field.onDelete){
-		properties.onDelete = actionExtend(field.onDelete, property, properties.onDelete);
 	}
 
 	if (field.index){
@@ -123,10 +120,6 @@ function onUpdate(obj){
 	return obj;
 }
 
-function onDelete(obj){
-	return obj;
-}
-
 function compileProperties(fields){
 	const properties = {
 		create: [],
@@ -136,8 +129,6 @@ function compileProperties(fields){
 		update: [],
 		updateType: {},
 		onUpdate,
-		delete: [],
-		onDelete,
 		key: null,
 		index: [],
 		query: []
@@ -240,5 +231,6 @@ class Model {
 }
 
 module.exports = {
-	Model
+	Model,
+	types
 };

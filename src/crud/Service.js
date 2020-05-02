@@ -1,8 +1,42 @@
 
+const {create} = require('bmoor/src/lib/error.js');
+
+async function runStatement(service, base, ctx){
+	base.model = service.model;
+	base.fields = service._allowedFields ?
+		service._allowedFields(ctx) : service.model.properties.read;
+
+	const prepared = await service.connector.prepare(base, ctx);
+
+	return await service.connector.execute(prepared);
+}
+
+async function runMap(arr, service, ctx){
+	if (service._mapFactory){
+		const fn = await service._mapFactory(ctx);
+
+		return arr.map(fn);
+	} else {
+		return arr;
+	}
+}
+
+async function runFilter(arr, service, ctx){
+	if (service._filterFactory){
+		const filter = await service._filterFactory(ctx);
+
+		return arr.filter(filter);
+	} else {
+		return arr;
+	}
+}
+
+let count = 1;
+
 class Service {
 	constructor(model, connector){
+		this.count = count++;
 		this.model = model;
-		this.hooks = {};
 		this.connector = connector;
 	}
 
@@ -10,175 +44,206 @@ class Service {
 		Object.assign(this, decoration);
 	}
 
-	async create(datum, ctx){
-		if (this.hooks.beforeCreate){
-			await this.hooks.beforeCreate(datum, ctx);
+	async create(proto, ctx){
+		if (this._beforeCreate){
+			await this._beforeCreate(proto, ctx);
 		}
 
 		if (!this.connector){
-			throw new Error(`missing create connector for ${this.model.name}`);
+			throw create(`missing create connector for ${this.model.name}`, {
+				code: 'BMOOR_DATA_SERVICE_CREATE_CONNECTOR'
+			});
 		}
 
-		const prepared = await this.connector.prepare({
+		const res = await runStatement(this, {
 			method: 'create',
-			model: this.model,
 			delta: this.model.properties.onCreate(
-				this.model.cleanDelta(datum, 'create', ctx),
+				this.model.cleanDelta(proto, 'create', ctx),
 				ctx
 			)
 		}, ctx);
 
-		const rtn = await this.model.properties.onRead(
-			(await this.connector.execute(prepared))[0],
-			ctx
-		);
+		const datum = (await runMap(res, this, ctx))[0];
 
-		if (this.hooks.afterCreate){
-			await this.hooks.afterCreate(rtn, ctx);
+		if (this._afterCreate){
+			await this._afterCreate(datum, ctx);
 		}
 
-		return rtn;
+		if (ctx){
+			ctx.addChange(this.model.name, 'create', datum);
+		}
+
+		return datum;
 	}
 
 	async read(id, ctx){
 		if (!this.connector){
-			throw new Error(`missing read connector for ${this.model.name}`);
+			throw create(`missing read connector for ${this.model.name}`, {
+				code: 'BMOOR_DATA_SERVICE_READ_CONNECTOR'
+			});
 		}
 
-		const prepared = await this.connector.prepare({
+		const rtn = await runStatement(this, {
 			method: 'read',
-			model: this.model,
 			context: {
 				[this.model.properties.key]: id
 			}
 		}, ctx);
 
-		return this.model.properties.onRead(
-			(await this.connector.execute(prepared))[0],
+		const datum = (await runFilter(
+			await runMap(rtn, this, ctx), 
+			this, 
 			ctx
-		);
+		))[0];
+		
+		if (!datum){
+			throw create(`unable to view ${id} of ${this.model.name}`, {
+				code: 'BMOOR_DATA_SERVICE_READ_FILTER',
+				context: {
+					id
+				}
+			});
+		}
+
+		return datum;
 	}
 
 	async readAll(ctx){
 		if (!this.connector){
-			throw new Error(`missing readAll connector for ${this.model.name}`);
+			throw create(`missing readAll connector for ${this.model.name}`, {
+				code: 'BMOOR_DATA_SERVICE_READALL_CONNECTOR'
+			});
 		}
 
-		const prepared = await this.connector.prepare({
+		const res = await runStatement(this, {
 			method: 'read',
-			model: this.model,
 			context: null
 		}, ctx);
 
-		const results = await this.connector.execute(prepared);
-
-		return Promise.all(results.map(
-			datum => this.model.properties.onRead(datum, ctx)
-		));
+		return runFilter(
+			await runMap(res, this, ctx), 
+			this, 
+			ctx
+		);
 	}
 
 	async readMany(ids, ctx){
 		if (!this.connector){
-			throw new Error(`missing readMany connector for ${this.model.name}`);
+			throw create(`missing readMany connector for ${this.model.name}`, {
+				code: 'BMOOR_DATA_SERVICE_READMANY_CONNECTOR'
+			});
 		}
 
-		const prepared = await this.connector.prepare({
+		const res = await runStatement(this, {
 			method: 'read',
-			model: this.model,
 			context: {
 				[this.model.properties.key]: ids
 			}
 		}, ctx);
 
-		const results = await this.connector.execute(prepared);
-
-		return Promise.all(results.map(
-			datum => this.model.properties.onRead(datum, ctx)
-		));
+		return runFilter(
+			await runMap(res, this, ctx),
+			this, 
+			ctx
+		);
 	}
 
-	async query(datum, ctx){
+	async query(search, ctx){
 		if (!this.connector){
-			throw new Error(`missing query connector for ${this.model.name}`);
+			throw create(`missing query connector for ${this.model.name}`, {
+				code: 'BMOOR_DATA_SERVICE_QUERY_CONNECTOR'
+			});
 		}
 
-		const prepared = await this.connector.prepare({
+		if (this._beforeQuery){
+			await this._beforeQuery(search, ctx);
+		}
+
+		const res = await runStatement(this, {
 			method: 'read',
-			model: this.model,
-			context: this.model.getIndex(datum),
+			context: this.model.getQuery(search)
 		}, ctx);
 
-		const results = await this.connector.execute(prepared, ctx);
-
-		return Promise.all(results.map(
-			datum => this.model.properties.onRead(datum, ctx)
-		));
+		return runFilter(
+			await runMap(res, this, ctx),
+			this, 
+			ctx
+		);
 	}
 
 	async update(id, delta, ctx){
 		if (!this.connector){
-			throw new Error(`missing update connector for ${this.model.name}`);
+			throw create(`missing update connector for ${this.model.name}`, {
+				code: 'BMOOR_DATA_SERVICE_UPDATE_CONNECTOR'
+			});
 		}
 
-		const datum = await this.read(id, ctx);
+		const tgt = await this.read(id, ctx);
 
-		if (this.hooks.beforeUpdate){
-			await this.hooks.beforeUpdate(delta, datum);
+		if (this._beforeUpdate){
+			await this._beforeUpdate(delta, tgt, ctx);
 		}
 
-		const prepared = await this.connector.prepare({
+		const rtn = await runStatement(this, {
 			method: 'update',
-			model: this.model,
 			context: {
 				[this.model.properties.key]: id
 			},
 			delta: this.model.properties.onUpdate(
 				this.model.cleanDelta(delta, 'update'),
-				datum,
+				tgt,
 				ctx
 			)
-		});
+		}, ctx);
 
-		const rtn = await this.model.properties.onRead(
-			(await this.connector.execute(prepared))[0],
-			ctx
-		);
+		// rtn is expected to be [] of one
+		const datum = (await runMap(rtn, this, ctx))[0];
 
-		if (this.hooks.afterUpdate){
-			await this.hooks.afterUpdate(rtn, datum, ctx);
+		if (this._afterUpdate){
+			await this._afterUpdate(datum, tgt, ctx);
 		}
 
-		return rtn;
+		if (ctx){
+			ctx.addChange(this.model.name, 'update', datum);
+		}
+
+		return datum;
 	}
 
+	/**
+	 * Delete will only run off ids.  If you want to do a mass delete, you need to run a query
+	 * and then interate over that.  It simplifies the logic, but does make mass deletion an
+	 * issue.  I'm ok with that for now.
+	 **/
 	async delete(id, ctx){
 		if (!this.connector){
-			throw new Error(`missing delete connector for ${this.model.name}`);
+			throw create(`missing readMany connector for ${this.model.name}`, {
+				code: 'BMOOR_DATA_SERVICE_DELETE_CONNECTOR'
+			});
 		}
 
 		const datum = await this.read(id, ctx);
 
-		if (this.hooks.beforeDelete){
-			await this.hooks.beforeDelete(datum, ctx);
+		if (this._beforeDelete){
+			await this._beforeDelete(datum, ctx);
 		}
 
-		await this.model.properties.onDelete(datum, ctx);
-
-		const prepared = await this.connector.prepare({
+		await runStatement(this, {
 			method: 'delete',
-			model: this.model,
 			context: {
 				[this.model.properties.key]: id
 			}
 		}, ctx);
 
-		await this.connector.execute(prepared); // don't care about response if success
-
-		if (this.hooks.afterDelete){
-			await this.hooks.afterDelete(datum, ctx);
+		if (this._afterDelete){
+			await this._afterDelete(datum, ctx);
 		}
 
-		return datum;
+		if (ctx){
+			ctx.addChange(this.model.name, 'delete', datum);
+		}
+
+		return datum; // datum will have had onRead run against it
 	}
 }
 

@@ -1,4 +1,5 @@
-
+// TODO: this needs to be renamed as Normalized
+// Synthetic will be a large denormalized schema based on smaller models
 const {Network} = require('../model/Network.js');
 
 async function getDatum(service, query, ctx){
@@ -126,7 +127,12 @@ async function inflate(service, query, mapper, registry, ctx){
 			service
 		})
 	);
-	const lookAside = (query.join||[]).reduce((agg, table) => {
+	const joinModels = (query.join||[]).reduce((agg, table) => {
+		agg[table] = true;
+
+		return agg;
+	}, {});
+	const stubModels = (query.stub||[]).reduce((agg, table) => {
 		agg[table] = true;
 
 		return agg;
@@ -159,7 +165,7 @@ async function inflate(service, query, mapper, registry, ctx){
 		};
 	}
 
-	function addDatum(service, datum){
+	function addDatum(service, datum, type = 'create-or-update'){
 		let s = known[service.model.name];
 
 		if (!s){
@@ -172,7 +178,7 @@ async function inflate(service, query, mapper, registry, ctx){
 		const key = datum[field];
 
 		delete datum[field];
-		datum.$type = 'create-or-update';
+		datum.$type = type;
 
 		let rtn = s[key];
 		// TODO : if I do this, I should check the ref and replace that?
@@ -200,51 +206,59 @@ async function inflate(service, query, mapper, registry, ctx){
 
 		const datums = await getDatums(service, loading.query, ctx);
 
+		const stubbed = !!stubModels[service.model.name];
+
 		datums.forEach(datum => { // jshint ignore:line
 			const key = service.model.getKey(datum);
-			const {current, isNew} = addDatum(service, datum);
+			const {current, isNew} = addDatum(
+				service,
+				datum,
+				stubbed ? 'read' : 'create-or-update'
+			);
 
 			if (!isNew){
 				return true;
 			}
 
 			//------- process outgoing links
-			mapper.getByDirection(service.model.name, 'outgoing')
-			.forEach(link => { // jshint ignore:line
-				const fk = current[link.local];
+			if (!stubbed){
+				mapper.getByDirection(service.model.name, 'outgoing')
+				.forEach(link => { // jshint ignore:line
+					const fk = current[link.local];
 
-				if (fk !== null){
-					const {ref, newish} = getLooking(link.name, fk); // jshint ignore:line
-					
-					if (newish){
+					if (fk !== null){
+						const {ref, newish} = getLooking(link.name, fk); // jshint ignore:line
+						
+						if (newish){
+							toProcess.push({
+								ref: ref,
+								service: link.name,
+								query: {[link.remote]: fk}
+							});
+						}
+
+						current[link.local] = ref;
+					}
+				});
+
+				//------- process incoming links
+				const {ref} = getLooking(service.model.name, key);
+				current.$ref = ref;
+
+				mapper.getByDirection(service.model.name, 'incoming')
+				.forEach(link => {
+					if (joinModels[link.name]){
 						toProcess.push({
 							ref: ref,
+							back: link.remote,
 							service: link.name,
-							query: {[link.remote]: fk}
+							query: {
+								[link.remote]: key
+							}
 						});
 					}
-
-					current[link.local] = ref;
-				}
-			});
-
-			//------- process incoming links
-			const {ref} = getLooking(service.model.name, key);
-			current.$ref = ref;
-
-			mapper.getByDirection(service.model.name, 'incoming')
-			.forEach(link => {
-				if (lookAside[link.name]){
-					toProcess.push({
-						ref: ref,
-						back: link.remote,
-						service: link.name,
-						query: {
-							[link.remote]: key
-						}
-					});
-				}
-			});
+				});
+			}
 
 			//------- now that we've processed, we can change data, otherwise things get mixed up up above
 			if (loading.back){

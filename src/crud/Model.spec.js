@@ -17,7 +17,6 @@ describe('bmoor-data::crud/Model', function(){
 						create: false,
 						read: true,
 						update: false,
-						delete: true,
 						key: true
 					},
 					zwei: true,
@@ -57,11 +56,6 @@ describe('bmoor-data::crud/Model', function(){
 				'zwei'
 			]);
 
-			expect(model.properties.delete)
-			.to.deep.equal([
-				'eins'
-			]);
-
 			expect(model.properties.index)
 			.to.deep.equal([
 				'funf'
@@ -80,7 +74,6 @@ describe('bmoor-data::crud/Model', function(){
 						create: false,
 						read: true,
 						update: false,
-						delete: true,
 						key: true
 					},
 					zwei: true,
@@ -127,7 +120,6 @@ describe('bmoor-data::crud/Model', function(){
 						create: false,
 						read: true,
 						update: false,
-						delete: true,
 						key: true
 					},
 					zwei: false,
@@ -151,7 +143,6 @@ describe('bmoor-data::crud/Model', function(){
 						create: false,
 						read: true,
 						update: false,
-						delete: true,
 						key: true
 					},
 					zwei: {
@@ -180,7 +171,6 @@ describe('bmoor-data::crud/Model', function(){
 						create: false,
 						read: true,
 						update: false,
-						delete: true,
 						key: true
 					},
 					zwei: false,
@@ -208,7 +198,6 @@ describe('bmoor-data::crud/Model', function(){
 						create: false,
 						read: true,
 						update: false,
-						delete: true,
 						key: true
 					},
 					zwei: {
@@ -299,4 +288,6 @@ describe('bmoor-data::crud/Model', function(){
 			).to.be.null;
 		});
 	});
+
+	// TODO : test types
 });

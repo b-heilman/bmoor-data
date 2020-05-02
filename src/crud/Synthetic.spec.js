@@ -841,6 +841,68 @@ describe('bmoor-data::crud/Synthetic', function(){
 					done();
 				}).catch(done);
 			});
+
+			it('should properly allow the stubbing of a table', function(done){
+				stubs.class1 = sinon.stub(class1, 'query')
+				.resolves([{
+					n: 1,
+					id: 123
+				}]);
+
+				stubs.class2 = sinon.stub(class2, 'query')
+				.resolves([{
+					n: 2,
+					id: 234,
+					class1Id: 123
+				}]);
+
+				stubs.class3 = sinon.stub(class3, 'read')
+				.resolves({
+					n: 3,
+					id: 345,
+					class2Id: 234
+				});
+
+				stubs.class4 = sinon.stub(class4, 'query')
+				.resolves([{
+					n: 4,
+					id: 456,
+					class1Id: 123
+				}]);
+
+				inflate('class-3', {keys:[345], stub:['class-2']}, mapper, serviceRegistry, {})
+				.then(instructions => {
+					expect(stubs.class1.getCall(0))
+					.to.equal(null);
+
+					expect(stubs.class2.getCall(0).args[0])
+					.to.deep.equal({id:234});
+
+					expect(stubs.class3.getCall(0).args[0])
+					.to.equal(345);
+
+					expect(stubs.class4.getCall(0))
+					.to.equal(null);
+
+					expect(instructions)
+					.to.deep.equal({
+						'class-2': [{
+							$ref: 'ref-1',
+							$type: 'read',
+							n: 2,
+							class1Id: 123
+						}],
+						'class-3': [{
+							$ref: 'ref-0',
+							$type: 'create-or-update',
+							n: 3,
+							class2Id: 'ref-1'
+						}]
+					});
+
+					done();
+				}).catch(done);
+			});
 		});
 	});
 	

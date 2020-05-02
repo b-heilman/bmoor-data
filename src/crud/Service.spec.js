@@ -269,7 +269,7 @@ describe('bmoor-data::crud/Service', function(){
 						read: true,
 						update: true,
 						delete: true,
-						index: true
+						query: true
 					},
 					title: {
 						create: true,
@@ -449,6 +449,80 @@ describe('bmoor-data::crud/Service', function(){
 
 				done();
 			}).catch(done);
+		});
+	});
+
+	describe('::decorate', function(){
+		it('should basically work', async function(){
+			const model = new Model('model-1', {
+				fields: {
+					id: {
+						key: true,
+						read: true
+					},
+					name: {
+						create: true,
+						read: true,
+						update: true,
+						delete: true,
+						index: true
+					},
+					title: {
+						create: true,
+						read: true,
+						update: true
+					}
+				}
+			});
+
+			const service = new Service(
+				model,
+				{
+					prepare: function(request){
+						expect(request.method).to.equal('delete');
+						expect(request.model).to.equal(model);
+						expect(request.context).to.deep.equal({
+							id: '1'
+						});
+
+						return Promise.resolve('foo-bar');
+					},
+					execute: function(prepared){
+						expect(prepared).to.equal('foo-bar');
+
+						return Promise.resolve([{
+							id: 'something-1',
+							name: 'v-1',
+							title: 't-1',
+						}]);
+					}
+				}
+			);
+
+			let wasSupered = false;
+
+			service.decorate({
+				superDelete: async function(id, ctx){
+					expect(id).to.equal('1');
+
+					wasSupered = true;
+
+					return this.delete(id, ctx);
+				}
+			});
+
+			stubs.read = sinon.stub(service, 'read')
+			.resolves({id: 123});
+
+			return await service.superDelete('1')
+			.then(res => {
+				expect(res).to.deep.equal({
+					id: 123
+				});
+
+				expect(stubs.read.getCall(0).args[0])
+				.to.equal('1');
+			});
 		});
 	});
 });
