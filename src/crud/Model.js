@@ -8,11 +8,8 @@ tableLink: {
 fieldDef: {
 	-- crud operations
 	create
-	onCreate
 	read
-	onRead
 	update
-	onUpdate
 	delete
 
 	-- 
