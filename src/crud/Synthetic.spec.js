@@ -876,7 +876,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 					class1Id: {
 						link: {
 							name: 'class-1',
-							field: 'id'
+							field: 'name'
 						}
 					}
 				}
@@ -902,7 +902,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 					class3Id: {
 						link: {
 							name: 'class-3',
-							field: 'id'
+							field: 'name'
 						}
 					}
 				}
@@ -918,13 +918,13 @@ describe('bmoor-data::crud/Synthetic', function(){
 					class2Id: {
 						link: {
 							name: 'class-2',
-							field: 'id'
+							field: 'name'
 						}
 					},
 					class4Id: {
 						link: {
 							name: 'class-4',
-							field: 'id'
+							field: 'name'
 						}
 					}
 				}
@@ -999,10 +999,10 @@ describe('bmoor-data::crud/Synthetic', function(){
 					.to.deep.equal({class1Id: 123});
 
 					expect(stubs.class3.getCall(0).args[0])
-					.to.deep.equal({id:345});
+					.to.deep.equal({name:345});
 
 					expect(stubs.class4.getCall(0).args[0])
-					.to.deep.equal({id:456});
+					.to.deep.equal({name:456});
 
 					expect(stubs.class5.getCall(0).args[0])
 					.to.deep.equal({class2Id: 234});
