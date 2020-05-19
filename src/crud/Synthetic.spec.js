@@ -371,7 +371,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 		});
 	});
 
-	describe('::export', function(){
+	describe('::inflate', function(){
 		let mapper = null;
 		let serviceRegistry = null;
 
@@ -520,18 +520,18 @@ describe('bmoor-data::crud/Synthetic', function(){
 
 		describe('class3', function(){
 			it('should properly with a single key', function(done){
-				stubs.class1 = sinon.stub(class1, 'read')
-				.resolves({
+				stubs.class1 = sinon.stub(class1, 'query')
+				.resolves([{
 					n: 1,
 					id:123
-				});
+				}]);
 
-				stubs.class2 = sinon.stub(class2, 'read')
-				.resolves({
+				stubs.class2 = sinon.stub(class2, 'query')
+				.resolves([{
 					n: 2,
 					id:123,
 					class1Id: 'key-1-1'
-				});
+				}]);
 
 				stubs.class3 = sinon.stub(class3, 'read')
 				.resolves({
@@ -543,10 +543,10 @@ describe('bmoor-data::crud/Synthetic', function(){
 				inflate('class-3', {keys:['key-1']}, mapper, serviceRegistry, {})
 				.then(instructions => {
 					expect(stubs.class1.getCall(0).args[0])
-					.to.equal('key-1-1');
+					.to.deep.equal({id:'key-1-1'});
 
 					expect(stubs.class2.getCall(0).args[0])
-					.to.equal('key-2-1');
+					.to.deep.equal({id:'key-2-1'});
 
 					expect(stubs.class3.getCall(0).args[0])
 					.to.equal('key-1');
@@ -577,23 +577,23 @@ describe('bmoor-data::crud/Synthetic', function(){
 			});
 
 			it('should properly with multiple keys', function(done){
-				stubs.class1 = sinon.stub(class1, 'read');
-				stubs.class1.onCall(0).resolves({
+				stubs.class1 = sinon.stub(class1, 'query');
+				stubs.class1.onCall(0).resolves([{
 					n: 1,
 					id:123
-				});
+				}]);
 
-				stubs.class2 = sinon.stub(class2, 'read');
-				stubs.class2.onCall(0).resolves({
+				stubs.class2 = sinon.stub(class2, 'query');
+				stubs.class2.onCall(0).resolves([{
 					n: 2,
 					id:123,
 					class1Id: 'key-1-1'
-				});
-				stubs.class2.onCall(1).resolves({
+				}]);
+				stubs.class2.onCall(1).resolves([{
 					n: 3,
 					id:234,
 					class1Id: 'key-1-1'
-				});
+				}]);
 
 				stubs.class3 = sinon.stub(class3, 'read');
 				stubs.class3.onCall(0).resolves({
@@ -615,13 +615,13 @@ describe('bmoor-data::crud/Synthetic', function(){
 				inflate('class-3', {keys:['key-1', 'key-2', 'key-3']}, mapper, serviceRegistry, {})
 				.then(instructions => {
 					expect(stubs.class1.getCall(0).args[0])
-					.to.equal('key-1-1');
+					.to.deep.equal({id:'key-1-1'});
 
 					expect(stubs.class2.getCall(0).args[0])
-					.to.equal('key-2-1');
+					.to.deep.equal({id:'key-2-1'});
 
 					expect(stubs.class2.getCall(1).args[0])
-					.to.equal('key-2-2');
+					.to.deep.equal({id:'key-2-2'});
 
 					expect(stubs.class3.getCall(0).args[0])
 					.to.equal('key-1');
@@ -675,11 +675,11 @@ describe('bmoor-data::crud/Synthetic', function(){
 
 		describe('class4', function(){
 			it('should properly with a single key', function(done){
-				stubs.class1 = sinon.stub(class1, 'read')
-				.resolves({
+				stubs.class1 = sinon.stub(class1, 'query')
+				.resolves([{
 					n: 1,
 					id:123
-				});
+				}]);
 
 				stubs.class4 = sinon.stub(class4, 'read')
 				.resolves({
@@ -691,7 +691,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 				inflate('class-4', {keys:['key-1']}, mapper, serviceRegistry, {})
 				.then(instructions => {
 					expect(stubs.class1.getCall(0).args[0])
-					.to.equal('key-1-1');
+					.to.deep.equal({id:'key-1-1'});
 
 					expect(stubs.class4.getCall(0).args[0])
 					.to.equal('key-1');
@@ -716,11 +716,11 @@ describe('bmoor-data::crud/Synthetic', function(){
 			});
 
 			it('should properly with a dual key', function(done){
-				stubs.class1 = sinon.stub(class1, 'read');
-				stubs.class1.onCall(0).resolves({
+				stubs.class1 = sinon.stub(class1, 'query');
+				stubs.class1.onCall(0).resolves([{
 					n: 1,
 					id:123
-				});
+				}]);
 
 				stubs.class4 = sinon.stub(class4, 'read');
 				stubs.class4.onCall(0).resolves({
@@ -738,7 +738,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 				inflate('class-4', {keys:['key-1', 'key-2']}, mapper, serviceRegistry, {})
 				.then(instructions => {
 					expect(stubs.class1.getCall(0).args[0])
-					.to.equal('key-1-1');
+					.to.deep.equal({id:'key-1-1'});
 
 					expect(stubs.class4.getCall(0).args[0])
 					.to.equal('key-1');
@@ -770,18 +770,18 @@ describe('bmoor-data::crud/Synthetic', function(){
 
 		describe('class3 - class4 joined into', function(){
 			it('should properly with a single key', function(done){
-				stubs.class1 = sinon.stub(class1, 'read')
-				.resolves({
+				stubs.class1 = sinon.stub(class1, 'query')
+				.resolves([{
 					n: 1,
 					id: 123
-				});
+				}]);
 
-				stubs.class2 = sinon.stub(class2, 'read')
-				.resolves({
+				stubs.class2 = sinon.stub(class2, 'query')
+				.resolves([{
 					n: 2,
 					id: 234,
 					class1Id: 123
-				});
+				}]);
 
 				stubs.class3 = sinon.stub(class3, 'read')
 				.resolves({
@@ -800,10 +800,10 @@ describe('bmoor-data::crud/Synthetic', function(){
 				inflate('class-3', {keys:[345], join:['class-4']}, mapper, serviceRegistry, {})
 				.then(instructions => {
 					expect(stubs.class1.getCall(0).args[0])
-					.to.equal(123);
+					.to.deep.equal({id:123});
 
 					expect(stubs.class2.getCall(0).args[0])
-					.to.equal(234);
+					.to.deep.equal({id:234});
 
 					expect(stubs.class3.getCall(0).args[0])
 					.to.equal(345);
@@ -962,18 +962,18 @@ describe('bmoor-data::crud/Synthetic', function(){
 					class1Id: 123
 				}]);
 
-				stubs.class3 = sinon.stub(class3, 'read')
-				.resolves({
+				stubs.class3 = sinon.stub(class3, 'query')
+				.resolves([{
 					n: 3,
 					id: 345
-				});
+				}]);
 
-				stubs.class4 = sinon.stub(class4, 'read')
-				.resolves({
+				stubs.class4 = sinon.stub(class4, 'query')
+				.resolves([{
 					n: 4,
 					id: 456,
 					class3Id: 345
-				});
+				}]);
 
 				stubs.class5 = sinon.stub(class5, 'query');
 				stubs.class5.onCall(0).resolves([{
@@ -999,10 +999,10 @@ describe('bmoor-data::crud/Synthetic', function(){
 					.to.deep.equal({class1Id: 123});
 
 					expect(stubs.class3.getCall(0).args[0])
-					.to.equal(345);
+					.to.deep.equal({id:345});
 
 					expect(stubs.class4.getCall(0).args[0])
-					.to.equal(456);
+					.to.deep.equal({id:456});
 
 					expect(stubs.class5.getCall(0).args[0])
 					.to.deep.equal({class2Id: 234});

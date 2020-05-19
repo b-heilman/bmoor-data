@@ -220,7 +220,7 @@ async function inflate(service, query, mapper, registry, ctx){
 						toProcess.push({
 							ref: ref,
 							service: link.name,
-							query: fk
+							query: {[link.remote]: fk}
 						});
 					}
 
