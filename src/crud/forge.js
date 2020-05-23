@@ -15,7 +15,7 @@ class Forge {
 				return this.messageBus.triggerEvent(ref, 'create', datum, ctx);
 			},
 			afterUpdate: (datum, was, ctx) => {
-				return this.messageBus.triggerEvent(ref, 'update', datum, was, ctx);
+				return this.messageBus.triggerEvent(ref, 'update', datum, ctx, was);
 			},
 			afterDelete: (datum, ctx) => {
 				return this.messageBus.triggerEvent(ref, 'delete', datum, ctx);
@@ -41,8 +41,12 @@ class Forge {
 					settings.model,
 					settings.action,
 					(...args) => settings.callback(service, ...args)
-				)
+				);
 			})
 		);
 	}
 }
+
+module.exports = {
+	Forge
+};

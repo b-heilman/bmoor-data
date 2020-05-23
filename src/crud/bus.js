@@ -15,3 +15,7 @@ class Bus {
 		return this.broadcast.on(`${model}.${event}`, cb);
 	}
 }
+
+module.exports = {
+	Bus
+};
