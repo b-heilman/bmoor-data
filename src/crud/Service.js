@@ -156,7 +156,7 @@ class Service {
 		}
 
 		if (this._beforeQuery){
-			search = await this._beforeQuery(search, ctx);
+			await this._beforeQuery(search, ctx);
 		}
 
 		const res = await runStatement(this, {
@@ -210,6 +210,11 @@ class Service {
 		return datum;
 	}
 
+	/**
+	 * Delete will only run off ids.  If you want to do a mass delete, you need to run a query
+	 * and then interate over that.  It simplifies the logic, but does make mass deletion an
+	 * issue.  I'm ok with that for now.
+	 **/
 	async delete(id, ctx){
 		if (!this.connector){
 			throw create(`missing readMany connector for ${this.model.name}`, {
@@ -222,8 +227,6 @@ class Service {
 		if (this._beforeDelete){
 			await this._beforeDelete(datum, ctx);
 		}
-
-		await this.model.properties.onDelete(datum, ctx);
 
 		await runStatement(this, {
 			method: 'delete',

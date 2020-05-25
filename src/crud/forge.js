@@ -67,23 +67,18 @@ class Forge {
 		const beforeCreate = [];
 		const beforeQuery = [];
 		const beforeUpdate = [];
-		const beforeDelete = [];
 
 		for (let [field, info] of Object.entries(fields)) {
 			if (typeof(info.create) === 'string'){
 				beforeCreate.push(clearFactory(field, info.create));
 			}
 
-			if (typeof(field.query) === 'string'){
+			if (typeof(info.query) === 'string'){
 				beforeQuery.push(clearFactory(field, info.query));
 			}
 
-			if (typeof(field.update) === 'string'){
+			if (typeof(info.update) === 'string'){
 				beforeUpdate.push(clearFactory(field, info.update));
-			}
-
-			if (typeof(field.delete) === 'string'){
-				beforeDelete.push(clearFactory(field, info.delete));
 			}
 		}
 
@@ -93,16 +88,25 @@ class Forge {
 					beforeCreate.map(fn => fn(datum, ctx))
 				) : null,
 			beforeQuery: beforeQuery.length ?
-				(datum, ctx) => Promise.all(
-					beforeQuery.map(fn => fn(datum, ctx))
-				) : null,
+				async function(query, ctx){
+					const requested = Object.keys(query);
+
+					const res = await Promise.all(
+						beforeQuery.map(fn => fn(query, ctx))
+					);
+
+					console.log('======>');
+					console.log(requested, Object.keys(query));
+					if (requested.length !== Object.keys(query).length){
+						console.log('error');
+						throw new Error('unable to query all properties requested');
+					}
+
+					return res;
+				} : null,
 			beforeUpdate: beforeUpdate.length ?
-				(datum, ctx) => Promise.all(
-					beforeCreate.map(fn => fn(datum, ctx))
-				) : null,
-			beforeDelete: beforeDelete.length ?
-				(datum, ctx) => Promise.all(
-					beforeDelete.map(fn => fn(datum, ctx))
+				(delta, tgt, ctx) => Promise.all(
+					beforeUpdate.map(fn => fn(delta, ctx))
 				) : null
 		});
 

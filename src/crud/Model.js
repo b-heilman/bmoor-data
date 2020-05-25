@@ -14,7 +14,6 @@ fieldDef: {
 	create
 	read
 	update
-	delete
 
 	-- 
 	key: // is a primary key
@@ -49,15 +48,13 @@ function buildProperties(properties, property, field){
 		field = {
 			create: true,
 			read: true,
-			update: true,
-			delete: false
+			update: true
 		};
 	} else if (field === false){
 		field = {
 			create: false,
 			read: true,
-			update: false,
-			delete: false
+			update: false
 		};
 	}
 
@@ -94,14 +91,6 @@ function buildProperties(properties, property, field){
 		properties.onUpdate = actionExtend(field.onUpdate, property, properties.onUpdate);
 	}
 
-	if (field.delete){
-		properties.delete.push(property);
-	}
-
-	if (field.onDelete){
-		properties.onDelete = actionExtend(field.onDelete, property, properties.onDelete);
-	}
-
 	if (field.index){
 		properties.index.push(property);
 	}
@@ -131,10 +120,6 @@ function onUpdate(obj){
 	return obj;
 }
 
-function onDelete(obj){
-	return obj;
-}
-
 function compileProperties(fields){
 	const properties = {
 		create: [],
@@ -144,8 +129,6 @@ function compileProperties(fields){
 		update: [],
 		updateType: {},
 		onUpdate,
-		delete: [],
-		onDelete,
 		key: null,
 		index: [],
 		query: []
