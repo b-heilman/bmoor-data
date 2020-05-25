@@ -58,6 +58,8 @@ class Forge {
 		);
 	}
 
+	// TODO: validation?
+
 	async secure(ref){
 		const service = await this.nexus.loadService(ref);
 		const fields = service.model.settings.fields;

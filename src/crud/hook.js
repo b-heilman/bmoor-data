@@ -93,7 +93,6 @@ function hook(crud, settings){
 	}
 
 	if (settings.mapFactory){
-		console.log('defining mapFactory');
 		crud._mapFactory = mapFactory(
 			settings.mapFactory,
 			crud._mapFactory

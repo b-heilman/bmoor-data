@@ -299,4 +299,6 @@ describe('bmoor-data::crud/Model', function(){
 			).to.be.null;
 		});
 	});
+
+	// TODO : test types
 });
