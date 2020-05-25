@@ -14,7 +14,7 @@
     "build": "gulp build"
   },
   "dependencies": {
-    "bmoor": "~0.8.8",
+    "bmoor": "~0.8.10",
     "bmoor-schema": "^0.8.1",
     "rxjs": "^6.5.5"
   },

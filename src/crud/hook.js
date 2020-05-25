@@ -52,6 +52,14 @@ function hook(crud, settings){
 		);
 	}
 
+	if (settings.beforeQuery){
+		crud._beforeQuery = asyncWrap(
+			settings.beforeQuery, 
+			crud._beforeQuery,
+			true
+		);
+	}
+
 	if (settings.beforeUpdate){
 		crud._beforeUpdate = asyncWrap(
 			settings.beforeUpdate, 

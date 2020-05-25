@@ -1,4 +1,5 @@
-
+// TODO: this needs to be renamed as Normalized
+// Synthetic will be a large denormalized schema based on smaller models
 const {Network} = require('../model/Network.js');
 
 async function getDatum(service, query, ctx){

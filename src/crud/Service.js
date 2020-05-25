@@ -69,6 +69,10 @@ class Service {
 			await this._afterCreate(datum, ctx);
 		}
 
+		if (ctx){
+			ctx.addChange(this.model.name, 'create', datum);
+		}
+
 		return datum;
 	}
 
@@ -151,6 +155,10 @@ class Service {
 			});
 		}
 
+		if (this._beforeQuery){
+			search = await this._beforeQuery(search, ctx);
+		}
+
 		const res = await runStatement(this, {
 			method: 'read',
 			context: this.model.getQuery(search)
@@ -195,6 +203,10 @@ class Service {
 			await this._afterUpdate(datum, tgt, ctx);
 		}
 
+		if (ctx){
+			ctx.addChange(this.model.name, 'update', datum);
+		}
+
 		return datum;
 	}
 
@@ -222,6 +234,10 @@ class Service {
 
 		if (this._afterDelete){
 			await this._afterDelete(datum, ctx);
+		}
+
+		if (ctx){
+			ctx.addChange(this.model.name, 'delete', datum);
 		}
 
 		return datum; // datum will have had onRead run against it

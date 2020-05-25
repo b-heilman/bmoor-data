@@ -1,4 +1,8 @@
 
+const {Config} = require('bmoor/src/lib/config.js');
+
+const types = new Config();
+
 /**
 tableLink: {
 	name:
@@ -19,14 +23,16 @@ fieldDef: {
 
 	-- structure
 	link: <tableLink> // if a foreign key
+	internal: ''  TODO : internal structure
 }
 
 fields: {
-	[fieldName]: <fieldDef>
+	[externalPath]: <fieldDef>
 }
 
 model: {
-	name: ''
+	name: '',
+	type: '',
 	fields: <fields>
 }
 **/
@@ -53,6 +59,11 @@ function buildProperties(properties, property, field){
 			update: false,
 			delete: false
 		};
+	}
+
+	if (field.type){
+		// this allows types to define onCreate, onRead, onUpdate, onDelete
+		Object.assign(field, types.get(field.type)||{});
 	}
 
 	if (field.create){
@@ -237,5 +248,6 @@ class Model {
 }
 
 module.exports = {
-	Model
+	Model,
+	types
 };
