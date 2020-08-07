@@ -22,9 +22,14 @@ function nextProtoken(master, pos, state, patterns){
 }
 
 function tokenize(str, patterns){
-	const tokens = [];
-	
+	let tokens = [];
 	let misses = [];
+
+	const sets = [{
+		tokens,
+		misses
+	}];
+	
 	let state = null;
 
 	let previous = null;
@@ -41,25 +46,33 @@ function tokenize(str, patterns){
 
 			tokens.push(current.token);
 		} else {
-			misses.push(str[pos]);
+			const ch = str[pos];
+
+			if (ch === ','){
+				tokens = [];
+				misses = [];
+
+				sets.push({
+					tokens,
+					misses
+				});
+			} else {
+				misses.push();
+			}
 		}
 	}
 
-	return {
-		tokens,
-		misses
-	};
+	return sets;
 }
 
 function convertToken(token, expressions){
-	// TODO : proper error management
-	try {
-		return expressions.get(token.type)(token);
-	} catch(ex){
-		console.log(ex);
+	const fn = expressions.get(token.type);
 
-		throw ex;
+	if (!fn){
+		throw new Error('unknown expression: '+token.type);
 	}
+
+	return fn(token);
 }
 
 // infix to postfix transformation
@@ -127,7 +140,10 @@ class Compiler {
 
 	// take a string, convert it into a function that can be expressed
 	prepare(str){
-		return this.buildExpressor(this.tokenize(str).tokens);
+		const sets = this.tokenize(str);
+		const fns = sets.map(set => this.buildExpressor(set.tokens));
+
+		return (ctx) => fns.map(fn => fn(ctx));
 	}
 }
 

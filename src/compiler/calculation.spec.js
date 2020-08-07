@@ -9,7 +9,7 @@ describe('bmoor-data.compiler.calculation', function(){
 			describe('single parsing', function(){
 				it('should work for blocks', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('(like, this)').tokens
+						compiler.tokenize('(like, this)')[0].tokens
 					))).to.deep.equal([{
 						'type': 'block',
 						'metadata': null,
@@ -19,7 +19,7 @@ describe('bmoor-data.compiler.calculation', function(){
 
 				it('should work for operations', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('&&').tokens
+						compiler.tokenize('&&')[0].tokens
 					))).to.deep.equal([{
 						'type': 'operation',
 						'metadata': null,
@@ -29,17 +29,20 @@ describe('bmoor-data.compiler.calculation', function(){
 
 				it('should work for methods', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('method(of, some, kind)').tokens
+						compiler.tokenize('method(of, some, kind)')[0].tokens
 					))).to.deep.equal([{
 						'type': 'method',
-						'metadata': null,
+						'metadata': {
+							name: 'method',
+							arguments: 'of, some, kind'
+						},
 						'value': 'method(of, some, kind)'
 					}]);
 				});
 
 				it('should work for number (int)', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('123').tokens
+						compiler.tokenize('123')[0].tokens
 					))).to.deep.equal([{
 						'type': 'constant',
 						'metadata': {
@@ -51,7 +54,7 @@ describe('bmoor-data.compiler.calculation', function(){
 
 				it('should work for number (float)', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('123.23').tokens
+						compiler.tokenize('123.23')[0].tokens
 					))).to.deep.equal([{
 						'type': 'constant',
 						'metadata': {
@@ -63,7 +66,7 @@ describe('bmoor-data.compiler.calculation', function(){
 
 				it('should work for string (")', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('"foo-bar it\'s"').tokens
+						compiler.tokenize('"foo-bar it\'s"')[0].tokens
 					))).to.deep.equal([{
 						'type': 'constant',
 						'metadata': {
@@ -75,7 +78,7 @@ describe('bmoor-data.compiler.calculation', function(){
 
 				it('should work for string (\')', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize(`'foo-bar it\\'s that\\'s'`).tokens
+						compiler.tokenize(`'foo-bar it\\'s that\\'s'`)[0].tokens
 					))).to.deep.equal([{
 						'type': 'constant',
 						'metadata': {
@@ -87,7 +90,7 @@ describe('bmoor-data.compiler.calculation', function(){
 
 				it('should work for string (`)', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('`foo-bar it\'s`').tokens
+						compiler.tokenize('`foo-bar it\'s`')[0].tokens
 					))).to.deep.equal([{
 						'type': 'constant',
 						'metadata': {
@@ -96,19 +99,46 @@ describe('bmoor-data.compiler.calculation', function(){
 						'value': 'foo-bar it\'s'
 					}]);
 				});
+
+				it('should work under a multi statement', function(){
+					const sets = compiler.tokenize('fooBar(hello,world),base');
+
+					expect(JSON.parse(JSON.stringify(
+						sets[0].tokens
+					))).to.deep.equal([{
+						'type': 'method',
+						'metadata': {
+							name: 'fooBar',
+							arguments: 'hello,world'
+						},
+						'value': 'fooBar(hello,world)'
+					}]);
+
+					expect(JSON.parse(JSON.stringify(
+						sets[1].tokens
+					))).to.deep.equal([{
+						'type': 'method',
+						'metadata': {
+							name: 'base'
+						},
+						'value': 'base'
+					}]);
+				});
 			});
 			
 			describe('mixed parsing', function(){
 				it('should work without operators', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('(like, this) boo (hello & world) "bar" 123  23.45').tokens
+						compiler.tokenize('(like, this) boo (hello & world) "bar" 123  23.45')[0].tokens
 					))).to.deep.equal([{
 						'type': 'block',
 						'metadata': null,
 						'value': 'like, this'
 					},{
 						'type': 'method',
-						'metadata': null,
+						'metadata': {
+							name: 'boo'
+						},
 						'value': 'boo'
 					},{
 						'type': 'block',
@@ -137,25 +167,33 @@ describe('bmoor-data.compiler.calculation', function(){
 
 				it('should parse a method', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('drump(like, 123)boo blah(hello & world)').tokens
+						compiler.tokenize('drumpf(like, 123)boo blah(hello & world)')[0].tokens
 					))).to.deep.equal([{
 						'type': 'method',
-						'metadata': null,
-						'value': 'drump(like, 123)'
+						'metadata': {
+							name: 'drumpf',
+							arguments: 'like, 123'
+						},
+						'value': 'drumpf(like, 123)'
 					},{
 						'type': 'method',
-						'metadata': null,
+						'metadata': {
+							name: 'boo'
+						},
 						'value': 'boo'
 					},{
 						'type': 'method',
-						'metadata': null,
+						'metadata': {
+							name: 'blah',
+							arguments: 'hello & world'
+						},
 						'value': 'blah(hello & world)'
 					}]);
 				});
 
 				it('should parse operations with this', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('$foo.bar && $hello.world || 123 > $eins').tokens
+						compiler.tokenize('$foo.bar && $hello.world || 123 > $eins')[0].tokens
 					))).to.deep.equal([{
 						'type': 'accessor',
 						'metadata': null,
@@ -191,7 +229,7 @@ describe('bmoor-data.compiler.calculation', function(){
 
 				it('should work without spaces', function(){
 					expect(JSON.parse(JSON.stringify(
-						compiler.tokenize('$foo.bar&&$hello.world||123>$eins').tokens
+						compiler.tokenize('$foo.bar&&$hello.world||123>$eins')[0].tokens
 					))).to.deep.equal([{
 						'type': 'accessor',
 						'metadata': null,
@@ -230,7 +268,7 @@ describe('bmoor-data.compiler.calculation', function(){
 		describe('::compile', function(){
 			it('should hopefully work - 1', function(){
 				expect(JSON.parse(JSON.stringify(
-					compiler.compile(compiler.tokenize('$a+$b*$c-$d/$e').tokens).postfix
+					compiler.compile(compiler.tokenize('$a+$b*$c-$d/$e')[0].tokens).postfix
 				))).to.deep.equal([
 					{ type: 'value', method: 'getter' },
 					{ type: 'value', method: 'getter' },
@@ -246,7 +284,7 @@ describe('bmoor-data.compiler.calculation', function(){
 
 			it('should hopefully work - 2', function(){
 				expect(JSON.parse(JSON.stringify(
-					compiler.compile(compiler.tokenize('$a*$b+$c*$d').tokens).postfix
+					compiler.compile(compiler.tokenize('$a*$b+$c*$d')[0].tokens).postfix
 				))).to.deep.equal([
 					{ type: 'value', method: 'getter' },
 					{ type: 'value', method: 'getter' },
@@ -260,52 +298,93 @@ describe('bmoor-data.compiler.calculation', function(){
 		});
 
 		describe('::prepare', function(){
-			const exp = '$a+4 == $b || $c + 3 > $d - 5';
+			describe('complicated', function(){
+				const exp = '$a+4 == $b || $c + 3 > $d - 5';
 
-			it('should tokenize', function(){
-				expect(JSON.parse(JSON.stringify(
-					compiler.compile(compiler.tokenize(exp).tokens).postfix
-				))).to.deep.equal([
-					{ type: 'value', method: 'getter' },
-					{ type: 'value', method: 'numberValue' },
-					{ type: 'operation', method: 'add' },
-					{ type: 'value', method: 'getter' },
-					{ type: 'operation', method: 'equals' },
-					
-					{ type: 'value', method: 'getter' },
-					{ type: 'value', method: 'numberValue' },
-					{ type: 'operation', method: 'add' },
-					{ type: 'value', method: 'getter' },
-					{ type: 'value', method: 'numberValue' },
-					{ type: 'operation', method: 'sub' },
-					{ type: 'operation', method: 'gt' },
-					{ type: 'operation', method: 'or' },
-				]);
+				it('should tokenize', function(){
+					expect(JSON.parse(JSON.stringify(
+						compiler.compile(compiler.tokenize(exp)[0].tokens).postfix
+					))).to.deep.equal([
+						{ type: 'value', method: 'getter' },
+						{ type: 'value', method: 'numberValue' },
+						{ type: 'operation', method: 'add' },
+						{ type: 'value', method: 'getter' },
+						{ type: 'operation', method: 'equals' },
+						
+						{ type: 'value', method: 'getter' },
+						{ type: 'value', method: 'numberValue' },
+						{ type: 'operation', method: 'add' },
+						{ type: 'value', method: 'getter' },
+						{ type: 'value', method: 'numberValue' },
+						{ type: 'operation', method: 'sub' },
+						{ type: 'operation', method: 'gt' },
+						{ type: 'operation', method: 'or' },
+					]);
+				});
+
+				it('should properly express', function(){
+					const prepared = compiler.prepare(exp);
+
+					expect(prepared({
+						a: 1,
+						b: 5,
+						c: 2,
+						d: 20
+					})).to.deep.equal([true]);
+
+					expect(prepared({
+						a: 10,
+						b: 5,
+						c: 2,
+						d: 20
+					})).to.deep.equal([false]);
+
+					expect(prepared({
+						a: 10,
+						b: 5,
+						c: 10,
+						d: 15
+					})).to.deep.equal([false]);
+				});
 			});
 
-			it('should properly express', function(){
-				const prepared = compiler.prepare(exp);
+			it('should allow string comparison', function(){
+				expect(compiler.prepare('$a == "hello"')({a:'hello'}))
+				.to.deep.equal([true]);
 
-				expect(prepared({
-					a: 1,
-					b: 5,
-					c: 2,
-					d: 20
-				})).to.equal(true);
+				expect(compiler.prepare('$a == "world"')({a:'hello'}))
+				.to.deep.equal([false]);
+			});
 
-				expect(prepared({
-					a: 10,
-					b: 5,
-					c: 2,
-					d: 20
-				})).to.equal(false);
+			it('should allow a comparison to null', function(){
+				expect(compiler.prepare('$a == null')({a:null}))
+				.to.deep.equal([true]);
 
-				expect(prepared({
-					a: 10,
-					b: 5,
-					c: 10,
-					d: 15
-				})).to.equal(false);
+				expect(compiler.prepare('$a == null')({a:'hello'}))
+				.to.deep.equal([false]);
+			});
+
+			it('should allow a comparison to undefined', function(){
+				expect(compiler.prepare('$a == undefined')({}))
+				.to.deep.equal([true]);
+
+				expect(compiler.prepare('$a == undefined')({a:'hello'}))
+				.to.deep.equal([false]);
+			});
+
+			it('should work as a multipart statement', function(){
+				expect(compiler.prepare('$a,$b')({a:1,b:2}))
+				.to.deep.equal([1,2]);
+			});
+
+			it('should work with a method in the statement', function(){
+				expect(compiler.prepare('sum($a,$b)')({a:1,b:2}))
+				.to.deep.equal([3]);
+			});
+
+			it('should work with a methods inside methods', function(){
+				expect(compiler.prepare('join("|",4,$c,sum($a,$b))')({a:1,b:2,c:3}))
+				.to.deep.equal(['4|3|3']);
 			});
 		});
 	});
@@ -431,21 +510,21 @@ describe('bmoor-data.compiler.calculation', function(){
 				fn({
 					foo: 'bar'
 				})
-			).to.equal(false);
+			).to.deep.equal(false);
 
 			expect(
 				fn({
 					foo: 'bar',
 					hello: 'world'
 				})
-			).to.equal(true);
+			).to.deep.equal(true);
 
 			expect(
 				fn({
 					foo: 'bar2',
 					hello: 'world'
 				})
-			).to.equal(false);
+			).to.deep.equal(false);
 		});
 		
 		it('should allow multiple fromSchema statements', function(){
@@ -489,21 +568,21 @@ describe('bmoor-data.compiler.calculation', function(){
 				fn({
 					foo: 'bar'
 				})
-			).to.equal(true);
+			).to.deep.equal(true);
 
 			expect(
 				fn({
 					foo: 'bar',
 					hello: 'world'
 				})
-			).to.equal(true);
+			).to.deep.equal(true);
 
 			expect(
 				fn({
 					foo: 'bar2',
 					hello: 'world'
 				})
-			).to.equal(true);
+			).to.deep.equal(true);
 
 			expect(
 				fn({

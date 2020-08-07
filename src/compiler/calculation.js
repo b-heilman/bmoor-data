@@ -170,15 +170,19 @@ const parsings = config.sub('parsings', {
 
 	method: {
 		// method(some, vars)
-		open: function(master, pos){
+		open: function(master, pos, state){
 			const ch = master[pos];
 			
 			if (isCharacter.test(ch)){
+				state.begin = pos;
+
 				return {
 					pos: pos+1,
 					begin: pos
 				};
 			}
+
+			return false;
 		},
 		close: function(master, pos, state){
 			const ch = master[pos];
@@ -189,6 +193,7 @@ const parsings = config.sub('parsings', {
 
 			if (!state.open && ch === '('){
 				state.open = true;
+				state.openPos = pos;
 				state.count = 1;
 
 				return false;
@@ -199,6 +204,8 @@ const parsings = config.sub('parsings', {
 					state.count = state.count - 1;
 
 					if (state.count === 0){
+						state.closePos = pos;
+
 						return {
 							pos: pos+1,
 							end: pos
@@ -214,8 +221,24 @@ const parsings = config.sub('parsings', {
 				end: pos-1
 			};
 		},
-		toToken: function(content){
-			return new Token('method', content);
+		toToken: function(content, state){
+			const metadata = {};
+
+			if (state.openPos){
+				metadata.name = content.substring(
+					0,
+					state.openPos - state.begin
+				);
+
+				metadata.arguments = content.substring(
+					state.openPos - state.begin + 1,
+					state.closePos - state.begin
+				);
+			} else {
+				metadata.name = content;
+			}
+
+			return new Token('method', content, metadata);
 		}
 	},
 
@@ -374,6 +397,17 @@ const operations = config.sub('operations', {
 	}
 });
 
+let compiler = null;
+
+const methods = config.sub('methods', {
+	join: function(glue, ...args){
+		return args.join(glue);
+	},
+	sum: function(...args){
+		return args.reduce((agg,v) => agg+v);
+	}
+});
+
 const expressions = config.sub('expressions', {
 	accessor: function(token){
 		const getter = makeGetter(token.value);
@@ -405,14 +439,30 @@ const expressions = config.sub('expressions', {
 			throw new Error('Unable to load operation: '+loading);
 		}
 	},
-	/*
-	method: function(token){
 
-	},
-	*/
+	method: function(token){
+		let fn = null;
+
+		if (token.value === 'null'){
+			fn = () => null;
+		} else if (token.value === 'undefined'){
+			fn = () => undefined;
+		} else {
+			const tFn = methods.get(token.metadata.name);
+
+			if (token.metadata.arguments){
+				const prepared = compiler.prepare(token.metadata.arguments);
+				fn = (ctx) => tFn(...prepared(ctx));
+			} else {
+				fn = tFn;
+			}
+		}
+
+		return [new Expressable('value', fn)];
+	}
 });
 
-const compiler = new Compiler(parsings, expressions);
+compiler = new Compiler(parsings, expressions);
 
 expressions.set('block', function(token){
 	return [compiler.buildBlock(compiler.tokenize(token.value).tokens)];
@@ -420,5 +470,6 @@ expressions.set('block', function(token){
 
 module.exports = {
 	config,
-	compiler
+	compiler,
+	expressions
 };

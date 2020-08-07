@@ -108,5 +108,6 @@ const compiler = new Compiler(parsings, expressions);
 
 module.exports = {
 	config,
-	compiler
+	compiler,
+	expressions
 };

@@ -13,3 +13,7 @@ class Router {
 		this.routes.push(router);
 	}
 }
+
+module.exports = {
+	Router
+};

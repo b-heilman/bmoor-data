@@ -7,7 +7,7 @@ describe('bmoor-data.compiler.format', function(){
 	describe('- Compiler', function(){
 		it('should correctly tokenize', function(){
 			expect(JSON.parse(JSON.stringify(
-				compiler.tokenize('hello ${world} foo$bar').tokens
+				compiler.tokenize('hello ${world} foo$bar')[0].tokens
 			))).to.deep.equal([{
 				'type': 'constant',
 				'metadata': null,
@@ -25,7 +25,7 @@ describe('bmoor-data.compiler.format', function(){
 
 		it('should correctly compile', function(){
 			expect(JSON.parse(JSON.stringify(
-				compiler.compile(compiler.tokenize('hello ${world} foo$bar').tokens).postfix
+				compiler.compile(compiler.tokenize('hello ${world} foo$bar')[0].tokens).postfix
 			))).to.deep.equal([
 				{ type: 'value', method: 'stringValue' },
 				{ type: 'value', method: 'getter' },
@@ -40,7 +40,7 @@ describe('bmoor-data.compiler.format', function(){
 
 			expect(prepared({
 				world: 'this is a thing'
-			})).to.equal('hello this is a thing foo$bar');
+			})).to.deep.equal(['hello this is a thing foo$bar']);
 		});
 	});
 });
