@@ -377,6 +377,11 @@ describe('bmoor-data.compiler.calculation', function(){
 				.to.deep.equal([1,2]);
 			});
 
+			it('should work as a multipart statement and complex variables', function(){
+				expect(compiler.prepare('${a-b},${c-d}')({'a-b':1,'c-d':2}))
+				.to.deep.equal([1,2]);
+			});
+
 			it('should work with a method in the statement', function(){
 				expect(compiler.prepare('sum($a,$b)')({a:1,b:2}))
 				.to.deep.equal([3]);

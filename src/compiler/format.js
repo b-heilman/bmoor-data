@@ -6,6 +6,8 @@ const {Token} = require('../expression/Token.js');
 const {Expressable} = require('../expression/Expressable.js');
 const {Compiler} = require('../expression/Compiler.js');
 
+const isPath = /[\w\.]/;
+
 const escapeChar = '\\';
 
 const config = new Config({});
@@ -13,19 +15,41 @@ const config = new Config({});
 const parsings = config.sub('parsings', {
 	accessor: {
 		open: function(master, pos, state){
-			if (state.last !== escapeChar && master[pos] === '$' && master[pos+1] === '{'){
-				return {
-					pos: pos+2,
-					begin: pos+2
-				};
+			const ch = master[pos];
+
+			if (state.last !== escapeChar && ch === '$'){
+				if (master[pos+1] === '{'){
+					state.complex = true;
+
+					return {
+						pos: pos+2,
+						begin: pos+2
+					};
+				} else {
+					return {
+						pos: pos+2,
+						begin: pos+1
+					};
+				}
 			}
 		},
 		close: function(master, pos, state){
-			if (state.last !== escapeChar && master[pos] === '}'){
-				return {
-					pos: pos+1,
-					end: pos-1
-				};
+			const ch = master[pos];
+
+			if (state.complex){
+				if (state.last !== escapeChar && master[pos] === '}'){
+					return {
+						pos: pos+1,
+						end: pos-1
+					};
+				}
+			} else {
+				if (!isPath.test(ch)){
+					return {
+						pos: pos,
+						end: pos - 1
+					};
+				}
 			}
 		},
 		toToken: function(content){

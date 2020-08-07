@@ -22,17 +22,38 @@ const parsings = config.sub('parsings', {
 			const ch = master[pos];
 
 			if (state.last !== escapeChar && ch === '$'){
-				return {
-					pos: pos+2,
-					begin: pos+1
-				};
+				if (master[pos+1] === '{'){
+					state.complex = true;
+					
+					return {
+						pos: pos+2,
+						begin: pos+2
+					};
+				} else {
+					return {
+						pos: pos+2,
+						begin: pos+1
+					};
+				}
 			}
 		},
-		close: function(master, pos){
+		close: function(master, pos, state){
 			const ch = master[pos];
 
-			if (isPath.test(ch)){
-				return null;
+			if (state.complex){
+				if (state.last !== escapeChar && master[pos] === '}'){
+					return {
+						pos: pos+1,
+						end: pos-1
+					};
+				}
+			} else {
+				if (!isPath.test(ch)){
+					return {
+						pos: pos,
+						end: pos - 1
+					};
+				}
 			}
 
 			/* ignoring bracket notation for now
@@ -62,10 +83,7 @@ const parsings = config.sub('parsings', {
 			}
 			*/
 
-			return {
-				pos: pos,
-				end: pos - 1
-			};
+			
 		},
 		toToken: function(content){
 			return new Token('accessor', content);
@@ -440,6 +458,7 @@ const expressions = config.sub('expressions', {
 		}
 	},
 
+	// TODO: there's one heck of a compiler bug
 	method: function(token){
 		let fn = null;
 
