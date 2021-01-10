@@ -14,5 +14,5 @@ class Compound extends Token {
 }
 
 module.exports = {
-	Token
+	Compound
 };

@@ -1,7 +1,6 @@
 
 const {Block} = require('./Block.js'); 
-const {Protoken} = require('./Protoken.js'); 
-const {Protoken} = require('./Protoken.js'); 
+const {Protoken} = require('./Protoken.js');
 
 function nextProtoken(master, pos, state, patterns){
 	const keys = patterns.keys();
@@ -67,28 +66,31 @@ function tokenize(str, patterns){
 }
 
 function subReduce(tokens, pos, group){
-	const toTest = group.map(
+	let toTest = group.map(
 		def => ({
 			source: def,
 			tokens: def.tokens.slice(0)
 		})
 	);
 	let found = null; // array of sources
+	let token = null;
+
+	function run(test){
+		const myToken = test.tokens.shift();
+
+		if (myToken === token){
+			if (test.tokens.length){
+				return true;
+			} else {
+				found = test.source;
+			}
+		}
+	}
 
 	while(pos < tokens.length && toTest.length){
-		const token = tokens[pos].type;
+		token = tokens[pos].type;
 
-		toTest = toTest.filter(test => {
-			const myToken = test.tokens.shift();
-
-			if (myToken === token){
-				if (test.tokens.length){
-					return true;
-				} else {
-					found = test.source;
-				}
-			}
-		});
+		toTest = toTest.filter(run);
 
 		pos++;
 	}
@@ -118,14 +120,19 @@ function tokenReduce(tokens, compounds){
 				tokens: compound.tokens,
 				factory: compound.factory
 			});
+
+			return agg;
 		},
 		{}
 	);
 
+	console.log(index);
+	console.log('tokens', tokens);
 	// I could write this to not be destructive?
 	for(let i = 0, c = tokens.length; i < c; i++){
 		let group = index[tokens[i].type];
 
+		console.log('group', group);
 		if (group){
 			let match = subReduce(tokens, i, group);
 
@@ -196,20 +203,35 @@ class Compiler {
 
 	// take a string, convert it into a set of tokens in infix order
 	tokenize(str){
-		const tokens = tokenize(str, this.parsingConfig);
+		const tokenSet = tokenize(str, this.parsingConfig);
 
 		if (this.compoundConfig){
-
+			return tokenSet.map(
+				info => ({
+					tokens: tokenReduce(info.tokens, this.compoundConfig),
+					misses: info.misses
+				})
+			);
+		} else {
+			return tokenSet;
 		}
 	}
 
 	// take a token, convert it into an expression that can be evaluated
 	getExpression(token){
+		if (!this.expressionConfig){
+			throw new Error('unable to getExpression without expressions');
+		}
+
 		return tokenExpress(token, this.expressionConfig);
 	}
 
 	// take a set of tokens, assumed to be infix, and convert into infix / postfix order
 	compile(tokens){
+		if (!this.expressionConfig){
+			throw new Error('unable to compile without expressions');
+		}
+
 		return compile(tokens, this.expressionConfig);
 	}
 

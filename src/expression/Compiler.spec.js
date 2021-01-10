@@ -2,18 +2,205 @@
 const {expect} = require('chai');
 const {Config} = require('bmoor/src/lib/config.js');
 
+const isCharacter = /[A-Za-z_0-9]/;
+
+const {Token} = require('./Token.js'); 
+const {Compound} = require('./Compound.js'); 
+
 describe('bmoor-data.expression.compiler', function(){
-	const {compiler} = require('./Compiler.js');
+	const {Compiler} = require('./Compiler.js');
 	
+	let parsingConfig = null;
+	let compoundConfig = null;
+	let expressionConfig = null;
+
+	beforeEach(function(){
+		parsingConfig = new Config({
+			model: {
+				open: function(master, pos){
+					if (master[pos] === '$'){
+						return {
+							pos: pos+1,
+							begin: pos+1
+						};
+					}
+				},
+				close: function(master, pos){
+					const ch = master[pos];
+					
+					if (isCharacter.test(ch)){
+						return false;
+					}
+
+					return {
+						pos,
+						end: pos-1
+					};
+				},
+				toToken: function(content){
+					return new Token('model', content);
+				}
+			},
+
+			accessor: {
+				open: function(master, pos){
+					if (master[pos] === '.'){
+						return {
+							pos: pos+1,
+							begin: pos+1
+						};
+					}
+				},
+				close: function(master, pos){
+					const ch = master[pos];
+
+					if (isCharacter.test(ch)){
+						return false;
+					}
+
+					return {
+						pos,
+						end: pos-1
+					};
+				},
+				toToken: function(content){
+					return new Token('accessor', content);
+				}
+			},
+
+			variable: {
+				open: function(master, pos){
+					if (master[pos] === '@'){
+						return {
+							pos: pos+1,
+							begin: pos+1
+						};
+					}
+				},
+				close: function(master, pos){
+					const ch = master[pos];
+
+					if (isCharacter.test(ch)){
+						return false;
+					}
+
+					return {
+						pos,
+						end: pos-1
+					};
+				},
+				toToken: function(content){
+					return new Token('variable', content);
+				}
+			}
+		});
+
+		compoundConfig = new Config({
+			path: {
+				tokens: ['model','accessor'],
+				factory: function(tokens){
+					return new Compound('path', tokens);
+				}
+			}
+		});
+
+		expressionConfig = new Config({
+
+		});
+	});
+
 	describe('::tokenize', function(){
-		it('should work for blocks', function(){
-			expect(JSON.parse(JSON.stringify(
-				compiler.tokenize('(like, this)')[0].tokens
-			))).to.deep.equal([{
-				'type': 'block',
-				'metadata': null,
-				'value': 'like, this'
-			}]);
+		let compiler = null;
+		describe('with compounds', function(){
+			beforeEach(function(){
+				compiler = new Compiler(parsingConfig);
+			});
+
+			it('should work basically', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.tokenize('$foo.bar')[0].tokens
+				))).to.deep.equal(
+					[{
+						'type': 'model',
+						'metadata': null,
+						'value': 'foo'
+					},{
+						'type': 'accessor',
+						'metadata': null,
+						'value': 'bar'
+					}]
+				);
+			});
+
+			it('should work with spaces', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.tokenize('$foo .bar @token')[0].tokens
+				))).to.deep.equal(
+					[{
+						'type': 'model',
+						'metadata': null,
+						'value': 'foo'
+					},{
+						'type': 'accessor',
+						'metadata': null,
+						'value': 'bar'
+					},{
+						'type': 'variable',
+						'metadata': null,
+						'value': 'token'
+					}]
+				);
+			});
+		});
+
+		describe('without compounds', function(){
+			beforeEach(function(){
+				compiler = new Compiler(parsingConfig, null, compoundConfig);
+			});
+
+			it('should work basically', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.tokenize('$foo.bar')[0].tokens
+				))).to.deep.equal(
+					[{
+						type: 'path',
+						metadata: null,
+						value: [{
+							'type': 'model',
+							'metadata': null,
+							'value': 'foo'
+						},{
+							'type': 'accessor',
+							'metadata': null,
+							'value': 'bar'
+						}]
+					}]
+				);
+			});
+
+			it('should work with spaces', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.tokenize('$foo .bar @token')[0].tokens
+				))).to.deep.equal(
+					[{
+						type: 'path',
+						metadata: null,
+						value: [{
+							'type': 'model',
+							'metadata': null,
+							'value': 'foo'
+						},{
+							'type': 'accessor',
+							'metadata': null,
+							'value': 'bar'
+						}]
+					},{
+						'type': 'variable',
+						'metadata': null,
+						'value': 'token'
+					}]
+				);
+			});
 		});
 	});
 });
