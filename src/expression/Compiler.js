@@ -126,13 +126,10 @@ function tokenReduce(tokens, compounds){
 		{}
 	);
 
-	console.log(index);
-	console.log('tokens', tokens);
 	// I could write this to not be destructive?
 	for(let i = 0, c = tokens.length; i < c; i++){
 		let group = index[tokens[i].type];
 
-		console.log('group', group);
 		if (group){
 			let match = subReduce(tokens, i, group);
 
@@ -144,8 +141,6 @@ function tokenReduce(tokens, compounds){
 				c = tokens.length;
 			}
 		}
-
-		i++;
 	}
 
 	return tokens;

@@ -92,6 +92,32 @@ describe('bmoor-data.expression.compiler', function(){
 				toToken: function(content){
 					return new Token('variable', content);
 				}
+			},
+
+			junk: {
+				open: function(master, pos){
+					if (master[pos] === '>'){
+						return {
+							pos: pos+1,
+							begin: pos
+						};
+					}
+				},
+				close: function(master, pos){
+					const ch = master[pos];
+
+					if (ch === '>'){
+						return false;
+					}
+
+					return {
+						pos,
+						end: pos-1
+					};
+				},
+				toToken: function(content){
+					return new Token('junk', content);
+				}
 			}
 		});
 
@@ -151,6 +177,78 @@ describe('bmoor-data.expression.compiler', function(){
 					}]
 				);
 			});
+
+			it('should work with junk leading', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.tokenize('>>>> $foo .bar @token')[0].tokens
+				))).to.deep.equal(
+					[{
+						'type': 'junk',
+						'metadata': null,
+						'value': '>>>>'
+					},{
+						'type': 'model',
+						'metadata': null,
+						'value': 'foo'
+					},{
+						'type': 'accessor',
+						'metadata': null,
+						'value': 'bar'
+					},{
+						'type': 'variable',
+						'metadata': null,
+						'value': 'token'
+					}]
+				);
+			});
+
+			it('should work with junk trailing', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.tokenize('$foo .bar @token >>')[0].tokens
+				))).to.deep.equal(
+					[{
+						'type': 'model',
+						'metadata': null,
+						'value': 'foo'
+					},{
+						'type': 'accessor',
+						'metadata': null,
+						'value': 'bar'
+					},{
+						'type': 'variable',
+						'metadata': null,
+						'value': 'token'
+					},{
+						'type': 'junk',
+						'metadata': null,
+						'value': '>>'
+					}]
+				);
+			});
+
+			it('should work with squashed', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.tokenize('$foo.bar@token>>')[0].tokens
+				))).to.deep.equal(
+					[{
+						'type': 'model',
+						'metadata': null,
+						'value': 'foo'
+					},{
+						'type': 'accessor',
+						'metadata': null,
+						'value': 'bar'
+					},{
+						'type': 'variable',
+						'metadata': null,
+						'value': 'token'
+					},{
+						'type': 'junk',
+						'metadata': null,
+						'value': '>>'
+					}]
+				);
+			});
 		});
 
 		describe('without compounds', function(){
@@ -198,6 +296,86 @@ describe('bmoor-data.expression.compiler', function(){
 						'type': 'variable',
 						'metadata': null,
 						'value': 'token'
+					}]
+				);
+			});
+
+			it('should work basically', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.tokenize('>>>>$foo.bar')[0].tokens
+				))).to.deep.equal(
+					[{
+						'type': 'junk',
+						'metadata': null,
+						'value': '>>>>'
+					},{
+						type: 'path',
+						metadata: null,
+						value: [{
+							'type': 'model',
+							'metadata': null,
+							'value': 'foo'
+						},{
+							'type': 'accessor',
+							'metadata': null,
+							'value': 'bar'
+						}]
+					}]
+				);
+			});
+
+			it('should work with spaces', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.tokenize('$foo .bar @token>>>>')[0].tokens
+				))).to.deep.equal(
+					[{
+						type: 'path',
+						metadata: null,
+						value: [{
+							'type': 'model',
+							'metadata': null,
+							'value': 'foo'
+						},{
+							'type': 'accessor',
+							'metadata': null,
+							'value': 'bar'
+						}]
+					},{
+						'type': 'variable',
+						'metadata': null,
+						'value': 'token'
+					},{
+						'type': 'junk',
+						'metadata': null,
+						'value': '>>>>'
+					}]
+				);
+			});
+
+			it('should work squashed', function(){
+				expect(JSON.parse(JSON.stringify(
+					compiler.tokenize('$foo.bar@token>>>>')[0].tokens
+				))).to.deep.equal(
+					[{
+						type: 'path',
+						metadata: null,
+						value: [{
+							'type': 'model',
+							'metadata': null,
+							'value': 'foo'
+						},{
+							'type': 'accessor',
+							'metadata': null,
+							'value': 'bar'
+						}]
+					},{
+						'type': 'variable',
+						'metadata': null,
+						'value': 'token'
+					},{
+						'type': 'junk',
+						'metadata': null,
+						'value': '>>>>'
 					}]
 				);
 			});
