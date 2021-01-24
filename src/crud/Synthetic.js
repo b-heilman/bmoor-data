@@ -32,6 +32,10 @@ async function install(action, service, master, mapper, ctx){
 	let ref = action.$ref;
 	let datum = null;
 
+	if (action.$type === 'create-or-update'){
+		action.$type = 'update-create';
+	}
+
 	if (action.$type === 'read'){
 		// either search by key, or the whop thing sent in
 		datum = await getDatum(service, action, ctx);
@@ -63,12 +67,18 @@ async function install(action, service, master, mapper, ctx){
 		}
 
 		datum = await service.update(service.model.getKey(current), action, ctx);
-	} else if (action.$type === 'create-or-update'){
+	} else if (action.$type === 'update-create'){
 		datum = await getDatum(service, action, ctx);
 
 		if (datum){
 			await service.update(service.model.getKey(datum), action, ctx);
 		} else {
+			datum = await service.create(action, ctx);
+		}
+	} else if (action.$type === 'read-create'){
+		datum = await getDatum(service, action, ctx);
+
+		if (!datum){
 			datum = await service.create(action, ctx);
 		}
 	} else {
@@ -162,6 +172,14 @@ async function inflate(service, query, mapper, registry, ctx){
 
 		return agg;
 	}, {});
+	const ensureModels = (query.ensure||[]).reduce( // read-create, no update
+		(agg, table) => {
+			agg[table] = true;
+
+			return agg;
+		},
+		{}
+	);
 	
 	let c = 0;
 	function getLooking(serviceName, key){
@@ -190,7 +208,7 @@ async function inflate(service, query, mapper, registry, ctx){
 		};
 	}
 
-	function addDatum(service, datum, type = 'create-or-update'){
+	function addDatum(service, datum, type = 'update-create'){
 		let s = known[service.model.name];
 
 		if (!s){
@@ -232,13 +250,14 @@ async function inflate(service, query, mapper, registry, ctx){
 		const datums = await getDatums(service, loading.query, ctx);
 
 		const stubbed = !!stubModels[service.model.name];
+		const ensured = !!ensureModels[service.model.name];
 
 		datums.forEach(datum => { // jshint ignore:line
 			const key = service.model.getKey(datum);
 			const {current, isNew} = addDatum(
 				service,
 				datum,
-				stubbed ? 'read' : 'create-or-update'
+				ensured ? 'read-create' : (stubbed ? 'read' : 'update-create')
 			);
 
 			if (!isNew){

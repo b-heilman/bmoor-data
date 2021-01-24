@@ -472,7 +472,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 					.to.deep.equal({
 						'class-1': [{
 							$ref: 'ref-0',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							hello: 'world'
 						}]
 					});
@@ -504,11 +504,11 @@ describe('bmoor-data::crud/Synthetic', function(){
 					.to.deep.equal({
 						'class-1': [{
 							$ref: 'ref-0',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							foo: 'bar'
 						},{
 							$ref: 'ref-1',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							foo: 'bar2'
 						}]
 					});
@@ -555,18 +555,18 @@ describe('bmoor-data::crud/Synthetic', function(){
 					.to.deep.equal({
 						'class-1': [{
 							$ref: 'ref-3',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 1
 						}],
 						'class-2': [{
 							$ref: 'ref-1',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 2,
 							class1Id: 'ref-3'
 						}],
 						'class-3': [{
 							$ref: 'ref-0',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 3,
 							class2Id: 'ref-1'
 						}]
@@ -636,33 +636,33 @@ describe('bmoor-data::crud/Synthetic', function(){
 					.to.deep.equal({
 						'class-1': [{
 							$ref: 'ref-6',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 1
 						}],
 						'class-2': [{
 							$ref: 'ref-1',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 2,
 							class1Id: 'ref-6'
 						}, {
 							$ref: 'ref-4',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 3,
 							class1Id: 'ref-6'
 						}],
 						'class-3': [{
 							$ref: 'ref-0',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 4,
 							class2Id: 'ref-1'
 						},{
 							$ref: 'ref-2',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 5,
 							class2Id: null
 						},{
 							$ref: 'ref-3',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 6,
 							class2Id: 'ref-4'
 						}]
@@ -700,12 +700,12 @@ describe('bmoor-data::crud/Synthetic', function(){
 					.to.deep.equal({
 						'class-1': [{
 							$ref: 'ref-1',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 1
 						}],
 						'class-4': [{
 							$ref: 'ref-0',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 2,
 							class1Id: 'ref-1'
 						}]
@@ -747,17 +747,17 @@ describe('bmoor-data::crud/Synthetic', function(){
 					.to.deep.equal({
 						'class-1': [{
 							$ref: 'ref-1',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 1
 						}],
 						'class-4': [{
 							$ref: 'ref-0',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 2,
 							class1Id: 'ref-1'
 						}, {
 							$ref: 'ref-2',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 3,
 							class1Id: 'ref-1'
 						}]
@@ -815,24 +815,24 @@ describe('bmoor-data::crud/Synthetic', function(){
 					.to.deep.equal({
 						'class-1': [{
 							$ref: 'ref-2',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 1
 						}],
 						'class-2': [{
 							$ref: 'ref-1',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 2,
 							class1Id: 'ref-2'
 						}],
 						'class-3': [{
 							$ref: 'ref-0',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 3,
 							class2Id: 'ref-1'
 						}],
 						'class-4': [{
 							$ref: 'ref-3',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 4,
 							class1Id: 'ref-2'
 						}]
@@ -894,7 +894,7 @@ describe('bmoor-data::crud/Synthetic', function(){
 						}],
 						'class-3': [{
 							$ref: 'ref-0',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 3,
 							class2Id: 'ref-1'
 						}]
@@ -1076,29 +1076,29 @@ describe('bmoor-data::crud/Synthetic', function(){
 					.to.deep.equal({
 						'class-1': [{
 							$ref: 'ref-0',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 1
 						}],
 						'class-2': [{
 							$ref: 'ref-1',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 2,
 							class1Id: 'ref-0'
 						}],
 						'class-3': [{
 							$ref: 'ref-4',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 3
 						}],
 						'class-4': [{
 							$ref: 'ref-3',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 4,
 							class3Id: 'ref-4'
 						}],
 						'class-5': [{
 							$ref: 'ref-2',
-							$type: 'create-or-update',
+							$type: 'update-create',
 							n: 5,
 							class2Id: 'ref-1',
 							class4Id: 'ref-3'
