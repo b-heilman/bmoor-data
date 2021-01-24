@@ -8,40 +8,77 @@ class Network {
 	}
 
 	// given a set of targets, see if they all connect, limiting depth of search
-	search(names, count = 999){
-		const contains = names.reduce((agg, name) => {
-			agg[name] = false;
-
-			return agg;
-		}, {});
-
+	search(toSearch, depth = 999){
 		// reduce all names to the links for them
-		return names.reduce((agg, name, i) => {
-			if (!contains[name]){
+		let models = [...new Set(toSearch)]; // make unique
+
+		if (models.length === 1){
+			// I feel a little dirty for this... but...
+			return [{
+				name: models[0]
+			}];
+		}
+
+		let contains = models.reduce(
+			(agg, name) => {
+				agg[name] = null;
+
+				return agg;
+			},
+			{}
+		);
+
+		const masterModels = models;
+		const fnFactory = (depthTarget) => {
+			return (agg, name, i) => {
 				const linker = new Linker(this.mapper, name);
 
-				agg.push(linker.link);
-				contains[name] = true;
-
 				// run only the following names, it's n!, but the ifs reduce n
-				names.slice(i+1).forEach(nextName => {
-					if (!contains[nextName]){
-						let results = linker.search(nextName, count);
+				masterModels.slice(i+1)
+				.forEach(nextName => {
+					let results = linker.search(nextName, depthTarget);
 
-						if (results){
-							results.forEach(link => {
-								if (!contains[link.name]){
-									agg.push(link);
-									contains[link.name] = true;
+					if (results){
+						results.forEach(link => {
+							if (name !== link.name){
+								agg[name] = linker.link;
+
+								if (!agg[link.name]){
+									agg[link.name] = link;	
 								}
-							});
-						}
+							}
+						});
 					}
 				});
+
+				return agg;
+			};
+		};
+
+		const filterFn = key => !contains[key];
+
+		for(let depthPos = 1;  depthPos <= depth; depthPos++){
+			contains = models.reduce(fnFactory(depthPos), contains);
+
+			if (Object.values(contains).indexOf(null) === -1){
+				depthPos = depth;
 			}
 
-			return agg;
-		}, []);
+			models = Object.keys(contains).filter(filterFn);
+		}
+
+		// Do a last can, make sure all links were defined... ensuring all
+		// tables are linked
+		return Object.keys(contains)
+		.map(key => {
+			const link = contains[key];
+
+			if (!link){
+				throw new Error('unlinked target: '+key);
+			}
+
+			return link;
+		});
 	}
 
 	requirements(names, count = 3){

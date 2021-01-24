@@ -1,3 +1,6 @@
+
+const {create} = require('bmoor/src/lib/error.js');
+
 // TODO: this needs to be renamed as Normalized
 // Synthetic will be a large denormalized schema based on smaller models
 const {Network} = require('../model/Network.js');
@@ -32,10 +35,32 @@ async function install(action, service, master, mapper, ctx){
 	if (action.$type === 'read'){
 		// either search by key, or the whop thing sent in
 		datum = await getDatum(service, action, ctx);
+
+		if (!datum){
+			throw create(`unable to read expected datum of type ${service.model.name}`, {
+				status: 406,
+				code: 'BMOOR_DATA_SYNTHETIC_INSTALL_READ',
+				context: {
+					name: service.model.name,
+					action
+				}
+			});
+		}
 	} else if (action.$type === 'update'){
 		// allows you to do something like update by name, but also change the name by overloading
 		// the key
 		const current = await getDatum(service, action, ctx);
+
+		if (!current){
+			throw create(`unable to update expected datum of type ${service.model.name}`, {
+				status: 406,
+				code: 'BMOOR_DATA_SYNTHETIC_INSTALL_UPDATE',
+				context: {
+					name: service.model.name,
+					action
+				}
+			});
+		}
 
 		datum = await service.update(service.model.getKey(current), action, ctx);
 	} else if (action.$type === 'create-or-update'){

@@ -12,6 +12,8 @@ class Linker {
 
 		if (connection){
 			return [this.link, this.mapper.getLink(toName)];
+		} else if (count === 1){ // you can make one jump and no direct connection
+			return null;
 		}
 
 		let rtn = null;

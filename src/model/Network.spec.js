@@ -34,7 +34,7 @@ describe('bmoor-data::/mode/Network', function(){
 			expect(
 				network.search(['table-1','table-2','table-4'], 3)
 				.map(t => t.name)
-			).to.deep.equal(['table-1', 'table-2', 'table-3', 'table-4']);
+			).to.deep.equal(['table-1', 'table-2', 'table-4', 'table-3']);
 		});
 
 		it('should pick the shortest route', function(){
@@ -50,7 +50,7 @@ describe('bmoor-data::/mode/Network', function(){
 			expect(
 				network.search(['table-1','table-3','table-4'], 3)
 				.map(t => t.name)
-			).to.deep.equal(['table-1', 'table-2', 'table-3', 'table-4']);
+			).to.deep.equal(['table-1', 'table-3', 'table-4']);
 		});
 	});
 
@@ -87,7 +87,7 @@ describe('bmoor-data::/mode/Network', function(){
 				network.requirements(master, 3)
 				.map(t => t.name)
 			).to.deep.equal(
-				['table-2','table-4','table-7','table-6','table-5','table-3','table-1']
+				['table-7','table-2','table-4','table-6','table-5','table-3','table-1']
 			);
 
 			expect(
