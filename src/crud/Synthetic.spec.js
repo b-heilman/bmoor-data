@@ -797,8 +797,18 @@ describe('bmoor-data::crud/Synthetic', function(){
 					class1Id: 123
 				}]);
 
-				inflate('class-3', {keys:[345], join:['class-4']}, mapper, serviceRegistry, {})
-				.then(instructions => {
+				inflate(
+					'class-3', 
+					{
+						keys:[345], 
+						join: {
+							'class-1': ['class-4']
+						}
+					}, 
+					mapper, 
+					serviceRegistry,
+					{}
+				).then(instructions => {
 					expect(stubs.class1.getCall(0).args[0])
 					.to.deep.equal({id:123});
 
@@ -1051,8 +1061,20 @@ describe('bmoor-data::crud/Synthetic', function(){
 					class4Id: 456
 				}]);
 
-				inflate('class-1', {keys:[123], join:['class-2', 'class-5']}, mapper, serviceRegistry, {})
-				.then(instructions => {
+				inflate(
+					'class-1', 
+					{
+						keys:[123], 
+						join: {
+							'class-1': ['class-2'], 
+							'class-2': ['class-5'], 
+							'class-4': ['class-5']
+						}
+					}, 
+					mapper, 
+					serviceRegistry, 
+					{}
+				).then(instructions => {
 
 					expect(stubs.class1.getCall(0).args[0])
 					.to.equal(123);

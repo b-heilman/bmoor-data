@@ -162,11 +162,23 @@ async function inflate(service, query, mapper, registry, ctx){
 			service
 		})
 	);
-	const joinModels = (query.join||[]).reduce((agg, table) => {
-		agg[table] = true;
+	const joinModels = Object.keys(query.join||[]).reduce(
+		(agg, model) => {
+			const tables = query.join[model];
 
-		return agg;
-	}, {});
+			agg[model] = tables.reduce(
+				(agg, table) => {
+					agg[table] = true;
+
+					return agg;
+				},
+				{}
+			);
+
+			return agg;
+		}, 
+		{}
+	);
 	const stubModels = (query.stub||[]).reduce((agg, table) => {
 		agg[table] = true;
 
@@ -289,19 +301,23 @@ async function inflate(service, query, mapper, registry, ctx){
 				const {ref} = getLooking(service.model.name, key);
 				current.$ref = ref;
 
-				mapper.getByDirection(service.model.name, 'incoming')
-				.forEach(link => {
-					if (joinModels[link.name]){
-						toProcess.push({
-							ref: ref,
-							back: link.remote,
-							service: link.name,
-							query: {
-								[link.remote]: key
-							}
-						});
-					}
-				});
+				// optionally load incoming links
+				const lookup = joinModels[service.model.name];
+				if (lookup){
+					mapper.getByDirection(service.model.name, 'incoming')
+					.forEach(link => {
+						if (lookup[link.name]){
+							toProcess.push({
+								ref: ref,
+								back: link.remote,
+								service: link.name,
+								query: {
+									[link.remote]: key
+								}
+							});
+						}
+					});
+				}
 			}
 
 			//------- now that we've processed, we can change data, otherwise things get mixed up up above
