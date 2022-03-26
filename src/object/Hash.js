@@ -1,37 +1,34 @@
 var bmoor = require('bmoor');
 
-function stack( old, getter ){
-	if ( old ){
-		return function( obj ){
-			return old( obj )+':'+getter(obj);
+function stack(old, getter) {
+	if (old) {
+		return function (obj) {
+			return old(obj) + ':' + getter(obj);
 		};
-	}else{
-		return function( obj ){
-			return getter( obj );
+	} else {
+		return function (obj) {
+			return getter(obj);
 		};
 	}
 }
 
-function build( obj ){
+function build(obj) {
 	var fn,
 		keys,
 		values = [];
 
-	if ( bmoor.isArray(obj) ){
+	if (bmoor.isArray(obj)) {
 		keys = obj;
-	}else{
+	} else {
 		let flat = bmoor.object.implode(obj);
 
-		keys = Object.keys( flat );
+		keys = Object.keys(flat);
 	}
 
-	keys.sort().forEach(function( path ){
-		fn = stack(
-			fn,
-			bmoor.makeGetter(path)
-		);
+	keys.sort().forEach(function (path) {
+		fn = stack(fn, bmoor.makeGetter(path));
 
-		values.push( path );
+		values.push(path);
 	});
 
 	return {
@@ -41,39 +38,36 @@ function build( obj ){
 }
 
 class Hash {
-	constructor( ops, settings ){
-		var fn,
-			hash;
+	constructor(ops, settings) {
+		var fn, hash;
 
-		if ( !settings ){
+		if (!settings) {
 			settings = {};
 		}
 
-		if ( bmoor.isFunction(ops) ){
+		if (bmoor.isFunction(ops)) {
 			fn = ops;
-			hash = ops.toString().replace(/[\s]+/g,'');
-		}else if ( bmoor.isObject(ops) ){
-			let t = build( ops );
+			hash = ops.toString().replace(/[\s]+/g, '');
+		} else if (bmoor.isObject(ops)) {
+			let t = build(ops);
 
 			fn = t.fn;
 			hash = t.index;
-		}else{
-			throw new Error(
-				'I can not build a Hash out of '+typeof(ops)
-			);
+		} else {
+			throw new Error('I can not build a Hash out of ' + typeof ops);
 		}
 
 		this.hash = settings.hash || hash;
 		this.fn = fn;
-		this.parse = ( search ) => {
-			if ( bmoor.isObject(search) ) {
-				return this.fn( search );
-			}else{
-				return search; 
+		this.parse = (search) => {
+			if (bmoor.isObject(search)) {
+				return this.fn(search);
+			} else {
+				return search;
 			}
 		};
-		this.go = ( search ) => {
-			if ( settings.massage && bmoor.isObject(search) ){
+		this.go = (search) => {
+			if (settings.massage && bmoor.isObject(search)) {
 				search = settings.massage(search);
 			}
 

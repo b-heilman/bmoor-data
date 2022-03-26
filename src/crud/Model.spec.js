@@ -1,16 +1,14 @@
-
 const {expect} = require('chai');
 
-describe('bmoor-data::crud/Model', function(){
-	
+describe('bmoor-data::crud/Model', function () {
 	const {Model} = require('./model.js');
 
-	it('should be defined', function(){
+	it('should be defined', function () {
 		expect(Model).to.exist;
 	});
 
-	describe('.properties', function(){
-		it('should expand default properties correctly', function(){
+	describe('.properties', function () {
+		it('should expand default properties correctly', function () {
 			const model = new Model('test-1', {
 				fields: {
 					eins: {
@@ -35,15 +33,9 @@ describe('bmoor-data::crud/Model', function(){
 				}
 			});
 
-			expect(model.properties.create)
-			.to.deep.equal([
-				'zwei',
-				'fier',
-				'funf'
-			]);
+			expect(model.properties.create).to.deep.equal(['zwei', 'fier', 'funf']);
 
-			expect(model.properties.read)
-			.to.deep.equal([
+			expect(model.properties.read).to.deep.equal([
 				'eins',
 				'zwei',
 				'drei',
@@ -51,23 +43,16 @@ describe('bmoor-data::crud/Model', function(){
 				'funf'
 			]);
 
-			expect(model.properties.update)
-			.to.deep.equal([
-				'zwei'
-			]);
+			expect(model.properties.update).to.deep.equal(['zwei']);
 
-			expect(model.properties.index)
-			.to.deep.equal([
-				'funf'
-			]);
+			expect(model.properties.index).to.deep.equal(['funf']);
 
-			expect(model.properties.key)
-			.to.equal('eins');
+			expect(model.properties.key).to.equal('eins');
 		});
 	});
 
-	describe('::getKey', function(){
-		it('pull in a singular value', function(){
+	describe('::getKey', function () {
+		it('pull in a singular value', function () {
 			const model = new Model('test-1', {
 				fields: {
 					eins: {
@@ -89,7 +74,7 @@ describe('bmoor-data::crud/Model', function(){
 			).to.deep.equal(1);
 		});
 
-		it('fail on multiple keys', function(){
+		it('fail on multiple keys', function () {
 			let failure = false;
 
 			try {
@@ -104,7 +89,7 @@ describe('bmoor-data::crud/Model', function(){
 						drei: false
 					}
 				});
-			} catch(ex){
+			} catch (ex) {
 				failure = true;
 			}
 
@@ -112,8 +97,8 @@ describe('bmoor-data::crud/Model', function(){
 		});
 	});
 
-	describe('::getIndex', function(){
-		it('pull in a singlar value', function(){
+	describe('::getIndex', function () {
+		it('pull in a singlar value', function () {
 			const model = new Model('test-1', {
 				fields: {
 					eins: {
@@ -136,7 +121,7 @@ describe('bmoor-data::crud/Model', function(){
 			).to.deep.equal({drei: 3});
 		});
 
-		it('pull in a multiple values', function(){
+		it('pull in a multiple values', function () {
 			const model = new Model('test-1', {
 				fields: {
 					eins: {
@@ -163,8 +148,8 @@ describe('bmoor-data::crud/Model', function(){
 		});
 	});
 
-	describe('::cleanDelta', function(){
-		it('pull in a singlar value', function(){
+	describe('::cleanDelta', function () {
+		it('pull in a singlar value', function () {
 			const model = new Model('test-1', {
 				fields: {
 					eins: {
@@ -190,8 +175,8 @@ describe('bmoor-data::crud/Model', function(){
 		});
 	});
 
-	describe('::getChanges', function(){
-		it('pull in a singlar value', function(){
+	describe('::getChanges', function () {
+		it('pull in a singlar value', function () {
 			const model = new Model('test-1', {
 				fields: {
 					eins: {
@@ -210,20 +195,23 @@ describe('bmoor-data::crud/Model', function(){
 			});
 
 			expect(
-				model.getChanges({
-					drei: 1,
-					junk: 'foo-bar'
-				}, {
-					eins: 1,
-					drei: 3,
-					junk: 'asdasd'
-				})
+				model.getChanges(
+					{
+						drei: 1,
+						junk: 'foo-bar'
+					},
+					{
+						eins: 1,
+						drei: 3,
+						junk: 'asdasd'
+					}
+				)
 			).to.deep.equal({drei: 3});
 		});
 	});
 
-	describe('::getChangeType', function(){
-		it('pull in a singlar value', function(){
+	describe('::getChangeType', function () {
+		it('pull in a singlar value', function () {
 			const model = new Model('test-1', {
 				fields: {
 					eins: {
@@ -251,8 +239,8 @@ describe('bmoor-data::crud/Model', function(){
 					fier: 4
 				})
 			).to.deep.equal({
-				'major': 'fier',
-				'minor': 'drei'
+				major: 'fier',
+				minor: 'drei'
 			});
 
 			expect(
@@ -261,8 +249,8 @@ describe('bmoor-data::crud/Model', function(){
 					drei: 3
 				})
 			).to.deep.equal({
-				'major': 'zwei',
-				'minor': 'drei'
+				major: 'zwei',
+				minor: 'drei'
 			});
 
 			expect(
@@ -270,7 +258,7 @@ describe('bmoor-data::crud/Model', function(){
 					zwei: 2
 				})
 			).to.deep.equal({
-				'major': 'zwei'
+				major: 'zwei'
 			});
 
 			expect(
@@ -278,7 +266,7 @@ describe('bmoor-data::crud/Model', function(){
 					zwei: 2
 				})
 			).to.deep.equal({
-				'major': 'zwei'
+				major: 'zwei'
 			});
 
 			expect(

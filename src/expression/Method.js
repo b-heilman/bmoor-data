@@ -1,6 +1,5 @@
-
-class Method{
-	constructor(token){
+class Method {
+	constructor(token) {
 		this.token = token;
 	}
 }

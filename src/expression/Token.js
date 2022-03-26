@@ -1,20 +1,19 @@
-
 class Token {
-	constructor(type, value, metadata = null){
+	constructor(type, value, metadata = null) {
 		this.type = type;
 		this.value = value;
 		this.metadata = metadata;
 	}
 
-	setState(state){
+	setState(state) {
 		this.state = state;
 	}
-	
-	assign(properties){
+
+	assign(properties) {
 		return Object.assign(this.metadata, properties);
 	}
 
-	toJSON(){
+	toJSON() {
 		return {
 			type: this.type,
 			value: this.value,

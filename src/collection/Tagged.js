@@ -1,31 +1,29 @@
-
 const {Collection} = require('../Collection.js');
 const {Proxied} = require('./Proxied.js');
 
 class Tagged extends Proxied {
+	add(datum, tags) {
+		var proxy = this._wrap(datum);
 
-	add( datum, tags ){
-		var proxy = this._wrap( datum );
-		
-		if ( tags ){
+		if (tags) {
 			proxy.tags = tags;
 		}
-		
+
 		return super.add(proxy);
 	}
 
-	choose( settings ){
-		if ( !settings ){
+	choose(settings) {
+		if (!settings) {
 			settings = {};
 		}
 
-		if ( settings.massage ){
+		if (settings.massage) {
 			let old = settings.massage;
-			settings.massage = function( proxy ){
+			settings.massage = function (proxy) {
 				return old(proxy.tags || {}, proxy);
 			};
-		}else{
-			settings.massage = function( proxy ){
+		} else {
+			settings.massage = function (proxy) {
 				return proxy.tags || {};
 			};
 		}

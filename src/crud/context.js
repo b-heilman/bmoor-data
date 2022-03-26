@@ -1,6 +1,5 @@
-
 class Context {
-	constructor(systemContext = {}){
+	constructor(systemContext = {}) {
 		this.ctx = systemContext;
 		this.query = systemContext.query;
 		this.params = systemContext.params;
@@ -10,15 +9,15 @@ class Context {
 		this.changes = {};
 	}
 
-	async hasPermission(/*permission*/){
+	async hasPermission(/*permission*/) {
 		return true;
 	}
 
 	// method
 
 	// params
-	getParam(name){
-		if (this.params && name in this.params){
+	getParam(name) {
+		if (this.params && name in this.params) {
 			return this.params[name];
 		} else {
 			return null;
@@ -26,26 +25,26 @@ class Context {
 	}
 
 	// query
-	getQuery(name){
-		if (this.query && name in this.query){
+	getQuery(name) {
+		if (this.query && name in this.query) {
 			return this.query[name];
 		} else {
 			return null;
 		}
 	}
 
-	async getContent(){
+	async getContent() {
 		return this.content;
 	}
 
-	async getFile(){
+	async getFile() {
 		return null;
 	}
 
-	addChange(model, action, datum){
+	addChange(model, action, datum) {
 		let modelInfo = this.changes[model];
 
-		if (!modelInfo){
+		if (!modelInfo) {
 			modelInfo = [];
 
 			this.changes[model] = modelInfo;
@@ -57,7 +56,7 @@ class Context {
 		});
 	}
 
-	getChanges(){
+	getChanges() {
 		return this.changes;
 	}
 }

@@ -1,4 +1,3 @@
-
 var bmoor = require('bmoor'),
 	Hash = require('./object/Hash.js'),
 	Test = require('./object/Test.js'),
@@ -11,15 +10,14 @@ var bmoor = require('bmoor'),
 	memorized = require('../lib/cache.js').memorized;
 
 // NOTE : this class is a temporary class that will be removed eventually
-//   this is to support backwards compatibility, so I am creating it now, but 
+//   this is to support backwards compatibility, so I am creating it now, but
 //   will depricate immediately in next version
 
 const {Feed} = require('./Feed.js');
 const {Subject} = require('./Subject.js');
 
 class Actionable extends Feed {
-
-	constructor(parent, fn, settings = {}){
+	constructor(parent, fn, settings = {}) {
 		super(null, settings);
 
 		this.go = () => {
@@ -31,19 +29,19 @@ class Actionable extends Feed {
 		this.setParent(parent.subscribe(this.go));
 	}
 
-	index( search, settings = {}){
+	index(search, settings = {}) {
 		settings = Object.assign(settings, this.settings);
 
-		return memorized( 
+		return memorized(
 			this,
-			'indexes', 
+			'indexes',
 			search instanceof Hash ? search : new Hash(search, settings),
 			indexFn,
 			(fn) => {
 				const rtn = new Subject();
 
 				rtn.setParent(
-					this.subscribe(data => {
+					this.subscribe((data) => {
 						const dex = fn(data);
 
 						rtn.data = dex;
@@ -58,15 +56,15 @@ class Actionable extends Feed {
 	}
 
 	//--- child generators
-	route( search, settings = {}){
+	route(search, settings = {}) {
 		settings = Object.assign(settings, this.settings);
 
 		return memorized(
 			this,
 			'routes',
 			search instanceof Hash ? search : new Hash(search, settings),
-			function(dex, parent){
-				return routeFn(dex, parent, function(){
+			function (dex, parent) {
+				return routeFn(dex, parent, function () {
 					return new Feed();
 				});
 			},
@@ -74,7 +72,7 @@ class Actionable extends Feed {
 				const rtn = new Subject();
 
 				rtn.setParent(
-					this.subscribe(data => {
+					this.subscribe((data) => {
 						const dex = fn(data);
 
 						rtn.data = dex;
@@ -89,7 +87,7 @@ class Actionable extends Feed {
 	}
 
 	// TODO : create the Compare class, then memorize this
-	sorted( sortFn, settings = {}){
+	sorted(sortFn, settings = {}) {
 		settings = Object.assign(settings, this.settings);
 
 		return memorized(
@@ -105,7 +103,7 @@ class Actionable extends Feed {
 		);
 	}
 
-	map( mapFn, settings = {}){
+	map(mapFn, settings = {}) {
 		settings = Object.assign(settings, this.settings);
 
 		return memorized(
@@ -121,7 +119,7 @@ class Actionable extends Feed {
 		);
 	}
 
-	_filter( search, settings = {}){
+	_filter(search, settings = {}) {
 		settings = Object.assign(settings, this.settings);
 
 		return memorized(
@@ -134,38 +132,37 @@ class Actionable extends Feed {
 		);
 	}
 
-	filter( search, settings = {}){
+	filter(search, settings = {}) {
 		return this._filter(search, settings);
 	}
 
-	select( settings = {}){
-		var ctx,
-			test;
+	select(settings = {}) {
+		var ctx, test;
 
-		for( let i = settings.tests.length - 1; i !== -1; i-- ){
+		for (let i = settings.tests.length - 1; i !== -1; i--) {
 			test = testStack(test, settings.tests[i]);
 		}
 
-		const hash = settings.hash || 'search:'+Date.now();
+		const hash = settings.hash || 'search:' + Date.now();
 
 		settings = Object.assign(settings, this.settings);
 
 		return this._filter(
-			function( datum ){
-				if ( !datum.$normalized ){
+			function (datum) {
+				if (!datum.$normalized) {
 					datum.$normalized = {};
 				}
 
 				let cache = datum.$normalized[hash];
-				if (!cache){
+				if (!cache) {
 					cache = settings.normalizeDatum(datum);
 					datum.$normalized[hash] = cache;
 				}
 
 				return test(cache, ctx);
 			},
-			Object.assign(settings,{
-				before: function(){
+			Object.assign(settings, {
+				before: function () {
 					ctx = settings.normalizeContext();
 				},
 				hash
@@ -173,13 +170,13 @@ class Actionable extends Feed {
 		);
 	}
 
-	search( settings ){
+	search(settings) {
 		console.warn('Collection::search, will be removed soon');
-		return this.select( settings );
+		return this.select(settings);
 	}
 
 	// settings { size }
-	paginate(settings = {}){
+	paginate(settings = {}) {
 		let child = null;
 
 		const parent = this;
@@ -187,48 +184,48 @@ class Actionable extends Feed {
 
 		const nav = {
 			pos: settings.start || 0,
-			goto: function( pos ){
-				if ( bmoor.isObject(pos) ){
+			goto: function (pos) {
+				if (bmoor.isObject(pos)) {
 					var tPos = parent.data.indexOf(pos);
 
-					if ( tPos === -1 ){
+					if (tPos === -1) {
 						pos = 0;
-					}else{
-						pos = Math.floor(tPos/settings.size);
+					} else {
+						pos = Math.floor(tPos / settings.size);
 					}
 				}
 
-				if ( pos < 0 ){
+				if (pos < 0) {
 					pos = 0;
 				}
 
-				if ( pos !== this.pos ){
+				if (pos !== this.pos) {
 					this.pos = pos;
 					child.go();
 				}
 			},
-			hasNext: function(){
+			hasNext: function () {
 				return this.stop < this.count;
 			},
-			next: function(){
-				this.goto( this.pos + 1 );
+			next: function () {
+				this.goto(this.pos + 1);
 			},
-			hasPrev: function(){
+			hasPrev: function () {
 				return !!this.start;
 			},
-			prev: function(){
-				this.goto( this.pos - 1 );
+			prev: function () {
+				this.goto(this.pos - 1);
 			},
-			setSize: function( size ){
+			setSize: function (size) {
 				this.pos = -1;
 				settings.size = size;
-				this.goto( 0 );
+				this.goto(0);
 			},
-			maxSize: function(){
-				this.setSize( child.parent.data.length );
+			maxSize: function () {
+				this.setSize(child.parent.data.length);
 			},
-			resetSize: function(){
-				this.setSize( origSize );
+			resetSize: function () {
+				this.setSize(origSize);
 			}
 		};
 
@@ -239,7 +236,7 @@ class Actionable extends Feed {
 
 			var span = settings.size,
 				length = data.length,
-				steps = Math.ceil( length / span );
+				steps = Math.ceil(length / span);
 
 			nav.span = span;
 			nav.steps = steps;
@@ -249,13 +246,13 @@ class Actionable extends Feed {
 			let stop = start + span;
 
 			nav.start = start;
-			if ( stop > length ){
+			if (stop > length) {
 				stop = length;
 			}
 			nav.stop = stop;
 
 			let inside = [];
-			for( let i = start; i < stop; i++ ){
+			for (let i = start; i < stop; i++) {
 				inside.push(data[i]);
 			}
 
@@ -268,7 +265,7 @@ class Actionable extends Feed {
 		return child;
 	}
 
-	destroy(){
+	destroy() {
 		this.disconnect();
 
 		super.destroy();

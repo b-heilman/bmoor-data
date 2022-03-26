@@ -1,19 +1,18 @@
-
-const {Block} = require('./Block.js'); 
+const {Block} = require('./Block.js');
 const {Protoken} = require('./Protoken.js');
 
-function nextProtoken(master, pos, state, patterns){
+function nextProtoken(master, pos, state, patterns) {
 	const keys = patterns.keys();
 
-	state.last = pos !== 0 ? master[pos-1] : null;
+	state.last = pos !== 0 ? master[pos - 1] : null;
 
-	for (let i = 0, c = keys.length; i < c; i++){
+	for (let i = 0, c = keys.length; i < c; i++) {
 		const key = keys[i];
 		const rule = patterns.get(key);
 
 		const open = rule.open(master, pos, state);
 
-		if (open){
+		if (open) {
 			return new Protoken(key, rule, master, open, state);
 		}
 	}
@@ -21,34 +20,36 @@ function nextProtoken(master, pos, state, patterns){
 	return null;
 }
 
-function tokenize(str, patterns){
+function tokenize(str, patterns) {
 	let tokens = [];
 	let misses = [];
 
-	const sets = [{
-		tokens,
-		misses
-	}];
-	
+	const sets = [
+		{
+			tokens,
+			misses
+		}
+	];
+
 	let state = null;
 
 	let previous = null;
-	for (let pos = 0, c = str.length; pos < c; pos++){
+	for (let pos = 0, c = str.length; pos < c; pos++) {
 		state = {
 			previous
 		};
 
 		const current = nextProtoken(str, pos, state, patterns);
 
-		if (current){
+		if (current) {
 			previous = current;
-			pos = current.close-1;
+			pos = current.close - 1;
 
 			tokens.push(current.token);
 		} else {
 			const ch = str[pos];
 
-			if (ch === ','){
+			if (ch === ',') {
 				tokens = [];
 				misses = [];
 
@@ -65,21 +66,19 @@ function tokenize(str, patterns){
 	return sets;
 }
 
-function subReduce(tokens, pos, group){
-	let toTest = group.map(
-		def => ({
-			source: def,
-			tokens: def.tokens.slice(0)
-		})
-	);
+function subReduce(tokens, pos, group) {
+	let toTest = group.map((def) => ({
+		source: def,
+		tokens: def.tokens.slice(0)
+	}));
 	let found = null; // array of sources
 	let token = null;
 
-	function run(test){
+	function run(test) {
 		const myToken = test.tokens.shift();
 
-		if (myToken === token){
-			if (test.tokens.length){
+		if (myToken === token) {
+			if (test.tokens.length) {
 				return true;
 			} else {
 				found = test.source;
@@ -87,7 +86,7 @@ function subReduce(tokens, pos, group){
 		}
 	}
 
-	while(pos < tokens.length && toTest.length){
+	while (pos < tokens.length && toTest.length) {
 		token = tokens[pos].type;
 
 		toTest = toTest.filter(run);
@@ -101,39 +100,36 @@ function subReduce(tokens, pos, group){
 /**
  * [] : {tokens:[], factory}
  **/
-function tokenReduce(tokens, compounds){
-	const index = compounds.keys().reduce(
-		(agg, name) => {
-			const compound = compounds.get(name);
-			const first = compound.tokens[0];
+function tokenReduce(tokens, compounds) {
+	const index = compounds.keys().reduce((agg, name) => {
+		const compound = compounds.get(name);
+		const first = compound.tokens[0];
 
-			let group = agg[first];
+		let group = agg[first];
 
-			if (!group){
-				group = [];
+		if (!group) {
+			group = [];
 
-				agg[first] = group;
-			}
+			agg[first] = group;
+		}
 
-			group.push({
-				name,
-				tokens: compound.tokens,
-				factory: compound.factory
-			});
+		group.push({
+			name,
+			tokens: compound.tokens,
+			factory: compound.factory
+		});
 
-			return agg;
-		},
-		{}
-	);
+		return agg;
+	}, {});
 
 	// I could write this to not be destructive?
-	for(let i = 0, c = tokens.length; i < c; i++){
+	for (let i = 0, c = tokens.length; i < c; i++) {
 		let group = index[tokens[i].type];
 
-		if (group){
+		if (group) {
 			let match = subReduce(tokens, i, group);
 
-			if (match){
+			if (match) {
 				let sub = tokens.splice(i, match.tokens.length);
 
 				tokens.splice(i, 0, match.factory(sub));
@@ -147,35 +143,38 @@ function tokenReduce(tokens, compounds){
 }
 
 // convert the tokens to expressions
-function tokenExpress(token, expressions){
+function tokenExpress(token, expressions) {
 	const fn = expressions.get(token.type);
 
-	if (!fn){
-		throw new Error('unknown expression: '+token.type);
+	if (!fn) {
+		throw new Error('unknown expression: ' + token.type);
 	}
 
 	return fn(token);
 }
 
 // infix to postfix transformation
-function compile(tokens, expressions){
-	const infix = [].concat(...tokens.map(
-		token => tokenExpress(token, expressions)
-	));
+function compile(tokens, expressions) {
+	const infix = [].concat(
+		...tokens.map((token) => tokenExpress(token, expressions))
+	);
 
-	const processed = infix.reduce((state, exp) => {
-		if (exp.type === 'operation'){
-			while(state.ops.length && exp.rank >= state.ops[0].rank){
-				state.postfix.push(state.ops.shift());
+	const processed = infix.reduce(
+		(state, exp) => {
+			if (exp.type === 'operation') {
+				while (state.ops.length && exp.rank >= state.ops[0].rank) {
+					state.postfix.push(state.ops.shift());
+				}
+
+				state.ops.unshift(exp);
+			} else {
+				state.postfix.push(exp);
 			}
 
-			state.ops.unshift(exp);
-		} else {
-			state.postfix.push(exp);
-		}
-
-		return state;
-	}, {postfix:[], ops:[]});
+			return state;
+		},
+		{postfix: [], ops: []}
+	);
 
 	const postfix = processed.ops.reduce((agg, op) => {
 		agg.push(op);
@@ -190,31 +189,29 @@ function compile(tokens, expressions){
 }
 
 class Compiler {
-	constructor(parsingConfig, expressionConfig, compoundConfig=null){
+	constructor(parsingConfig, expressionConfig, compoundConfig = null) {
 		this.parsingConfig = parsingConfig;
 		this.expressionConfig = expressionConfig;
 		this.compoundConfig = compoundConfig;
 	}
 
 	// take a string, convert it into a set of tokens in infix order
-	tokenize(str){
+	tokenize(str) {
 		const tokenSet = tokenize(str, this.parsingConfig);
 
-		if (this.compoundConfig){
-			return tokenSet.map(
-				info => ({
-					tokens: tokenReduce(info.tokens, this.compoundConfig),
-					misses: info.misses
-				})
-			);
+		if (this.compoundConfig) {
+			return tokenSet.map((info) => ({
+				tokens: tokenReduce(info.tokens, this.compoundConfig),
+				misses: info.misses
+			}));
 		} else {
 			return tokenSet;
 		}
 	}
 
 	// take a token, convert it into an expression that can be evaluated
-	getExpression(token){
-		if (!this.expressionConfig){
+	getExpression(token) {
+		if (!this.expressionConfig) {
 			throw new Error('unable to getExpression without expressions');
 		}
 
@@ -222,8 +219,8 @@ class Compiler {
 	}
 
 	// take a set of tokens, assumed to be infix, and convert into infix / postfix order
-	compile(tokens){
-		if (!this.expressionConfig){
+	compile(tokens) {
+		if (!this.expressionConfig) {
 			throw new Error('unable to compile without expressions');
 		}
 
@@ -231,21 +228,21 @@ class Compiler {
 	}
 
 	// take a set of tokens, convert them into a postfix block
-	buildBlock(tokens){
+	buildBlock(tokens) {
 		return new Block(this.compile(tokens).postfix);
 	}
 
 	// take a set of tokens, covert them into a function that can be expressed
-	buildExpressor(tokens){
+	buildExpressor(tokens) {
 		return this.buildBlock(tokens).prepare();
 	}
 
 	// take a string, convert it into a function that can be expressed
-	prepare(str){
+	prepare(str) {
 		const sets = this.tokenize(str);
-		const fns = sets.map(set => this.buildExpressor(set.tokens));
+		const fns = sets.map((set) => this.buildExpressor(set.tokens));
 
-		return (ctx) => fns.map(fn => fn(ctx));
+		return (ctx) => fns.map((fn) => fn(ctx));
 	}
 }
 

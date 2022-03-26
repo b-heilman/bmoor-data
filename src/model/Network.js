@@ -1,32 +1,30 @@
-
 const {Linker} = require('./Linker.js');
 
 // Builds a network give a mapper
 class Network {
-	constructor(mapper){
+	constructor(mapper) {
 		this.mapper = mapper;
 	}
 
 	// given a set of targets, see if they all connect, limiting depth of search
-	search(toSearch, depth = 999){
+	search(toSearch, depth = 999) {
 		// reduce all names to the links for them
 		let models = [...new Set(toSearch)]; // make unique
 
-		if (models.length === 1){
+		if (models.length === 1) {
 			// I feel a little dirty for this... but...
-			return [{
-				name: models[0]
-			}];
+			return [
+				{
+					name: models[0]
+				}
+			];
 		}
 
-		let contains = models.reduce(
-			(agg, name) => {
-				agg[name] = null;
+		let contains = models.reduce((agg, name) => {
+			agg[name] = null;
 
-				return agg;
-			},
-			{}
-		);
+			return agg;
+		}, {});
 
 		const masterModels = models;
 		const fnFactory = (depthTarget) => {
@@ -34,17 +32,16 @@ class Network {
 				const linker = new Linker(this.mapper, name);
 
 				// run only the following names, it's n!, but the ifs reduce n
-				masterModels.slice(i+1)
-				.forEach(nextName => {
+				masterModels.slice(i + 1).forEach((nextName) => {
 					let results = linker.search(nextName, depthTarget);
 
-					if (results){
-						results.forEach(link => {
-							if (name !== link.name){
+					if (results) {
+						results.forEach((link) => {
+							if (name !== link.name) {
 								agg[name] = linker.link;
 
-								if (!agg[link.name]){
-									agg[link.name] = link;	
+								if (!agg[link.name]) {
+									agg[link.name] = link;
 								}
 							}
 						});
@@ -55,12 +52,12 @@ class Network {
 			};
 		};
 
-		const filterFn = key => !contains[key];
+		const filterFn = (key) => !contains[key];
 
-		for(let depthPos = 1;  depthPos <= depth; depthPos++){
+		for (let depthPos = 1; depthPos <= depth; depthPos++) {
 			contains = models.reduce(fnFactory(depthPos), contains);
 
-			if (Object.values(contains).indexOf(null) === -1){
+			if (Object.values(contains).indexOf(null) === -1) {
 				depthPos = depth;
 			}
 
@@ -69,19 +66,18 @@ class Network {
 
 		// Do a last can, make sure all links were defined... ensuring all
 		// tables are linked
-		return Object.keys(contains)
-		.map(key => {
+		return Object.keys(contains).map((key) => {
 			const link = contains[key];
 
-			if (!link){
-				throw new Error('unlinked target: '+key);
+			if (!link) {
+				throw new Error('unlinked target: ' + key);
 			}
 
 			return link;
 		});
 	}
 
-	requirements(names, count = 3){
+	requirements(names, count = 3) {
 		const links = this.search(names, count);
 		const context = {
 			scope: links,
@@ -89,12 +85,12 @@ class Network {
 		};
 
 		// keep rotating through the network, pulling off the edges
-		while(context.scope.length){
+		while (context.scope.length) {
 			const origLength = context.scope.length;
-			const names = context.scope.map(link => link.name);
+			const names = context.scope.map((link) => link.name);
 
-			context.scope = context.scope.filter(link => {
-				if (link.search('direction', 'outgoing', names).length === 0){
+			context.scope = context.scope.filter((link) => {
+				if (link.search('direction', 'outgoing', names).length === 0) {
 					context.found.push(link);
 					return false;
 				} else {
@@ -102,11 +98,11 @@ class Network {
 				}
 			});
 
-			if (context.scope.length === origLength){
+			if (context.scope.length === origLength) {
 				throw new Error('no edges found');
 			}
 		}
-		
+
 		return context.found;
 	}
 }

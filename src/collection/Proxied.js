@@ -1,20 +1,19 @@
-
 const {Proxy: Prox} = require('../object/Proxy.js');
 const {Collection} = require('../Collection.js');
 
 const defaultSettings = {
-	proxyFactory: function( datum ){
+	proxyFactory: function (datum) {
 		return new Prox(datum);
 	}
 };
 
-function configSettings( settings ){
-	if ( !settings ){
+function configSettings(settings) {
+	if (!settings) {
 		settings = {};
 	}
 
-	if ( !('massage' in settings) ){
-		settings.massage = function( proxy ){
+	if (!('massage' in settings)) {
+		settings.massage = function (proxy) {
 			return proxy.getDatum();
 		};
 	}
@@ -23,57 +22,57 @@ function configSettings( settings ){
 }
 
 class Proxied extends Collection {
-	constructor(src, settings){
+	constructor(src, settings) {
 		super(src, settings);
 
-		if (src){
-			this.data.forEach( ( datum, i ) => {
+		if (src) {
+			this.data.forEach((datum, i) => {
 				this.data[i] = this._wrap(datum);
 			});
 		}
 	}
 
 	//--- array methods
-	indexOf( obj, start ){
-		if ( !start ){
+	indexOf(obj, start) {
+		if (!start) {
 			start = 0;
 		}
 
-		if (obj instanceof Prox){
-			return super.indexOf( obj, start );
-		}else{
-			let c = this.data.length; 
-			while( start < c && this.data[start].getDatum() !== obj ){
+		if (obj instanceof Prox) {
+			return super.indexOf(obj, start);
+		} else {
+			let c = this.data.length;
+			while (start < c && this.data[start].getDatum() !== obj) {
 				start++;
 			}
 
-			if ( this.data.length !== start ){
+			if (this.data.length !== start) {
 				return start;
-			}else{
+			} else {
 				return -1;
 			}
 		}
 	}
 
-	mergeChanges(){
-		return this.data.map( p => {
+	mergeChanges() {
+		return this.data.map((p) => {
 			p.merge();
 
 			return p.getDatum();
 		});
 	}
 
-	flattenAll(){
-		return this.data.map( p => {
+	flattenAll() {
+		return this.data.map((p) => {
 			return p.flatten();
 		});
 	}
 
 	//--- collection methods
-	_wrap( datum ){
+	_wrap(datum) {
 		var proxy;
 
-		if (datum instanceof Prox){
+		if (datum instanceof Prox) {
 			proxy = datum;
 		} else {
 			let factory = this.settings.proxyFactory || defaultSettings.proxyFactory;
@@ -83,45 +82,45 @@ class Proxied extends Collection {
 		return proxy;
 	}
 
-	_add( datum ){
+	_add(datum) {
 		var proxy = this._wrap(datum);
 
-		return super._add( proxy );
+		return super._add(proxy);
 	}
 
-	index(search, settings){
+	index(search, settings) {
 		settings = configSettings(settings);
 
 		return super.index(search, settings);
 	}
 
-	sorted(compare, settings){
+	sorted(compare, settings) {
 		settings = configSettings(settings);
 
 		return super.sorted(compare, settings);
 	}
 
-	//--- child generators 
-	route( search, settings ){
-		settings = configSettings( settings );
+	//--- child generators
+	route(search, settings) {
+		settings = configSettings(settings);
 
-		return super.route( search, settings );
+		return super.route(search, settings);
 	}
 
-	filter( search, settings ){
-		settings = configSettings( settings );
+	filter(search, settings) {
+		settings = configSettings(settings);
 
-		return super.filter( search, settings );
+		return super.filter(search, settings);
 	}
 
-	search( settings ){
-		return this.select( settings );
+	search(settings) {
+		return this.select(settings);
 	}
 
-	select( settings ){
-		settings = configSettings( settings );
+	select(settings) {
+		settings = configSettings(settings);
 
-		return super.select( settings );
+		return super.select(settings);
 	}
 }
 

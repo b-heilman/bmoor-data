@@ -1,12 +1,11 @@
-
 const expect = require('chai').expect;
 
 const {Mapper} = require('./Mapper.js');
 const {Network} = require('./Network.js');
 
-describe('bmoor-data::/mode/Network', function(){
-	describe('::search', function(){
-		it('should pick the shortest route', function(){
+describe('bmoor-data::/mode/Network', function () {
+	describe('::search', function () {
+		it('should pick the shortest route', function () {
 			const mapper = new Mapper();
 
 			mapper.addLink('table-1', 'id', 'table-2', 'eins');
@@ -17,12 +16,11 @@ describe('bmoor-data::/mode/Network', function(){
 			const network = new Network(mapper);
 
 			expect(
-				network.search(['table-1','table-2','table-4'], 3)
-				.map(t => t.name)
+				network.search(['table-1', 'table-2', 'table-4'], 3).map((t) => t.name)
 			).to.deep.equal(['table-1', 'table-2', 'table-4']);
 		});
 
-		it('should work linearly', function(){
+		it('should work linearly', function () {
 			const mapper = new Mapper();
 
 			mapper.addLink('table-1', 'id', 'table-2', 'eins');
@@ -32,12 +30,11 @@ describe('bmoor-data::/mode/Network', function(){
 			const network = new Network(mapper);
 
 			expect(
-				network.search(['table-1','table-2','table-4'], 3)
-				.map(t => t.name)
+				network.search(['table-1', 'table-2', 'table-4'], 3).map((t) => t.name)
 			).to.deep.equal(['table-1', 'table-2', 'table-4', 'table-3']);
 		});
 
-		it('should pick the shortest route', function(){
+		it('should pick the shortest route', function () {
 			const mapper = new Mapper();
 
 			mapper.addLink('table-1', 'id', 'table-2', 'eins');
@@ -48,14 +45,13 @@ describe('bmoor-data::/mode/Network', function(){
 			const network = new Network(mapper);
 
 			expect(
-				network.search(['table-1','table-3','table-4'], 3)
-				.map(t => t.name)
+				network.search(['table-1', 'table-3', 'table-4'], 3).map((t) => t.name)
 			).to.deep.equal(['table-1', 'table-3', 'table-4']);
 		});
 	});
 
-	describe('::requirements', function(){
-		it('should order them correctly - order 1', function(){
+	describe('::requirements', function () {
+		it('should order them correctly - order 1', function () {
 			const mapper = new Mapper();
 
 			mapper.addLink('table-1', 'id', 'table-2', 'table1Id');
@@ -68,37 +64,56 @@ describe('bmoor-data::/mode/Network', function(){
 			const network = new Network(mapper);
 
 			expect(
-				network.requirements(['table-6','table-3','table-4'], 3)
-				.map(t => t.name)
-			).to.deep.equal(['table-6','table-4','table-5','table-3']);
+				network
+					.requirements(['table-6', 'table-3', 'table-4'], 3)
+					.map((t) => t.name)
+			).to.deep.equal(['table-6', 'table-4', 'table-5', 'table-3']);
 
 			expect(
-				network.requirements(['table-3','table-4','table-6'], 3)
-				.map(t => t.name)
-			).to.deep.equal(['table-4','table-6','table-5','table-3']);
+				network
+					.requirements(['table-3', 'table-4', 'table-6'], 3)
+					.map((t) => t.name)
+			).to.deep.equal(['table-4', 'table-6', 'table-5', 'table-3']);
 
 			expect(
-				network.requirements(['table-6','table-4','table-3'], 3)
-				.map(t => t.name)
-			).to.deep.equal(['table-6','table-4','table-5','table-3']);
+				network
+					.requirements(['table-6', 'table-4', 'table-3'], 3)
+					.map((t) => t.name)
+			).to.deep.equal(['table-6', 'table-4', 'table-5', 'table-3']);
 
-			let master = ['table-1','table-7','table-2','table-3','table-4','table-6','table-5'];
-			expect(
-				network.requirements(master, 3)
-				.map(t => t.name)
-			).to.deep.equal(
-				['table-7','table-2','table-4','table-6','table-5','table-3','table-1']
-			);
+			let master = [
+				'table-1',
+				'table-7',
+				'table-2',
+				'table-3',
+				'table-4',
+				'table-6',
+				'table-5'
+			];
+			expect(network.requirements(master, 3).map((t) => t.name)).to.deep.equal([
+				'table-7',
+				'table-2',
+				'table-4',
+				'table-6',
+				'table-5',
+				'table-3',
+				'table-1'
+			]);
 
 			expect(
-				network.requirements(master.reverse(), 3)
-				.map(t => t.name)
-			).to.deep.equal(
-				['table-4','table-2','table-7','table-6','table-5','table-3','table-1']
-			);
+				network.requirements(master.reverse(), 3).map((t) => t.name)
+			).to.deep.equal([
+				'table-4',
+				'table-2',
+				'table-7',
+				'table-6',
+				'table-5',
+				'table-3',
+				'table-1'
+			]);
 		});
 
-		it('should order them correctly - order 2', function(){
+		it('should order them correctly - order 2', function () {
 			const mapper = new Mapper();
 
 			mapper.addLink('table-1', 'table2Id', 'table-2', 'id');
@@ -111,18 +126,22 @@ describe('bmoor-data::/mode/Network', function(){
 
 			const network = new Network(mapper);
 
-			let results = network.requirements([
-				'table-7',
-				'table-6',
-				'table-5',
-				'table-4',
-				'table-3',
-				'table-2',
-				'table-1'
-			], 1).map(t => t.name);
+			let results = network
+				.requirements(
+					[
+						'table-7',
+						'table-6',
+						'table-5',
+						'table-4',
+						'table-3',
+						'table-2',
+						'table-1'
+					],
+					1
+				)
+				.map((t) => t.name);
 
-			expect(results)
-			.to.deep.equal([
+			expect(results).to.deep.equal([
 				'table-4',
 				'table-3',
 				'table-6',
@@ -132,18 +151,22 @@ describe('bmoor-data::/mode/Network', function(){
 				'table-1'
 			]);
 
-			results = network.requirements([
-				'table-1',
-				'table-2',
-				'table-3',
-				'table-4',
-				'table-5',
-				'table-6',
-				'table-7'
-			], 1).map(t => t.name);
+			results = network
+				.requirements(
+					[
+						'table-1',
+						'table-2',
+						'table-3',
+						'table-4',
+						'table-5',
+						'table-6',
+						'table-7'
+					],
+					1
+				)
+				.map((t) => t.name);
 
-			expect(results)
-			.to.deep.equal([
+			expect(results).to.deep.equal([
 				'table-3',
 				'table-4',
 				'table-2',
@@ -153,18 +176,22 @@ describe('bmoor-data::/mode/Network', function(){
 				'table-7'
 			]);
 
-			results = network.requirements([
-				'table-1',
-				'table-7',
-				'table-3',
-				'table-4',
-				'table-2',
-				'table-6',
-				'table-5'
-			], 1).map(t => t.name);
+			results = network
+				.requirements(
+					[
+						'table-1',
+						'table-7',
+						'table-3',
+						'table-4',
+						'table-2',
+						'table-6',
+						'table-5'
+					],
+					1
+				)
+				.map((t) => t.name);
 
-			expect(results)
-			.to.deep.equal([
+			expect(results).to.deep.equal([
 				'table-3',
 				'table-4',
 				'table-2',
@@ -175,7 +202,7 @@ describe('bmoor-data::/mode/Network', function(){
 			]);
 		});
 
-		it('should order them correctly - order 3', function(){
+		it('should order them correctly - order 3', function () {
 			const mapper = new Mapper();
 
 			mapper.addLink('table-1', 'table2Id', 'table-2', 'id');
@@ -190,18 +217,22 @@ describe('bmoor-data::/mode/Network', function(){
 
 			const network = new Network(mapper);
 
-			let results = network.requirements([
-				'table-7',
-				'table-6',
-				'table-5',
-				'table-4',
-				'table-3',
-				'table-2',
-				'table-1'
-			], 1).map(t => t.name);
+			let results = network
+				.requirements(
+					[
+						'table-7',
+						'table-6',
+						'table-5',
+						'table-4',
+						'table-3',
+						'table-2',
+						'table-1'
+					],
+					1
+				)
+				.map((t) => t.name);
 
-			expect(results)
-			.to.deep.equal([
+			expect(results).to.deep.equal([
 				'table-7',
 				'table-6',
 				'table-3',

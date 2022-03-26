@@ -1,15 +1,14 @@
-
 class Router {
-	constructor(path, routes = []){
+	constructor(path, routes = []) {
 		this.path = '';
 		this.routes = routes;
 	}
 
-	addRoute(route){
+	addRoute(route) {
 		this.routes.push(route);
 	}
 
-	addRouter(router){
+	addRouter(router) {
 		this.routes.push(router);
 	}
 }

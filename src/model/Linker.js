@@ -1,18 +1,18 @@
-
 // search a map for connective nodes, do it x deep
 class Linker {
-	constructor(mapper, name){
+	constructor(mapper, name) {
 		this.link = mapper.getLink(name);
 		this.mapper = mapper;
 	}
 
 	// search for tables within x jumps
-	search(toName, count = 999){
+	search(toName, count = 999) {
 		let connection = this.link.connectsTo(toName);
 
-		if (connection){
+		if (connection) {
 			return [this.link, this.mapper.getLink(toName)];
-		} else if (count === 1){ // you can make one jump and no direct connection
+		} else if (count === 1) {
+			// you can make one jump and no direct connection
 			return null;
 		}
 
@@ -22,28 +22,28 @@ class Linker {
 		const traversed = {};
 
 		// create initial search list
-		this.link.joins.forEach(l => {
+		this.link.joins.forEach((l) => {
 			const link = this.mapper.getLink(l.name);
 
 			toCheck.push({
-				count: count-1,
+				count: count - 1,
 				link: link
 			});
 			traversed[l.name] = true;
 		});
-		
+
 		// iterate over list, it can grow
-		while(toCheck.length){
+		while (toCheck.length) {
 			const check = toCheck.shift();
 			const link = check.link;
 			const match = link.connectsTo(toName);
 
-			if (match){
+			if (match) {
 				let iter = check;
 
 				rtn = [link, this.mapper.getLink(toName)];
 
-				while(iter.parent){
+				while (iter.parent) {
 					rtn.unshift(iter.parent.link);
 					iter = iter.parent;
 				}
@@ -51,12 +51,12 @@ class Linker {
 				rtn.unshift(this.link);
 
 				toCheck.length = 0; // exit loop
-			} else if (check.count > 1){
+			} else if (check.count > 1) {
 				// if not over count limit, add children to check list
-				link.joins.forEach(l => {
+				link.joins.forEach((l) => {
 					const childLink = this.mapper.getLink(l.name);
 
-					if (!traversed[l.name]){
+					if (!traversed[l.name]) {
 						toCheck.push({
 							count: check.count - 1,
 							link: childLink,

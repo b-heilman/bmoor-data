@@ -1,4 +1,3 @@
-
 const {expect} = require('chai');
 const sinon = require('sinon');
 
@@ -7,13 +6,13 @@ const {Context} = require('../context.js');
 
 const sut = require('./utility.js');
 
-describe('src/crud/controller/utility.js', function(){
+describe('src/crud/controller/utility.js', function () {
 	let stubs = {};
 	let nexus = null;
 	let service = null;
 	let interface = null;
 
-	beforeEach(async function(){
+	beforeEach(async function () {
 		stubs = {};
 
 		nexus = new Nexus();
@@ -36,25 +35,25 @@ describe('src/crud/controller/utility.js', function(){
 		});
 
 		interface = {};
-			
+
 		service = await nexus.installService('service-1', interface);
 	});
 
-	afterEach(function(){
-		Object.values(stubs)
-		.forEach(stub => stub.restore());
+	afterEach(function () {
+		Object.values(stubs).forEach((stub) => stub.restore());
 	});
 
-	describe('allowing for a method to be called', function(){
+	describe('allowing for a method to be called', function () {
 		const {Utility} = sut;
 
-		it('should work', async function(){
+		it('should work', async function () {
 			let called = false;
 
-			stubs.read = sinon.stub(service, 'read')
-			.resolves({id: 'eins', name: 'hello-world'});
+			stubs.read = sinon
+				.stub(service, 'read')
+				.resolves({id: 'eins', name: 'hello-world'});
 
-			service.fooBar = function(){
+			service.fooBar = function () {
 				called = true;
 
 				return 'eins-zwei';
@@ -76,20 +75,19 @@ describe('src/crud/controller/utility.js', function(){
 
 			const res = await utility.route(context);
 
-			expect(called)
-			.to.equal(true);
+			expect(called).to.equal(true);
 
-			expect(res)
-			.to.equal('eins-zwei');
+			expect(res).to.equal('eins-zwei');
 		});
 
-		it('should fail if permission fails', async function(){
+		it('should fail if permission fails', async function () {
 			let called = false;
 
-			stubs.read = sinon.stub(service, 'read')
-			.resolves({id: 'eins', name: 'hello-world'});
+			stubs.read = sinon
+				.stub(service, 'read')
+				.resolves({id: 'eins', name: 'hello-world'});
 
-			service.fooBar = function(){
+			service.fooBar = function () {
 				called = true;
 
 				return 'eins-zwei';
@@ -110,9 +108,8 @@ describe('src/crud/controller/utility.js', function(){
 				}
 			});
 
-			context.hasPermission = function(perm){
-				expect(perm)
-				.to.equal('oh-boy');
+			context.hasPermission = function (perm) {
+				expect(perm).to.equal('oh-boy');
 
 				return false;
 			};
@@ -121,32 +118,28 @@ describe('src/crud/controller/utility.js', function(){
 			try {
 				const res = await utility.route(context);
 
-				expect(called)
-				.to.equal(true);
+				expect(called).to.equal(true);
 
-				expect(res)
-				.to.equal('eins-zwei');
-			} catch(ex){
+				expect(res).to.equal('eins-zwei');
+			} catch (ex) {
 				failed = true;
 
-				expect(ex.code)
-				.to.equal('UTILITY_CONTROLLER_PERMISSION');
+				expect(ex.code).to.equal('UTILITY_CONTROLLER_PERMISSION');
 			}
 
-			expect(failed)
-			.to.equal(true);
+			expect(failed).to.equal(true);
 
-			expect(called)
-			.to.equal(false);
+			expect(called).to.equal(false);
 		});
 
-		it('should succeed if permission allows', async function(){
+		it('should succeed if permission allows', async function () {
 			let called = false;
 
-			stubs.read = sinon.stub(service, 'read')
-			.resolves({id: 'eins', name: 'hello-world'});
+			stubs.read = sinon
+				.stub(service, 'read')
+				.resolves({id: 'eins', name: 'hello-world'});
 
-			service.fooBar = function(){
+			service.fooBar = function () {
 				called = true;
 
 				return 'eins-zwei';
@@ -167,9 +160,8 @@ describe('src/crud/controller/utility.js', function(){
 				}
 			});
 
-			context.hasPermission = function(perm){
-				expect(perm)
-				.to.equal('oh-boy');
+			context.hasPermission = function (perm) {
+				expect(perm).to.equal('oh-boy');
 
 				return true;
 			};
@@ -178,27 +170,22 @@ describe('src/crud/controller/utility.js', function(){
 			try {
 				const res = await utility.route(context);
 
-				expect(called)
-				.to.equal(true);
+				expect(called).to.equal(true);
 
-				expect(res)
-				.to.equal('eins-zwei');
-			} catch(ex){
+				expect(res).to.equal('eins-zwei');
+			} catch (ex) {
 				failed = true;
 
-				expect(ex.code)
-				.to.equal('UTILITY_CONTROLLER_PERMISSION');
+				expect(ex.code).to.equal('UTILITY_CONTROLLER_PERMISSION');
 			}
 
-			expect(failed)
-			.to.equal(false);
+			expect(failed).to.equal(false);
 
-			expect(called)
-			.to.equal(true);
+			expect(called).to.equal(true);
 		});
 	});
 
-	it('should fail if a method not defined is called', async function(){
+	it('should fail if a method not defined is called', async function () {
 		const {Utility} = sut;
 
 		let called = false;
@@ -222,26 +209,21 @@ describe('src/crud/controller/utility.js', function(){
 		try {
 			const res = await utility.route(context);
 
-			expect(called)
-			.to.equal(true);
+			expect(called).to.equal(true);
 
-			expect(res)
-			.to.equal('eins-zwei');
-		} catch(ex){
+			expect(res).to.equal('eins-zwei');
+		} catch (ex) {
 			failed = true;
 
-			expect(ex.code)
-			.to.equal('UTILITY_CONTROLLER_METHOD');
+			expect(ex.code).to.equal('UTILITY_CONTROLLER_METHOD');
 		}
 
-		expect(failed)
-		.to.equal(true);
+		expect(failed).to.equal(true);
 
-		expect(called)
-		.to.equal(false);
+		expect(called).to.equal(false);
 	});
 
-	it('should fail if an utility not defined is called', async function(){
+	it('should fail if an utility not defined is called', async function () {
 		const {Utility} = sut;
 
 		let called = false;
@@ -265,26 +247,21 @@ describe('src/crud/controller/utility.js', function(){
 		try {
 			const res = await utility.route(context);
 
-			expect(called)
-			.to.equal(true);
+			expect(called).to.equal(true);
 
-			expect(res)
-			.to.equal('eins-zwei');
-		} catch(ex){
+			expect(res).to.equal('eins-zwei');
+		} catch (ex) {
 			failed = true;
 
-			expect(ex.code)
-			.to.equal('UTILITY_CONTROLLER_NO_UTILITY');
+			expect(ex.code).to.equal('UTILITY_CONTROLLER_NO_UTILITY');
 		}
 
-		expect(failed)
-		.to.equal(true);
+		expect(failed).to.equal(true);
 
-		expect(called)
-		.to.equal(false);
+		expect(called).to.equal(false);
 	});
 
-	it('should fail if the http method is incorrect', async function(){
+	it('should fail if the http method is incorrect', async function () {
 		const {Utility} = sut;
 
 		let called = false;
@@ -308,22 +285,17 @@ describe('src/crud/controller/utility.js', function(){
 		try {
 			const res = await utility.route(context);
 
-			expect(called)
-			.to.equal(true);
+			expect(called).to.equal(true);
 
-			expect(res)
-			.to.equal('eins-zwei');
-		} catch(ex){
+			expect(res).to.equal('eins-zwei');
+		} catch (ex) {
 			failed = true;
 
-			expect(ex.code)
-			.to.equal('UTILITY_CONTROLLER_WRONG_METHOD');
+			expect(ex.code).to.equal('UTILITY_CONTROLLER_WRONG_METHOD');
 		}
 
-		expect(failed)
-		.to.equal(true);
+		expect(failed).to.equal(true);
 
-		expect(called)
-		.to.equal(false);
+		expect(called).to.equal(false);
 	});
 });

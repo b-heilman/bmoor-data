@@ -1,4 +1,3 @@
-
 // I'm not going to keep indexing everything this way.  It goes back to when I used to
 // webpack everything.  I'll leave it to people to build their own index, so they don't need
 // to pull everything in.  New methods won't be added to this.

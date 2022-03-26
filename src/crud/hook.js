@@ -1,31 +1,30 @@
-
 const {asyncWrap} = require('./wrap.js');
 
-function mapFactory(fn, old){
-	if (!old){
+function mapFactory(fn, old) {
+	if (!old) {
 		return fn;
 	} else {
-		return async function(ctx){
+		return async function (ctx) {
 			const eins = await old(ctx);
 			const zwei = await fn(ctx);
 
-			return function(datum){
+			return function (datum) {
 				return zwei(eins(datum));
 			};
 		};
 	}
 }
 
-function filterFactory(fn, old){
-	if (!old){
+function filterFactory(fn, old) {
+	if (!old) {
 		return fn;
 	} else {
-		return async function(ctx){
+		return async function (ctx) {
 			const eins = await old(ctx);
 			const zwei = await fn(ctx);
 
-			return function(datum){
-				if (eins(datum)){
+			return function (datum) {
+				if (eins(datum)) {
 					return zwei(datum);
 				} else {
 					return false;
@@ -35,71 +34,68 @@ function filterFactory(fn, old){
 	}
 }
 
-function hook(crud, settings){
-	if (settings.beforeCreate){
+function hook(crud, settings) {
+	if (settings.beforeCreate) {
 		crud._beforeCreate = asyncWrap(
-			settings.beforeCreate, 
+			settings.beforeCreate,
 			crud._beforeCreate,
 			true
 		);
 	}
 
-	if (settings.afterCreate){
+	if (settings.afterCreate) {
 		crud._afterCreate = asyncWrap(
-			settings.afterCreate, 
+			settings.afterCreate,
 			crud._afterCreate,
 			false
 		);
 	}
 
-	if (settings.beforeQuery){
+	if (settings.beforeQuery) {
 		crud._beforeQuery = asyncWrap(
-			settings.beforeQuery, 
+			settings.beforeQuery,
 			crud._beforeQuery,
 			true
 		);
 	}
 
-	if (settings.beforeUpdate){
+	if (settings.beforeUpdate) {
 		crud._beforeUpdate = asyncWrap(
-			settings.beforeUpdate, 
+			settings.beforeUpdate,
 			crud._beforeUpdate,
 			true
 		);
 	}
 
-	if (settings.afterUpdate){
+	if (settings.afterUpdate) {
 		crud._afterUpdate = asyncWrap(
-			settings.afterUpdate, 
+			settings.afterUpdate,
 			crud._afterUpdate,
 			false
 		);
 	}
 
-	if (settings.beforeDelete){
+	if (settings.beforeDelete) {
 		crud._beforeDelete = asyncWrap(
-			settings.beforeDelete, 
+			settings.beforeDelete,
 			crud._beforeDelete,
 			true
 		);
 	}
 
-	if (settings.afterDelete){
+	if (settings.afterDelete) {
 		crud._afterDelete = asyncWrap(
-			settings.afterDelete, 
+			settings.afterDelete,
 			crud._afterDelete,
 			false
 		);
 	}
 
-	if (settings.mapFactory){
-		crud._mapFactory = mapFactory(
-			settings.mapFactory,
-			crud._mapFactory
-		);
+	if (settings.mapFactory) {
+		crud._mapFactory = mapFactory(settings.mapFactory, crud._mapFactory);
 	}
 
-	if (settings.filterFactory){
+	if (settings.filterFactory) {
 		crud._filterFactory = filterFactory(
 			settings.filterFactory,
 			crud._filterFactory

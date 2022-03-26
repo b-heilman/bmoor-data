@@ -1,26 +1,25 @@
-
 class Expressable {
-	constructor(type, method, rank = null){
+	constructor(type, method, rank = null) {
 		this.type = type;
 		this.rank = rank;
 		this.method = method;
 	}
 
-	eval(...args){
+	eval(...args) {
 		return this.method(...args);
 	}
 
-	prepare(){
+	prepare() {
 		return (...args) => {
 			return this.method(...args);
 		};
 	}
 
-	toJSON(){
+	toJSON() {
 		return {type: this.type, method: this.method.name};
 	}
 
-	toString(){
+	toString() {
 		return `{"type":"${this.type}", "method":"${this.method.name}"}`;
 	}
 }
