@@ -1,4 +1,4 @@
-const {Config} = require('bmoor/src/lib/config.js');
+const {Config, ConfigObject} = require('bmoor/src/lib/config.js');
 const {makeGetter} = require('bmoor/src/core.js');
 
 const {Token} = require('../expression/Token.js');
@@ -13,10 +13,8 @@ const isOperator = /\+|-|\*|\/|\^|\||&|=|~|<|>|!/;
 
 const escapeChar = '\\';
 
-const config = new Config({});
-
-const parsings = config.sub('parsings', {
-	accessor: {
+const parsings = new Config({
+	accessor: new ConfigObject({
 		open: function (master, pos, state) {
 			const ch = master[pos];
 
@@ -85,9 +83,9 @@ const parsings = config.sub('parsings', {
 		toToken: function (content) {
 			return new Token('accessor', content);
 		}
-	},
+	}),
 
-	string: {
+	string: new ConfigObject({
 		open: function (master, pos, state) {
 			const ch = master[pos];
 
@@ -120,9 +118,9 @@ const parsings = config.sub('parsings', {
 
 			return new Token('constant', content, {subtype: 'string'});
 		}
-	},
+	}),
 
-	number: {
+	number: new ConfigObject({
 		open: function (master, pos) {
 			const ch = master[pos];
 
@@ -155,9 +153,9 @@ const parsings = config.sub('parsings', {
 
 			return new Token('constant', content, {subtype: 'number'});
 		}
-	},
+	}),
 
-	operation: {
+	operation: new ConfigObject({
 		// +
 		open: function (master, pos) {
 			const ch = master[pos];
@@ -182,9 +180,9 @@ const parsings = config.sub('parsings', {
 		toToken: function (content) {
 			return new Token('operation', content);
 		}
-	},
+	}),
 
-	method: {
+	method: new ConfigObject({
 		// method(some, vars)
 		open: function (master, pos, state) {
 			const ch = master[pos];
@@ -253,10 +251,10 @@ const parsings = config.sub('parsings', {
 
 			return new Token('method', content, metadata);
 		}
-	},
+	}),
 
 	// (foo, bar)
-	block: {
+	block: new ConfigObject({
 		open: function (master, pos, state) {
 			const ch = master[pos];
 
@@ -290,10 +288,10 @@ const parsings = config.sub('parsings', {
 		toToken: function (content) {
 			return new Token('block', content);
 		}
-	}
+	})
 });
 
-const constants = config.sub('constants', {
+const constants = new Config({
 	string: function (value) {
 		value = value + '';
 
@@ -317,102 +315,102 @@ const constants = config.sub('constants', {
 	}
 });
 
-const operations = config.sub('operations', {
-	'~': {
+const operations = new Config({
+	'~': new ConfigObject({
 		fn: function contains(left, right, obj) {
 			return left(obj).indexOf(right(obj)) !== -1;
 		},
 		rank: 1
-	},
-	'*': {
+	}),
+	'*': new ConfigObject({
 		fn: function mult(left, right, obj) {
 			return left(obj) - right(obj);
 		},
 		rank: 3
-	},
-	'/': {
+	}),
+	'/': new ConfigObject({
 		fn: function div(left, right, obj) {
 			return left(obj) / right(obj);
 		},
 		rank: 3
-	},
-	'+': {
+	}),
+	'+': new ConfigObject({
 		fn: function add(left, right, obj) {
 			return left(obj) + right(obj);
 		},
 		rank: 4
-	},
-	'-': {
+	}),
+	'-': new ConfigObject({
 		fn: function sub(left, right, obj) {
 			return left(obj) - left(obj);
 		},
 		rank: 4
-	},
-	'<': {
+	}),
+	'<': new ConfigObject({
 		fn: function lt(left, right, obj) {
 			return left(obj) < left(obj);
 		},
 		rank: 6
-	},
-	'<=': {
+	}),
+	'<=': new ConfigObject({
 		fn: function lte(left, right, obj) {
 			return left(obj) <= left(obj);
 		},
 		rank: 6
-	},
-	'>': {
+	}),
+	'>': new ConfigObject({
 		fn: function gt(left, right, obj) {
 			return left(obj) > left(obj);
 		},
 		rank: 6
-	},
-	'>=': {
+	}),
+	'>=': new ConfigObject({
 		fn: function gte(left, right, obj) {
 			return left(obj) >= left(obj);
 		},
 		rank: 6
-	},
-	'==': {
+	}),
+	'==': new ConfigObject({
 		fn: function equals(left, right, obj) {
 			return left(obj) == right(obj); // jshint ignore:line
 		},
 		rank: 7
-	},
-	'!=': {
+	}),
+	'!=': new ConfigObject({
 		fn: function equals(left, right, obj) {
 			return left(obj) != right(obj); // jshint ignore:line
 		},
 		rank: 7
-	},
-	'&&': {
+	}),
+	'&&': new ConfigObject({
 		fn: function and(left, right, obj) {
 			return left(obj) && right(obj);
 		},
 		rank: 11
-	},
-	and: {
+	}),
+	and: new ConfigObject({
 		fn: function and(left, right, obj) {
 			return left(obj) && right(obj);
 		},
 		rank: 11
-	},
-	'||': {
+	}),
+	'||': new ConfigObject({
 		fn: function or(left, right, obj) {
 			return left(obj) || right(obj);
 		},
 		rank: 12
-	},
-	or: {
+	}),
+	or: new ConfigObject({
 		fn: function or(left, right, obj) {
 			return left(obj) || right(obj);
 		},
 		rank: 12
-	}
+	})
 });
 
 let compiler = null;
 
-const methods = config.sub('methods', {
+const methods = new Config({
 	join: function (glue, ...args) {
 		return args.join(glue);
 	},
@@ -421,7 +419,7 @@ const methods = config.sub('methods', {
 	}
 });
 
-const expressions = config.sub('expressions', {
+const expressions = new Config({
 	accessor: function (token) {
 		const getter = makeGetter(token.value);
 
@@ -483,7 +481,10 @@ expressions.set('block', function (token) {
 });
 
 module.exports = {
-	config,
-	compiler,
-	expressions
+	parsings,
+	constants,
+	operations,
+	methods,
+	expressions,
+	compiler
 };

@@ -1,4 +1,4 @@
-const {Config} = require('bmoor/src/lib/config.js');
+const {Config, ConfigObject} = require('bmoor/src/lib/config.js');
 const {makeGetter} = require('bmoor/src/core.js');
 
 const {Token} = require('../expression/Token.js');
@@ -9,10 +9,8 @@ const isPath = /[\w.]/;
 
 const escapeChar = '\\';
 
-const config = new Config({});
-
-const parsings = config.sub('parsings', {
-	accessor: {
+const parsings = new Config({
+	accessor: new ConfigObject({
 		open: function (master, pos, state) {
 			const ch = master[pos];
 
@@ -54,8 +52,8 @@ const parsings = config.sub('parsings', {
 		toToken: function (content) {
 			return new Token('accessor', content);
 		}
-	},
-	constant: {
+	}),
+	constant: new ConfigObject({
 		open: function (master, pos) {
 			return {
 				pos: pos,
@@ -77,10 +75,10 @@ const parsings = config.sub('parsings', {
 		toToken: function (content) {
 			return new Token('constant', content);
 		}
-	}
+	})
 });
 
-const constants = config.sub('constants', {
+const constants = new Config({
 	string: function (value) {
 		value = value + '';
 
@@ -90,16 +88,16 @@ const constants = config.sub('constants', {
 	}
 });
 
-const operations = config.sub('operations', {
-	concat: {
+const operations = new Config({
+	concat: new ConfigObject({
 		fn: function concat(left, right, obj) {
 			return left(obj) + right(obj);
 		},
 		rank: 4
-	}
+	})
 });
 
-const expressions = config.sub('expressions', {
+const expressions = new Config({
 	accessor: function (token) {
 		const getter = makeGetter(token.value);
 
@@ -134,7 +132,9 @@ const expressions = config.sub('expressions', {
 const compiler = new Compiler(parsings, expressions);
 
 module.exports = {
-	config,
-	compiler,
-	expressions
+	parsings,
+	constants,
+	operations,
+	expressions,
+	compiler
 };

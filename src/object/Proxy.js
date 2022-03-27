@@ -130,7 +130,10 @@ function flatten(obj, cmp) {
 		if (key.charAt(0) !== '$') {
 			let v = cmp[key];
 
-			if (bmoor.isObject(v) && !obj.hasOwnProperty(key)) {
+			if (
+				bmoor.isObject(v) &&
+				!Object.prototype.hasOwnProperty.call(obj, key)
+			) {
 				rtn[key] = bmoor.object.copy({}, v);
 			} else {
 				rtn[key] = v;

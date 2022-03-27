@@ -292,7 +292,9 @@ describe('bmoor-data.object.Proxy', function () {
 				proxy = new Proxy(target),
 				mask = proxy.getMask();
 
-			expect(mask.hello.hasOwnProperty('cruel')).to.equal(false);
+			expect(
+				Object.prototype.hasOwnProperty.call(mask.hello, 'cruel')
+			).to.equal(false);
 			expect(mask.hello.cruel).to.exist;
 
 			mask.hello.woot = 'ox';

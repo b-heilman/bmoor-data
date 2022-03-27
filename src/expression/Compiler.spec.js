@@ -1,5 +1,5 @@
 const {expect} = require('chai');
-const {Config} = require('bmoor/src/lib/config.js');
+const {Config, ConfigObject} = require('bmoor/src/lib/config.js');
 
 const isCharacter = /[A-Za-z_0-9]/;
 
@@ -11,11 +11,10 @@ describe('bmoor-data.expression.compiler', function () {
 
 	let parsingConfig = null;
 	let compoundConfig = null;
-	let expressionConfig = null;
 
 	beforeEach(function () {
 		parsingConfig = new Config({
-			model: {
+			model: new ConfigObject({
 				open: function (master, pos) {
 					if (master[pos] === '$') {
 						return {
@@ -39,9 +38,9 @@ describe('bmoor-data.expression.compiler', function () {
 				toToken: function (content) {
 					return new Token('model', content);
 				}
-			},
+			}),
 
-			accessor: {
+			accessor: new ConfigObject({
 				open: function (master, pos) {
 					if (master[pos] === '.') {
 						return {
@@ -65,9 +64,9 @@ describe('bmoor-data.expression.compiler', function () {
 				toToken: function (content) {
 					return new Token('accessor', content);
 				}
-			},
+			}),
 
-			variable: {
+			variable: new ConfigObject({
 				open: function (master, pos) {
 					if (master[pos] === '@') {
 						return {
@@ -91,9 +90,9 @@ describe('bmoor-data.expression.compiler', function () {
 				toToken: function (content) {
 					return new Token('variable', content);
 				}
-			},
+			}),
 
-			junk: {
+			junk: new ConfigObject({
 				open: function (master, pos) {
 					if (master[pos] === '>') {
 						return {
@@ -117,19 +116,17 @@ describe('bmoor-data.expression.compiler', function () {
 				toToken: function (content) {
 					return new Token('junk', content);
 				}
-			}
+			})
 		});
 
 		compoundConfig = new Config({
-			path: {
+			path: new ConfigObject({
 				tokens: ['model', 'accessor'],
 				factory: function (tokens) {
 					return new Compound('path', tokens);
 				}
-			}
+			})
 		});
-
-		expressionConfig = new Config({});
 	});
 
 	describe('::tokenize', function () {

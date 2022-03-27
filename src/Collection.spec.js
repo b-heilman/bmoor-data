@@ -267,9 +267,9 @@ describe('bmoor-data.Collection', function () {
 
 					child.destroy();
 
-					expect(feedCount).to.equal(0);
-					expect(childCount).to.equal(0);
-					
+					expect(feedCount).to.equal(1);
+					expect(childCount).to.equal(3);
+
 					done();
 				}
 			]);
