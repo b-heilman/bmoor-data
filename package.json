@@ -1,6 +1,6 @@
 {
   "name": "bmoor-data",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "author": "Brian Heilman <das.ist.junk@gmail.com>",
   "description": "Data structures for daily life",
   "license": "MIT",
@@ -10,8 +10,8 @@
   },
   "main": "src/index.js",
   "dependencies": {
-    "bmoor": "^0.10.1",
-    "bmoor-schema": "^0.8.1",
+    "bmoor": "^0.11.0",
+    "bmoor-schema": "^0.11.0",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
